@@ -1939,7 +1939,8 @@ class spell_item_flask_of_the_north : public SpellScript
     {
         Unit* caster = GetCaster();
         std::vector<uint32> possibleSpells;
-        switch (caster->getClass())
+        // Custom classes (12-32) choose through the legacy class that already supplies their stat formulas.
+        switch (GetLegacyClassForCustomClass(Classes(caster->getClass())))
         {
             case CLASS_WARLOCK:
             case CLASS_MAGE:
@@ -1971,6 +1972,10 @@ class spell_item_flask_of_the_north : public SpellScript
                 break;
             }
         }
+
+        // irand(0, -1) asserts, so a class without a choice must not reach the random pick.
+        if (possibleSpells.empty())
+            return;
 
         caster->CastSpell(caster, possibleSpells[irand(0, (possibleSpells.size() - 1))], true, nullptr);
     }
