@@ -30,6 +30,7 @@
 #include "GridNotifiers.h"
 #include "Group.h"
 #include "GroupMgr.h"
+#include "LocalLevelScaling.h"
 #include "Log.h"
 #include "LootMgr.h"
 #include "ObjectMgr.h"
@@ -433,7 +434,7 @@ void Creature::RemoveCorpse(bool setSpawnTime, bool skipVisibility)
             AI()->CorpseRemoved(respawnDelay);
 
         // Should get removed later, just keep "compatibility" with scripts
-        if (setSpawnTime)
+        if (setSpawnTime && !CreatureRespawnClock::KeepsRespawnTime(m_respawnTime, IsRespawnTimerFromDeath()))
         {
             m_respawnTime = GameTime::GetGameTime().count() + respawnDelay;
             //SaveRespawnTime();
@@ -463,7 +464,7 @@ void Creature::RemoveCorpse(bool setSpawnTime, bool skipVisibility)
         // Always save respawn time in non-compat mode since the creature is being
         // destroyed — ProcessRespawns() needs the entry to know when to recreate it.
         // m_respawnTime was already set in setDeathState(JustDied).
-        if (setSpawnTime)
+        if (setSpawnTime && !CreatureRespawnClock::KeepsRespawnTime(m_respawnTime, IsRespawnTimerFromDeath()))
             m_respawnTime = std::max<time_t>(GameTime::GetGameTime().count() + respawnDelay, m_respawnTime);
         SaveRespawnTime();
 
@@ -757,9 +758,17 @@ void Creature::Update(uint32 diff)
                 else
                 {
                     m_groupLootTimer -= diff;
+                    time_t const rollEnd = GameTime::GetGameTime().count() + m_groupLootTimer / IN_MILLISECONDS + 1;
+                    if (CreatureRespawnClock::KeepsRespawnTime(m_respawnTime, IsRespawnTimerFromDeath()) &&
+                        m_respawnTime < rollEnd)
+                    {
+                        m_respawnTime = rollEnd;
+                        SaveRespawnTime();
+                    }
                 }
             }
-            else if (m_corpseRemoveTime <= GameTime::GetGameTime().count())
+            else if (CreatureRespawnClock::IsCorpseDue(GameTime::GetGameTime().count(), m_corpseRemoveTime,
+                m_respawnTime, IsRespawnTimerFromDeath()))
             {
                 RemoveCorpse(false);
                 LOG_DEBUG("entities.unit", "Removing corpse... {} ", GetUInt32Value(OBJECT_FIELD_ENTRY));
@@ -1036,7 +1045,8 @@ void Creature::Regenerate(Powers power)
 
 void Creature::RegenerateHealth()
 {
-    if (!isRegeneratingHealth())
+    if (!isRegeneratingHealth() ||
+        HasAuraTypeWithMiscvalue(SPELL_AURA_PREVENT_REGENERATE_POWER, POWER_HEALTH))
         return;
 
     uint32 curValue = GetHealth();
@@ -1399,7 +1409,7 @@ void Creature::SaveToDB(uint32 mapid, uint8 spawnMask, uint32 phaseMask)
         m_spawnId = sObjectMgr->GenerateCreatureSpawnId();
 
     CreatureData& data = sObjectMgr->NewOrExistCreatureData(m_spawnId);
-
+    data.spawnId = m_spawnId;  // mod_playerbots
     uint32 displayId = GetNativeDisplayId();
     uint32 npcflag = GetNpcFlags();
     uint32 unit_flags = GetUnitFlags();
@@ -1553,6 +1563,45 @@ void Creature::SelectLevel(bool changelevel)
     SetStatFlatModifier(UNIT_MOD_ATTACK_POWER_RANGED, BASE_VALUE, stats->RangedAttackPower);
 
     sScriptMgr->OnCreatureSelectLevel(cInfo, this);
+}
+
+void Creature::RefreshLevelDependantStats()
+{
+    CreatureTemplate const* cInfo = GetCreatureTemplate();
+    if (!cInfo)
+        return;
+
+    uint32 const previousHealth = GetHealth();
+    uint32 const previousMaxHealth = GetMaxHealth();
+
+    // The level itself comes from OnBeforeCreatureSelectLevel, which is where the scaling features
+    // answer with the level they want this creature to be.
+    SelectLevel(true);
+
+    // Everything the level derives from. UpdateEntry does exactly this after SelectLevel, and calls
+    // UpdateAllStats for the fields SelectLevel does not write: attack power (melee and ranged), the
+    // damage range the client draws from it, armour and the resistances. Skipping it is invisible on
+    // the health bar and very visible in a fight.
+    SetMeleeDamageSchool(SpellSchools(cInfo->dmgschool));
+    CreatureBaseStats const* stats = sObjectMgr->GetCreatureBaseStats(GetLevel(), cInfo->unit_class);
+    SetStatFlatModifier(UNIT_MOD_ARMOR,             BASE_VALUE, stats->GenerateArmor(cInfo));
+    SetStatFlatModifier(UNIT_MOD_RESISTANCE_HOLY,   BASE_VALUE, float(cInfo->resistance[SPELL_SCHOOL_HOLY]));
+    SetStatFlatModifier(UNIT_MOD_RESISTANCE_FIRE,   BASE_VALUE, float(cInfo->resistance[SPELL_SCHOOL_FIRE]));
+    SetStatFlatModifier(UNIT_MOD_RESISTANCE_NATURE, BASE_VALUE, float(cInfo->resistance[SPELL_SCHOOL_NATURE]));
+    SetStatFlatModifier(UNIT_MOD_RESISTANCE_FROST,  BASE_VALUE, float(cInfo->resistance[SPELL_SCHOOL_FROST]));
+    SetStatFlatModifier(UNIT_MOD_RESISTANCE_SHADOW, BASE_VALUE, float(cInfo->resistance[SPELL_SCHOOL_SHADOW]));
+    SetStatFlatModifier(UNIT_MOD_RESISTANCE_ARCANE, BASE_VALUE, float(cInfo->resistance[SPELL_SCHOOL_ARCANE]));
+
+    SetCanModifyStats(true);
+    UpdateAllStats();
+
+    // A creature re-levelled here is one nobody is fighting: its health is carried over as a share
+    // rather than as the old absolute number, which at a much higher level would leave it looking
+    // nearly dead while it is in fact untouched (and a creature at full health simply stays full).
+    uint32 const newMaxHealth = GetMaxHealth();
+    SetHealth(previousMaxHealth && previousHealth
+        ? std::max<uint32>(1, uint32(uint64(previousHealth) * newMaxHealth / previousMaxHealth))
+        : newMaxHealth);
 }
 
 float Creature::_GetHealthMod(int32 Rank)
@@ -1960,8 +2009,11 @@ void Creature::setDeathState(DeathState state, bool despawn)
     if (state == DeathState::JustDied)
     {
         m_corpseRemoveTime = GameTime::GetGameTime().count() + m_corpseDelay;
-        uint32 dynamicRespawnDelay = GetMap()->ApplyDynamicModeRespawnScaling(this, m_respawnDelay);
-        m_respawnTime = GameTime::GetGameTime().count() + dynamicRespawnDelay + m_corpseDelay;
+        bool const respawnTimerFromDeath = IsRespawnTimerFromDeath();
+        uint32 dynamicRespawnDelay = GetMap()->ApplyDynamicModeRespawnScaling(this,
+            CreatureRespawnClock::DelayAtDeath(m_respawnDelay, respawnTimerFromDeath));
+        m_respawnTime = CreatureRespawnClock::RespawnTimeAtDeath(GameTime::GetGameTime().count(), dynamicRespawnDelay,
+            m_corpseDelay, respawnTimerFromDeath);
 
         // always save boss respawn time at death to prevent crash cheating
         if (GetMap()->IsDungeon() || isWorldBoss() || GetCreatureTemplate()->rank >= CREATURE_ELITE_ELITE)
@@ -2665,6 +2717,12 @@ void Creature::SaveRespawnTime()
     GetMap()->SaveCreatureRespawnTime(m_spawnId, m_respawnTime);
 }
 
+bool Creature::IsRespawnTimerFromDeath() const
+{
+    return m_spawnId && !IsSummon() && (!m_creatureData || m_creatureData->dbData)
+        && sWorld->getBoolConfig(CONFIG_RESPAWN_TIMER_STARTS_AT_DEATH);
+}
+
 bool Creature::CanCreatureAttack(Unit const* victim, bool skipDistCheck) const
 {
     if (!victim->IsInMap(this))
@@ -3148,7 +3206,7 @@ void Creature::AllLootRemovedFromCorpse()
     float decayRate = sWorld->getRate(RATE_CORPSE_DECAY_LOOTED);
     uint32 diff = uint32((m_corpseRemoveTime - now) * decayRate);
 
-    m_respawnTime -= diff;
+    m_respawnTime = CreatureRespawnClock::RespawnTimeAfterLoot(m_respawnTime, diff, IsRespawnTimerFromDeath());
 
     // corpse skinnable, but without skinning flag, and then skinned, corpse will despawn next update
     if (loot.loot_type == LOOT_SKINNING)
@@ -3163,8 +3221,21 @@ void Creature::AllLootRemovedFromCorpse()
 
 uint8 Creature::getLevelForTarget(WorldObject const* target) const
 {
-    if (!isWorldBoss() || !target->ToUnit())
+    if (!isWorldBoss() || !target || !target->ToUnit())
+    {
+        // A character with open-world scaling on fights *their* version of this creature, and the
+        // whole core asks this function for the level a fight is rolled at. Answering with the
+        // level they are shown is what keeps one definition of that version: spell hit and
+        // resistance tables, weapon and defence skill, the glancing and crushing tables, detection,
+        // aggro radius and kill experience all follow from here.
+        if (target)
+            if (Unit const* opponent = target->ToUnit())
+                if (Player const* viewer = opponent->GetCharmerOrOwnerPlayerOrPlayerItself())
+                    if (uint8 const view = LocalLevelScaling::ViewLevelFor(viewer, this))
+                        return view;
+
         return Unit::getLevelForTarget(target);
+    }
 
     uint16 level = target->ToUnit()->GetLevel() + sWorld->getIntConfig(CONFIG_WORLD_BOSS_LEVEL_DIFF);
     if (level < 1)

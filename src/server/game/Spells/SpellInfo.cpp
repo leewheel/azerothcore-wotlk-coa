@@ -28,6 +28,7 @@
 #include "SpellAuraEffects.h"
 #include "SpellMgr.h"
 #include <algorithm>
+#include <string_view>
 
 uint32 GetTargetFlagMask(SpellTargetObjectTypes objType)
 {
@@ -363,6 +364,10 @@ bool SpellEffectInfo::IsEffect(SpellEffects effectName) const
 
 uint32 SpellEffectInfo::GetItemArmorSubclassMask() const
 {
+    if (_spellInfo && _spellInfo->SpellFamilyName == 37 &&
+        (_spellInfo->Id == 706161 || _spellInfo->Id == 707808))
+        return EffectIndex == EFFECT_2 && IsAura(SPELL_AURA_MOD_BASE_RESISTANCE_PCT) &&
+            MiscValue == SPELL_SCHOOL_MASK_NORMAL && MiscValueB == 24 ? 24 : 0;
     if (_spellInfo && _spellInfo->SpellFamilyName == 35 &&
         (_spellInfo->Id == 706955 || _spellInfo->Id == 707872))
         return EffectIndex == EFFECT_0 && IsAura(SPELL_AURA_MOD_BASE_RESISTANCE_PCT) &&
@@ -1233,6 +1238,23 @@ bool SpellInfo::IsAutocastable() const
 
 bool SpellInfo::ComputeIsStackableWithRanks() const
 {
+    // Aspect ranks share one stance slot; lower ranks must be superseded in the client spell list.
+    constexpr uint32 AspectOfTheStarsRank1 = 800510;
+    constexpr uint32 AspectOfTheStarsRank2 = 803887;
+    constexpr uint32 AspectOfTheStarsRank3 = 803888;
+    if (Id == AspectOfTheStarsRank1 || Id == AspectOfTheStarsRank2 || Id == AspectOfTheStarsRank3)
+        return false;
+
+    // Runemaster tattoos are stance-bar spells whose ranks replace each other, like the Aspects above.
+    constexpr std::string_view RunicTattoos = "Runic Tattoos:";
+    if (SpellName[0] && std::string_view(SpellName[0]).starts_with(RunicTattoos))
+        return false;
+
+    // Pyromancer Ascensions (Executus, Ragnaros) are stance-bar spells whose ranks replace each other.
+    constexpr std::string_view Ascensions = "Ascension of ";
+    if (SpellName[0] && std::string_view(SpellName[0]).starts_with(Ascensions))
+        return false;
+
     if (IsPassive())
         return false;
     if (PowerType != POWER_MANA && PowerType != POWER_HEALTH)
@@ -1456,8 +1478,11 @@ bool SpellInfo::IsAffectedBySpellMod(SpellModifier const* mod) const
         mod->spellId == 705780 && mod->op == SPELLMOD_JUMP_TARGETS && mod->type == SPELLMOD_FLAT &&
         mod->mask == flag96(128, 0, 0);
 
+    bool const bloodFueledAbsorb = Id == 560361 && mod->spellId == 705416 && mod->op == SPELLMOD_EFFECT1 &&
+        mod->type == SPELLMOD_PCT;
+
     // xinef: dont check duration mod
-    if (mod->op != SPELLMOD_DURATION && !bandageGunTargets)
+    if (mod->op != SPELLMOD_DURATION && !bandageGunTargets && !bloodFueledAbsorb)
         if (!IsAffectedBySpellMods())
             return false;
 
@@ -1477,7 +1502,12 @@ bool SpellInfo::IsAffectedBySpellMod(SpellModifier const* mod) const
         switch (mod->spellId)
         {
             case 520682: case 520810: return Id == 520345;
-            case 680600: case 802047: return root == 805116 || root == 804152;
+            case 680600: return root == 805116 || root == 804152;
+            // Unlike 680600, this modifier's two effects are not interchangeable: effect 0
+            // (SPELLMOD_EFFECT1) carries only Hammer of Twilight's classmask, effect 1
+            // (SPELLMOD_EFFECT2) only Entropic Slam's. Route each op to its own root only,
+            // or the other op's SpellModifier instance also matches the wrong target spell.
+            case 802047: return mod->op == SPELLMOD_EFFECT1 ? root == 805116 : root == 804152;
             case 805115: return root == 500720 || root == 806222 || root == 805116;
             case 681102: case 681389: case 806768: return Id == 300277;
             default: break;

@@ -13,6 +13,11 @@
 # Make the script module list available in the current scope
 GetModuleSourceList(MODULES_MODULE_LIST)
 
+# CoA is built from src/server/coa; its SQL directory and its former module directory
+# are not modules, even when an old checkout left a stale src/ in either of them
+get_property(COA_SQL_DIRECTORY GLOBAL PROPERTY COA_SQL_DIRECTORY)
+list(REMOVE_ITEM MODULES_MODULE_LIST ${COA_SQL_DIRECTORY} mod-ascension-compat)
+
 # Make the native install offset available in this scope
 GetInstallOffset(INSTALL_OFFSET)
 
@@ -37,6 +42,7 @@ set("AC_MODULE_LIST" "")
 set("AC_SCRIPTS_LIST" "")
 set(MOD_ALE_FOUND 0)
 set(MOD_ALE_PATH "")
+set(MOD_PLAYERBOTS_FOUND 0)
 
 foreach(include ${AC_ADD_SCRIPTS_INCLUDE})
   set("AC_SCRIPTS_INCLUDES" "#include \"${include}\"\n${AC_SCRIPTS_INCLUDES}")
@@ -79,6 +85,16 @@ foreach(SOURCE_MODULE ${MODULES_MODULE_LIST})
   # Use only static for mod-ALE
   if (SOURCE_MODULE MATCHES "mod-ale")
     ConfigureALEModule(${SOURCE_MODULE})
+  endif()
+
+  if (SOURCE_MODULE MATCHES "mod-playerbots")
+    set(MOD_PLAYERBOTS_FOUND 1)
+    target_compile_options(database
+      PRIVATE
+        -DMOD_PLAYERBOTS)
+    target_compile_options(game-interface
+      INTERFACE
+        -DMOD_PLAYERBOTS)
   endif()
 
   # Build the Graph values
@@ -228,7 +244,8 @@ foreach(SOURCE_MODULE ${MODULES_MODULE_LIST})
       PRIVATE
         acore-core-interface
       PUBLIC
-        game)
+        game
+        coa-interface)
 
     target_include_directories(${MODULE_SOURCE_PROJECT_NAME}
       PUBLIC
@@ -289,8 +306,10 @@ endif()
 target_link_libraries(modules
   PRIVATE
     acore-core-interface
+    mysql
   PUBLIC
-    game-interface)
+    game-interface
+    coa)
 
 target_include_directories(modules
   PUBLIC
@@ -362,6 +381,12 @@ target_compile_options(modules
 target_compile_options(modules
   INTERFACE
     -DCONFIG_FILE_LIST=$<1:"${CONFIG_LIST}">)
+
+if (MOD_PLAYERBOTS_FOUND)
+    target_compile_options(modules
+            PRIVATE
+            -DMOD_PLAYERBOTS)
+endif()
 
 if (MOD_ALE_FOUND)
   if (APPLE)

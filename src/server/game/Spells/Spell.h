@@ -613,6 +613,7 @@ public:
     // Current target's resolved damage, capped by health immediately before
     // damage is dealt. Result hooks can use this for leech without overkill.
     uint32 GetScriptHealthLeechDamage() const { return m_scriptHealthLeechDamage; }
+    uint32 GetScriptHealingIncludingOverheal() const { return m_scriptHealingIncludingOverheal; }
 
     bool UpdatePointers();                              // must be used at call Spell code after time delay (non triggered spell cast/update spell call/etc)
 
@@ -692,6 +693,7 @@ public:
     mutable uint32 m_scriptEventMask;                   // per-cast bookkeeping, including read-only proc callbacks
     std::map<uint32, uint64> m_scriptValues;
     uint32 m_scriptHealthLeechDamage = 0;
+    uint32 m_scriptHealingIncludingOverheal = 0;
 
     bool m_autoRepeat;
     uint8 m_runesState;
@@ -842,6 +844,7 @@ public:
 
     SpellEvent* _spellEvent;
     TriggerCastFlags _triggeredCastFlags;
+    uint32 m_globalCooldownGeneration = 0; // set when this cast started a global cooldown
 
     // if need this can be replaced by Aura copy
     // we can't store original aura link to prevent access to deleted auras

@@ -387,6 +387,7 @@ enum AuraType
     SPELL_AURA_ASCENSION_MOD_CRIT_CHANCE_AGAINST_TARGET     = 330,
     SPELL_AURA_ASCENSION_MOD_HIT_CHANCE_ALL_PCT             = 333,
     SPELL_AURA_ASCENSION_MOD_IGNORE_ARMOR_PCT               = 338,
+    SPELL_AURA_ASCENSION_MOD_PVE_DAMAGE_DONE_PCT           = 341,
     SPELL_AURA_ASCENSION_MOD_ATTACK_POWER_FLAT               = 344,
     SPELL_AURA_ASCENSION_MOD_SPELL_POWER_FLAT                = 345,
     SPELL_AURA_ASCENSION_MOD_CRIT_CHANCE                     = 350,
@@ -410,6 +411,14 @@ enum AscensionIgnoreMinRangeType
 enum AscensionAuraStateDamageScope
 {
     ASCENSION_CLASSMASK_AURASTATE_DAMAGE = 20007
+};
+
+// Same arrangement for native aura 168: the selector kept in MiscValueB asks
+// SPELL_AURA_MOD_DAMAGE_DONE_VERSUS to honour the effect's class mask, which
+// the stock creature-type bonus ignores.
+enum AscensionCreatureTypeDamageScope
+{
+    ASCENSION_CLASSMASK_CREATURE_DAMAGE = 20014
 };
 
 // Local conversions of reviewed coefficient modifiers. Keep private client

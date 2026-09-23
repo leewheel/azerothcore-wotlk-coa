@@ -26,6 +26,7 @@
 #include "BattlegroundMgr.h"
 #include "BigNumber.h"
 #include "CliRunnable.h"
+#include "CoAScriptLoader.h"
 #include "Common.h"
 #include "Config.h"
 #include "DatabaseEnv.h"
@@ -181,7 +182,7 @@ int main(int argc, char** argv)
 #endif
 
     // Add file and args in config
-    sConfigMgr->Configure(configFile.generic_string(), {argv, argv + argc}, CONFIG_FILE_LIST);
+    sConfigMgr->Configure(configFile.generic_string(), {argv, argv + argc}, COA_CONFIG_FILE_LIST CONFIG_FILE_LIST);
 
     if (!sConfigMgr->LoadAppConfigs())
         return 1;
@@ -269,7 +270,11 @@ int main(int argc, char** argv)
     // Loading modules configs before scripts
     sConfigMgr->LoadModulesConfigs();
 
-    sScriptMgr->SetScriptLoader(AddScripts);
+    sScriptMgr->SetScriptLoader([]
+    {
+        AddScripts();
+        AddCoAScripts();
+    });
     sScriptMgr->SetModulesLoader(AddModulesScripts);
 
     std::shared_ptr<void> sScriptMgrHandle(nullptr, [](void*)
@@ -437,7 +442,8 @@ bool StartDB()
     MySQL::Library_Init();
 
     // Load databases
-    DatabaseLoader loader("server.worldserver", DatabaseLoader::DATABASE_MASK_ALL, AC_MODULES_LIST);
+    DatabaseLoader loader("server.worldserver", DatabaseLoader::DATABASE_MASK_ALL,
+        COA_DATABASE_MODULE_LIST AC_MODULES_LIST);
     loader
         .AddDatabase(LoginDatabase, "Login")
         .AddDatabase(CharacterDatabase, "Character")
@@ -445,6 +451,11 @@ bool StartDB()
 
     if (!loader.Load())
         return false;
+
+    if (!sScriptMgr->OnDatabasesLoading())
+    {
+        return false;
+    }
 
     ///- Get the realm Id from the configuration file
     realm.Id.Realm = sConfigMgr->GetOption<uint32>("RealmID", 1);
@@ -493,6 +504,8 @@ void StopDB()
     CharacterDatabase.Close();
     WorldDatabase.Close();
     LoginDatabase.Close();
+
+    sScriptMgr->OnDatabasesClosing();
 
     MySQL::Library_End();
 }
@@ -584,6 +597,8 @@ void WorldUpdateLoop()
     CharacterDatabase.WarnAboutSyncQueries(true);
     WorldDatabase.WarnAboutSyncQueries(true);
 
+    sScriptMgr->OnDatabaseWarnAboutSyncQueries(true);
+
     ///- While we have not World::m_stopEvent, update the world
     while (!World::IsStopped())
     {
@@ -612,6 +627,8 @@ void WorldUpdateLoop()
             Sleep(1000);
 #endif
     }
+
+    sScriptMgr->OnDatabaseWarnAboutSyncQueries(false);
 
     LoginDatabase.WarnAboutSyncQueries(false);
     CharacterDatabase.WarnAboutSyncQueries(false);

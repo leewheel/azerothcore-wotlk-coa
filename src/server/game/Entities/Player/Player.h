@@ -1000,7 +1000,8 @@ enum PlayerCommandStates
     CHEAT_CASTTIME = 0x02,
     CHEAT_COOLDOWN = 0x04,
     CHEAT_POWER = 0x08,
-    CHEAT_WATERWALK = 0x10
+    CHEAT_WATERWALK = 0x10,
+    CHEAT_SPELLCHARGES = 0x20
 };
 
 // Used for OnGiveXP PlayerScript hook
@@ -1010,7 +1011,9 @@ enum PlayerXPSource
     XPSOURCE_QUEST = 1,
     XPSOURCE_QUEST_DF = 2,
     XPSOURCE_EXPLORE = 3,
-    XPSOURCE_BATTLEGROUND = 4
+    XPSOURCE_BATTLEGROUND = 4,
+    XPSOURCE_PROFESSION = 5,
+    XPSOURCE_PROFESSION_SKILL = 6
 };
 
 enum InstantFlightGossipAction
@@ -1327,6 +1330,7 @@ public:
     InventoryResult CanUseItem(Item* pItem, bool not_loading = true) const;
     [[nodiscard]] bool HasItemTotemCategory(uint32 TotemCategory) const;
     bool IsTotemCategoryCompatiableWith(ItemTemplate const* pProto, uint32 requiredTotemCategoryId) const;
+    InventoryResult BotCanUseItem(ItemTemplate const* pItem) const;
     InventoryResult CanUseItem(ItemTemplate const* pItem) const;
     [[nodiscard]] InventoryResult CanUseAmmo(uint32 item) const;
     InventoryResult CanRollForItemInLFG(ItemTemplate const* item, WorldObject const* lootedObject) const;
@@ -1449,6 +1453,13 @@ public:
 
     int32 GetQuestLevel(Quest const* quest) const;
 
+    /// Re-sends the query data for every quest in the log. The client caches a quest's data by
+    /// quest id, across characters and sessions, so its copy of the level and of the rewards stands
+    /// until it is told again - which is what makes a quest picked up under one open-world scaling
+    /// choice keep showing that choice's numbers after the character changes it. Called when the
+    /// choice changes and when the effective level moves (login, level-up).
+    void RefreshQuestLogQueries();
+
     void PrepareQuestMenu(ObjectGuid guid);
     void SendPreparedQuest(ObjectGuid guid);
     [[nodiscard]] bool IsActiveQuest(uint32 quest_id) const;
@@ -1497,7 +1508,7 @@ public:
     void RemoveRewardedQuest(uint32 questId, bool update = true);
     void SendQuestUpdate(uint32 questId);
     QuestGiverStatus GetQuestDialogStatus(Object* questGiver);
-    float GetQuestRate(bool isDFQuest = false);
+    float GetQuestRate(bool isDFQuest = false, int32 questLevel = 0);
     void SetDailyQuestStatus(uint32 quest_id);
     bool IsDailyQuestDone(uint32 quest_id);
     void SetWeeklyQuestStatus(uint32 quest_id);
@@ -1728,6 +1739,7 @@ public:
     bool _addSpell(uint32 spellId, uint8 addSpecMask, bool temporary, bool learnFromSkill = false);
     void learnSpell(uint32 spellId, bool temporary = false, bool learnFromSkill = false);
     void removeSpell(uint32 spellId, uint8 removeSpecMask, bool onlyTemporary);
+    void MarkSpellForSave(uint32 spellId);
     void resetSpells();
     void LearnCustomSpells();
     void LearnDefaultSkills();
@@ -1735,7 +1747,6 @@ public:
     void learnQuestRewardedSpells();
     void learnQuestRewardedSpells(Quest const* quest);
     void learnSpellHighRank(uint32 spellid);
-    bool CheckSkillLearnedBySpell(uint32 spellId);
     void SetReputation(uint32 factionentry, float value);
     [[nodiscard]] uint32 GetReputation(uint32 factionentry) const;
     std::string const& GetGuildName();
@@ -1849,6 +1860,7 @@ public:
     void ConsumeSpellCharge(SpellInfo const* spellInfo, Spell* spell);
     void RestoreSpellCharge(uint32 spellId, uint32 count = 1);
     void RestoreSpellChargeCategory(uint32 categoryId, uint32 count);
+    void RestoreAllSpellCharges();
     void SendSpellChargeState(uint32 spellId) const;
     void SendAllSpellChargeStates() const;
     uint32 GetLastPotionId() { return m_lastPotionId; }
@@ -1971,6 +1983,8 @@ public:
     bool UpdateSkill(uint32 skill_id, uint32 step);
     bool UpdateSkillPro(uint16 SkillId, int32 Chance, uint32 step);
 
+    void RewardProfessionXP(uint32 skillId, uint32 current, uint32 gray, uint32 green, uint32 yellow,
+        bool disenchanting = false);
     bool UpdateCraftSkill(uint32 spellid);
     bool UpdateGatherSkill(uint32 SkillId, uint32 SkillValue, uint32 RedLevel, uint32 Multiplicator = 1);
     bool UpdateFishingSkill();
@@ -2112,10 +2126,13 @@ public:
     }
     bool IsMirrorTimerActive(MirrorTimerType type) { return m_MirrorTimer[type] == getMaxTimer(type); }
 
+    void SetMovement(PlayerMovementType pType);
+
     bool CanJoinConstantChannelInZone(ChatChannelsEntry const* channel, AreaTableEntry const* zone);
 
     void JoinedChannel(Channel* c);
     void LeftChannel(Channel* c);
+    bool IsInChannel(Channel const* c);
     void CleanupChannels();
     void ClearChannelWatch();
     void UpdateLFGChannel();
@@ -2259,7 +2276,8 @@ public:
     void SetCanParry(bool value);
     [[nodiscard]] bool CanBlock() const { return m_canBlock; }
     void SetCanBlock(bool value);
-    [[nodiscard]] bool CanTitanGrip() const { return m_canTitanGrip; }
+    [[nodiscard]] bool HasBurningCommander() const;
+    [[nodiscard]] bool CanTitanGrip(ItemTemplate const* weapon = nullptr) const;
     void SetCanTitanGrip(bool value);
     [[nodiscard]] bool CanTameExoticPets() const { return IsGameMaster() || HasAuraType(SPELL_AURA_ALLOW_TAME_PET_TYPE); }
 
@@ -2331,6 +2349,8 @@ public:
     std::vector<ItemSetEffect*> ItemSetEff;
 
     void SendLoot(ObjectGuid guid, LootType loot_type);
+    void LootCreatureWithCompanion(Creature* creature, float radius, bool skin = false);
+    bool IsWithinLootDistance(Creature const* creature) const;
     void SendLootError(ObjectGuid guid, LootError error);
     void SendLootRelease(ObjectGuid guid);
     void SendNotifyLootItemRemoved(uint8 lootSlot);
@@ -2731,6 +2751,8 @@ public:
 
     void SendSystemMessage(std::string_view msg, bool escapeCharacters = false);
 
+    void ResetSpeakTimers();
+
     std::string GetDebugInfo() const override;
 
     bool IsExpectingChangeTransport() const { return _expectingChangeTransport; }
@@ -2891,6 +2913,7 @@ protected:
 
     void outDebugValues() const;
     ObjectGuid m_lootGuid;
+    ObjectGuid m_companionLootGuid;
 
     TeamId m_team;
     uint32 m_nextSave; // pussywizard
