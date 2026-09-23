@@ -13822,6 +13822,12 @@ void Player::SetGrantableLevels(uint8 val)
         RemoveByteFlag(PLAYER_FIELD_BYTES, 1, 0x01);
 }
 
+// By leewheel 20261126 上游 #4908：光环的 misc 值必须是点名「击杀」的经验源掩码
+bool Player::IsKillXPAuraEffect(AuraEffect const* effect)
+{
+    return (effect->GetMiscValue() & XP_AURA_SOURCE_KILL) != 0;
+}
+
 bool Player::GetsRecruitAFriendBonus(bool forXP)
 {
     bool recruitAFriend = false;

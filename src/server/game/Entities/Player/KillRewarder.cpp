@@ -199,6 +199,10 @@ void KillRewarder::_RewardXP(Player* player, float rate)
             if ((effect->GetMiscValue() & sourceMask) == 0)
                 return false;
             // CoA's party Aura of Experience explicitly excludes the recruit-a-friend bonus.
+            // By leewheel 20261126 合并上游 #4908：光环的 misc 值必须是点名「击杀」的经验源掩码
+            if (!Player::IsKillXPAuraEffect(effect))
+                return false;
+            // CoA 的团队「经验光环」明确排除招募好友加成。
             if (effect->GetId() == 818059 && recruitAFriend)
                 return false;
             return !noBonusExperience || effect->GetAmount() <= 0;
