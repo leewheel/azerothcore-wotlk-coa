@@ -1208,6 +1208,9 @@ scale. Both return zero when absent and do not verify client rendering.
 `gameobject_remaining_ms` uses the same lookup and requires exactly
 one object when present; it returns the remaining lifetime with one-second precision, zero when absent,
 or -1 for an object without an expiry. Moving out of range is not proof of despawn.
+`nearby_gameobject_locked` requires a player and `entry` and exactly one spawned object of that entry in the
+same phase within 20 yards. It returns 1 when the object's template has a lock id or the object carries
+`GO_FLAG_LOCKED`, the two values the client uses to demand a key or lockpicking, and 0 otherwise.
 `at_homebind` checks that the player is on their homebind map and within five yards of its position.
 `summon_pending` is 1 while the player has an unanswered summon request (meeting stone, ritual or warlock summon).
 `use_gameobject` keeps normal interaction-distance and usability checks. It does not inspect a rendered UI.
