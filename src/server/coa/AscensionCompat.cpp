@@ -495,6 +495,13 @@ constexpr std::array<uint32, 8> GOBLIN_SALVAGE_QUEST_ITEMS =
 constexpr std::array<uint32, 2> GOBLIN_SALVAGE_FIELD_TESTING_QUESTS = { 176003, 176013 };
 constexpr float GOBLIN_SALVAGE_FIELD_TESTING_LOOT_REACH = 10.0f;
 
+//By leewheel 20261126 上游 #6540：客户端 item_dbc 缺的补充行，登录时流式补发
+constexpr std::array<uint32, 7> ITEM_DBC_SUPPLEMENT_IDS =
+{{
+    2143, 5042, 5048, 10678, 17307, 20437, 44924
+}};
+//End By leewheel
+
 enum AscensionRidingSpells : uint32
 {
     SPELL_RIDING_APPRENTICE = 33388,
@@ -12328,6 +12335,8 @@ void AddAscensionCompatScripts() {
   for (uint32 itemId : BUSHCRAFT_CRAFTED_ITEMS)
     Ascension::ClientItemPatches::Instance().Register(itemId);
   for (uint32 itemId : GOBLIN_SALVAGE_QUEST_ITEMS)
+    Ascension::ClientItemPatches::Instance().Register(itemId);
+  for (uint32 itemId : ITEM_DBC_SUPPLEMENT_IDS)
     Ascension::ClientItemPatches::Instance().Register(itemId);
   RegisterAscensionClientConfig([](AscensionClientConfig& config) {
     config.Booleans.emplace_back("CONFIG_CHARACTER_ADVANCEMENT_BUILD_INSPECT_ENABLED", true);
