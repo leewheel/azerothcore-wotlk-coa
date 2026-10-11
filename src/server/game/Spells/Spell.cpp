@@ -31,6 +31,7 @@
 #include "GridNotifiers.h"
 #include "Group.h"
 #include "InstanceScript.h"
+#include "LocalLevelScaling.h"
 #include "Log.h"
 #include "LootMgr.h"
 #include "ObjectAccessor.h"
@@ -904,6 +905,28 @@ void Spell::SelectSpellTargets()
             }
         }
     }
+
+    if (m_originalCaster)
+        for (TargetInfo& targetInfo : m_UniqueTargetInfo)
+        {
+            if (targetInfo.missCondition != SPELL_MISS_MISS || !targetInfo.effectMask)
+                continue;
+
+            bool positiveEffects = true;
+            for (uint8 index = 0; index < MAX_SPELL_EFFECTS; ++index)
+                if ((targetInfo.effectMask & (1u << index)) && !m_spellInfo->IsPositiveEffect(index))
+                {
+                    positiveEffects = false;
+                    break;
+                }
+            if (!positiveEffects)
+                continue;
+
+            Unit* target = targetInfo.targetGUID == m_caster->GetGUID() ? m_caster
+                : ObjectAccessor::GetUnit(*m_caster, targetInfo.targetGUID);
+            if (target && !m_originalCaster->IsHostileTo(target) && !target->IsImmunedToSpell(m_spellInfo, this))
+                targetInfo.missCondition = SPELL_MISS_NONE;
+        }
 
     if (uint64 dstDelay = CalculateDelayMomentForDst())
         m_delayMoment = dstDelay;
@@ -3140,8 +3163,8 @@ SpellMissInfo Spell::DoSpellHitOnUnit(Unit* unit, uint32 effectMask, bool scaleA
         if ((type == DRTYPE_PLAYER && (unit->IsCharmedOwnedByPlayerOrPlayer() || flagsExtra & CREATURE_FLAG_EXTRA_ALL_DIMINISH ||
             (m_diminishGroup == DIMINISHING_TAUNT && (flagsExtra & CREATURE_FLAG_EXTRA_OBEYS_TAUNT_DIMINISHING_RETURNS)))) || type == DRTYPE_ALL)
         {
-            // Do not apply diminish return if caster is NPC
-            if (m_caster->IsCharmedOwnedByPlayerOrPlayer())
+            // NPC casters only diminish player-controlled targets
+            if (m_caster->IsCharmedOwnedByPlayerOrPlayer() || unit->IsCharmedOwnedByPlayerOrPlayer())
             {
                 unit->IncrDiminishing(m_diminishGroup);
             }
@@ -4000,6 +4023,10 @@ void Spell::_cast(bool skipCheck)
     // we must send smsg_spell_go packet before m_castItem delete in TakeCastItem()...
     SendSpellGo();
 
+    // The client starts the DBC category cooldown by itself on cast; a charged spell has none
+    if (m_spellInfo->MaxCharges && m_spellInfo->CategoryRecoveryTime && m_caster->IsPlayer())
+        m_caster->ToPlayer()->SendClearCooldown(m_spellInfo->Id, m_caster);
+
     bool resetAttackTimers = IsAutoActionResetSpell() && !m_spellInfo->HasAttribute(SPELL_ATTR2_DO_NOT_RESET_COMBAT_TIMERS);
     if (resetAttackTimers)
     {
@@ -4419,7 +4446,9 @@ void Spell::SendSpellCooldown()
     Player* _player = m_caster->ToPlayer();
 
     // mana/health/etc potions, disabled by client (until combat out as declarate)
-    if (m_CastItem && (m_CastItem->IsPotion() || m_spellInfo->IsCooldownStartedOnEvent()))
+    // A triggered spell never clears the potion (Player::UpdatePotionCooldown skips it), so it must not set it either:
+    // an item whose second on-use spell is triggered would otherwise leave every potion "not ready" out of combat.
+    if (m_CastItem && !IsIgnoringCooldowns() && (m_CastItem->IsPotion() || m_spellInfo->IsCooldownStartedOnEvent()))
     {
         // need in some way provided data for Spell::finish SendCooldownEvent
         _player->SetLastPotionId(m_CastItem->GetEntry());
@@ -5008,7 +5037,7 @@ void Spell::WriteAmmoToPacket(WorldPacket* data)
                         ammoInventoryType = pProto->InventoryType;
                     }
                 }
-                else if (m_caster->HasAura(46699) || (IsAscensionClass(m_caster->getClass()) &&
+                else if (m_caster->HasAura(46699) || (!UsesProjectileAmmo(m_caster->getClass()) &&
                     (pItem->GetTemplate()->SubClass == ITEM_SUBCLASS_WEAPON_BOW ||
                      pItem->GetTemplate()->SubClass == ITEM_SUBCLASS_WEAPON_GUN ||
                      pItem->GetTemplate()->SubClass == ITEM_SUBCLASS_WEAPON_CROSSBOW))) // Requires No Ammo
@@ -5447,7 +5476,7 @@ void Spell::TakePower()
 
 void Spell::TakeAmmo()
 {
-    if (m_caster->IsPlayer() && IsAscensionClass(m_caster->getClass()))
+    if (m_caster->IsPlayer() && !UsesProjectileAmmo(m_caster->getClass()))
         return;
 
     if (m_attackType == RANGED_ATTACK && m_caster->IsPlayer() && !m_spellInfo->HasAttribute(SPELL_ATTR6_DO_NOT_CONSUME_RESOURCES))
@@ -5697,6 +5726,7 @@ void Spell::HandleThreatSpells()
         {
             if (!target->CanHaveThreatList())
                 continue;
+            threatToAdd = LocalLevelScaling::PoolThreatFor(unitCaster, target, threatToAdd);
             target->GetThreatMgr().AddThreat(unitCaster, threatToAdd, m_spellInfo, true);
         }
     }
@@ -6374,7 +6404,7 @@ SpellCastResult Spell::CheckCast(bool strict, uint32* /*param1*/, uint32* /*para
                     uint32 skill = creature->GetCreatureTemplate()->GetRequiredLootSkill();
 
                     int32 skillValue = m_caster->ToPlayer()->GetSkillValue(skill);
-                    int32 TargetLevel = m_targets.GetUnitTarget()->GetLevel();
+                    int32 TargetLevel = creature->GetLootSkillLevelFor(m_caster->ToPlayer());
                     int32 ReqValue = (skillValue < 100 ? (TargetLevel - 10) * 10 : TargetLevel * 5);
                     if (ReqValue > skillValue)
                         return SPELL_FAILED_LOW_CASTLEVEL;
@@ -6433,7 +6463,7 @@ SpellCastResult Spell::CheckCast(bool strict, uint32* /*param1*/, uint32* /*para
                     if (GameObject* go = m_targets.GetGOTarget())
                     {
                         lockId = go->GetGOInfo()->GetLockId();
-                        if (!lockId)
+                        if (!lockId && go->GetGoType() != GAMEOBJECT_TYPE_DOOR)
                             return SPELL_FAILED_BAD_TARGETS;
                     }
                     else if (Item* itm = m_targets.GetItemTarget())
@@ -6783,7 +6813,9 @@ SpellCastResult Spell::CheckCast(bool strict, uint32* /*param1*/, uint32* /*para
                     InstanceTemplate const* it = sObjectMgr->GetInstanceTemplate(m_caster->GetMapId());
                     if (it)
                         allowMount = it->AllowMount;
-                    if (m_caster->IsPlayer() && !allowMount && !m_spellInfo->AreaGroupId)
+                    // Mechsuit is a combat form; its mount helper carries the suit's model and form.
+                    bool tinkerMechsuit = m_spellInfo->Id == 803451 && m_caster->getClass() == CLASS_TINKER;
+                    if (m_caster->IsPlayer() && !allowMount && !m_spellInfo->AreaGroupId && !tinkerMechsuit)
                         return SPELL_FAILED_NO_MOUNTS_ALLOWED;
 
                     if (m_caster->IsInDisallowedMountForm())
@@ -6986,8 +7018,8 @@ SpellCastResult Spell::CheckCasterAuras(bool preventionOnly) const
                 dispel_immune |= SpellInfo::GetDispelMask(DispelType(m_spellInfo->Effects[i].MiscValue));
         }
         // immune movement impairment and loss of control
-        //         PVP trinket                   EMFH                   TOC PVP trinket               Bullheaded                  Bestial Wrath             // Beath Within         // Medalion of Immunity
-        if (m_spellInfo->Id == 42292 || m_spellInfo->Id == 59752 || m_spellInfo->Id == 65547 || m_spellInfo->Id == 53490 || m_spellInfo->Id == 19574 || m_spellInfo->Id == 34471 || m_spellInfo->Id == 46227)
+        //         PVP trinket                   Ascension PVP trinket            EMFH                   TOC PVP trinket               Bullheaded                  Bestial Wrath             // Beath Within         // Medalion of Immunity
+        if (m_spellInfo->Id == 42292 || m_spellInfo->Id == 1142292 || m_spellInfo->Id == 59752 || m_spellInfo->Id == 65547 || m_spellInfo->Id == 53490 || m_spellInfo->Id == 19574 || m_spellInfo->Id == 34471 || m_spellInfo->Id == 46227)
             mechanic_immune = IMMUNE_TO_MOVEMENT_IMPAIRMENT_AND_LOSS_CONTROL_MASK;
     }
 
@@ -7273,6 +7305,13 @@ SpellCastResult Spell::CheckPower()
     // item cast not used power
     if (m_CastItem)
         return SPELL_CAST_OK;
+
+    // CoA: dungeon creatures on Heroic/Mythic never run out of power (Heroic/Mythic templates often have no mana pool,
+    // e.g. Incendius and Magmus failed every spell with SPELL_FAILED_NO_POWER)
+    if (Creature const* creature = m_caster->ToCreature())
+        if (!creature->IsCharmedOwnedByPlayerOrPlayer() && creature->GetMap()->IsDungeon()
+            && creature->GetMap()->GetDifficulty() != DUNGEON_DIFFICULTY_NORMAL)
+            return SPELL_CAST_OK;
 
     //While .cheat power is enabled dont check if we need power to cast the spell
     if (m_caster->IsPlayer())
@@ -7700,7 +7739,8 @@ SpellCastResult Spell::CheckItems(uint32* param1, uint32* param2)
                     if (m_targets.GetItemTarget()->GetOwnerGUID() != m_caster->GetGUID())
                         return SPELL_FAILED_CANT_BE_DISENCHANTED;
 
-                    ItemTemplate const* itemProto = m_targets.GetItemTarget()->GetTemplate();
+                    ItemTemplate const* itemProto = LocalLevelScaling::InstanceTemplateFor(m_targets.GetItemTarget(),
+                        m_targets.GetItemTarget()->GetTemplate());
                     if (!itemProto)
                         return SPELL_FAILED_CANT_BE_DISENCHANTED;
 
@@ -7795,8 +7835,8 @@ SpellCastResult Spell::CheckItems(uint32* param1, uint32* param2)
                         return SPELL_FAILED_EQUIPPED_ITEM;
 
                     // Keep the real ranged-weapon/broken-item checks above.
-                    // Custom classes do not require or consume projectile stacks.
-                    if (IsAscensionClass(m_caster->getClass()))
+                    // Custom classes and Hero do not require or consume projectile stacks.
+                    if (!UsesProjectileAmmo(m_caster->getClass()))
                         break;
 
                     switch (pItem->GetTemplate()->SubClass)
@@ -7919,8 +7959,8 @@ SpellCastResult Spell::CheckItems(uint32* param1, uint32* param2)
 
 SpellCastResult Spell::CheckSpellFocus()
 {
-    // check spell focus object
-    if (m_spellInfo->RequiresSpellFocus)
+    // check spell focus object, unless a script answers the focus itself
+    if (m_spellInfo->RequiresSpellFocus && !sScriptMgr->OnSpellFocusAnswered(this))
     {
         CellCoord p(Acore::ComputeCellCoord(m_caster->GetPositionX(), m_caster->GetPositionY()));
         Cell cell(p);
@@ -8595,10 +8635,13 @@ SpellCastResult Spell::CanOpenLock(uint32 effIndex, uint32 lockId, SkillType& sk
 
                         // skill bonus provided by casting spell (mostly item spells)
                         // add the effect base points modifier from the spell casted (cheat lock / skeleton key etc.)
-                        if ((m_spellInfo->Effects[effIndex].TargetA.GetTarget() == TARGET_GAMEOBJECT_ITEM_TARGET || m_spellInfo->Effects[effIndex].TargetB.GetTarget() == TARGET_GAMEOBJECT_ITEM_TARGET)
-                            && !m_spellInfo->IsAbilityOfSkillType(SKILL_LOCKPICKING))
+                        SpellEffectInfo const& effect = m_spellInfo->Effects[effIndex];
+                        bool const hasClassLockBonus = m_spellInfo->Id == 570122 || m_spellInfo->Id == 804662;
+                        if ((effect.TargetA.GetTarget() == TARGET_GAMEOBJECT_ITEM_TARGET ||
+                            effect.TargetB.GetTarget() == TARGET_GAMEOBJECT_ITEM_TARGET) &&
+                            (!m_spellInfo->IsAbilityOfSkillType(SKILL_LOCKPICKING) || hasClassLockBonus))
                         {
-                            skillValue += m_spellInfo->Effects[effIndex].CalcValue();
+                            skillValue += effect.CalcValue(m_caster);
                         }
 
                         if (skillValue < reqSkillValue)
@@ -8985,8 +9028,13 @@ void Spell::PrepareTriggersExecutedOnHit()
     /// @todo: move this to scripts
     if (m_spellInfo->SpellFamilyName)
     {
+        constexpr uint32 HeavyArmsLockout = 285381;
+        constexpr uint32 SlamFamilyMask = 0x00200000;
+        bool const slamCasterLockout = m_spellInfo->SpellFamilyName == SPELLFAMILY_WARRIOR &&
+            (m_spellInfo->SpellFamilyFlags[0] & SlamFamilyMask) &&
+            m_spellInfo->ExcludeCasterAuraSpell == HeavyArmsLockout;
         SpellInfo const* excludeCasterSpellInfo = sSpellMgr->GetSpellInfo(m_spellInfo->ExcludeCasterAuraSpell);
-        if (excludeCasterSpellInfo && !excludeCasterSpellInfo->IsPositive())
+        if (excludeCasterSpellInfo && !excludeCasterSpellInfo->IsPositive() && !slamCasterLockout)
             m_preCastSpell = m_spellInfo->ExcludeCasterAuraSpell;
         SpellInfo const* excludeTargetSpellInfo = sSpellMgr->GetSpellInfo(m_spellInfo->ExcludeTargetAuraSpell);
         if (excludeTargetSpellInfo && !excludeTargetSpellInfo->IsPositive())

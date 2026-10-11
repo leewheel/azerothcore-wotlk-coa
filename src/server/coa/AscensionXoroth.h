@@ -10,6 +10,7 @@
 class Player;
 class Unit;
 class Creature;
+class Aura;
 namespace AscensionXoroth
 {
 enum SecondarySpells : uint32
@@ -50,6 +51,7 @@ void Cast(Unit* caster, Unit* target, uint32 id);
 void Copy(Unit* caster, Unit* target, uint32 id, uint32 damage);
 void Gain(Player* player, uint32 count);
 void Blood(Player* player);
+void SetRemainingUses(Aura* aura, uint8 uses);
 void Refresh(Player* player);
 bool Chance(Player* player, uint32 id, uint32 cooldown = 0, float bonus = 0);
 std::list<Unit*> Nearby(Unit* center, float range);
@@ -58,6 +60,8 @@ uint32 Highest(Player* player, uint32 root);
 void Replace(Player* player, uint32 root, uint32 replacement);
 void Unleash(Player* player, Unit* center, float strength = 1, bool pet = false);
 void Summon(Player* player, uint32 entry, Position const& position, uint32 duration);
+void ImpFormation(uint32 slot, float& distance, float& angle);
+Position ImpPosition(Player* player);
 void Spread(Player* player, Unit* target);
 void ApplyContracts(SpellInfo* info);
 }

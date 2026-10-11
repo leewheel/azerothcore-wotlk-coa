@@ -772,7 +772,7 @@ struct CreatureDisplayInfoExtraEntry
     //uint32 HairStyleID;                                   // 5
     //uint32 HairColorID;                                   // 6
     //uint32 FacialHairID;                                  // 7
-    //uint32 NPCItemDisplay[11];                            // 8-18
+    uint32 NPCItemDisplay[11];                              // 8-18
     //uint32 Flags;                                         // 19
     //char const* BakeName;                                 // 20
 };
@@ -1804,6 +1804,14 @@ struct SpellCategoryEntry
     uint32 Flags;
 };
 
+// Ascension: the spells each spell modifier applies to, beyond its own family and class mask.
+struct SpellAffectEntry
+{
+    uint32 ID;                                              // 0
+    uint32 ModifierSpellID;                                 // 1
+    uint32 AffectedSpellID;                                 // 2
+};
+
 struct SpellDifficultyEntry
 {
     uint32     ID;                                          // 0
@@ -2267,9 +2275,9 @@ struct MapDifficulty
 struct TalentSpellPos
 {
     TalentSpellPos()  = default;
-    TalentSpellPos(uint16 _talent_id, uint8 _rank) : talent_id(_talent_id), rank(_rank) {}
+    TalentSpellPos(uint32 _talent_id, uint8 _rank) : talent_id(_talent_id), rank(_rank) {}
 
-    uint16 talent_id{0};
+    uint32 talent_id{0};
     uint8  rank{0};
 };
 

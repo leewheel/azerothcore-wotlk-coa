@@ -769,7 +769,7 @@ public:
     void ReplaceAllNpcFlags(NPCFlags flags) { SetUInt32Value(UNIT_NPC_FLAGS, flags); }
 
     uint32 GetDynamicFlags() const override { return GetUInt32Value(UNIT_DYNAMIC_FLAGS); }
-    void ReplaceAllDynamicFlags(uint32 flag) override { SetUInt32Value(UNIT_DYNAMIC_FLAGS, flag); }
+    void ReplaceAllDynamicFlags(uint32 flag) override;
 
     // Movement flags
     void AddUnitMovementFlag(uint32 f) { m_movementInfo.flags |= f; }
@@ -1011,7 +1011,7 @@ public:
     void HandleProcExtraAttackFor(Unit* victim, uint32 count);
     void SetLastExtraAttackSpell(uint32 spellId) { _lastExtraAttackSpell = spellId; }
     [[nodiscard]] uint32 GetLastExtraAttackSpell() const { return _lastExtraAttackSpell; }
-    void AddExtraAttacks(uint32 count);
+    void AddExtraAttacks(uint32 count, ObjectGuid const& target = ObjectGuid::Empty);
 
     // Combot points system
     [[nodiscard]] uint8 GetComboPoints(Unit const* who = nullptr) const { return (who && m_comboTarget != who) ? 0 : m_comboPoints; }
@@ -1264,6 +1264,7 @@ public:
     int32 SpellBaseDamageBonusTaken(SpellSchoolMask schoolMask, bool isDoT = false);
     float SpellPctDamageModsDone(Unit* victim, SpellInfo const* spellProto, DamageEffectType damagetype);
     float GetSpellAttackPowerCoefficientMultiplier(SpellInfo const* spellInfo, bool periodic) const;
+    float GetSpellAttackPowerCoefficientFlatBonus(SpellInfo const* spellInfo) const;
     float GetSpellPowerCoefficientFlatBonus(SpellInfo const* spellInfo) const;
     uint32 SpellDamageBonusDone(Unit* victim, SpellInfo const* spellProto, uint32 pdamage, DamageEffectType damagetype, uint8 effIndex, float TotalMod = 0.0f, uint32 stack = 1);
     uint32 SpellDamageBonusTaken(Unit* caster, SpellInfo const* spellProto, uint32 pdamage, DamageEffectType damagetype, uint32 stack = 1);
@@ -1507,6 +1508,11 @@ public:
     }
 
     [[nodiscard]] bool HasAura(uint32 spellId, ObjectGuid casterGUID = ObjectGuid::Empty, ObjectGuid itemCasterGUID = ObjectGuid::Empty, uint8 reqEffMask = 0) const;
+    /// aura lookups that also match a stock spell's twins and namesakes (SpellMgr::GetSpellAndRelatives)
+    [[nodiscard]] bool HasAuraOrTwin(uint32 spellId, ObjectGuid casterGUID = ObjectGuid::Empty) const;
+    [[nodiscard]] Aura* GetAuraOfRankedSpellOrTwin(uint32 spellId, ObjectGuid casterGUID = ObjectGuid::Empty) const;
+    void RemoveAurasDueToSpellOrTwin(uint32 spellId);
+    [[nodiscard]] AuraEffect* GetAuraEffectOfRankedSpellOrTwin(uint32 spellId, uint8 effIndex, ObjectGuid casterGUID = ObjectGuid::Empty) const;
     [[nodiscard]] bool HasAuraType(AuraType auraType) const;
     [[nodiscard]] bool HasAuraTypeWithCaster(AuraType auratype, ObjectGuid caster) const;
     [[nodiscard]] bool HasAuraTypeWithMiscvalue(AuraType auratype, int32 miscvalue) const;
@@ -1542,6 +1548,7 @@ public:
     [[nodiscard]] float GetTotalAuraMultiplierByMiscMask(AuraType auratype, uint32 misc_mask) const;
     [[nodiscard]] float GetHealthBasedDamageTakenMultiplier() const;
     [[nodiscard]] float GetAscensionNormalTuningDamageMultiplier(Unit const* victim, uint32 schoolMask) const;
+    [[nodiscard]] float GetAscensionPvpTuningDamageMultiplier(Unit const* victim, uint32 schoolMask) const;
     [[nodiscard]] int32 GetMaxPositiveAuraModifierByMiscMask(AuraType auratype, uint32 misc_mask, AuraEffect const* except = nullptr) const;
     [[nodiscard]] int32 GetMaxNegativeAuraModifierByMiscMask(AuraType auratype, uint32 misc_mask) const;
 
@@ -1655,6 +1662,7 @@ public:
     // Energize spells
     void SendEnergizeSpellLog(Unit* victim, uint32 SpellID, uint32 Damage, Powers powertype);
     void EnergizeBySpell(Unit* victim, uint32 SpellID, uint32 Damage, Powers powertype);
+    [[nodiscard]] bool GainsManaWithoutThreat() const;
 
     // Spells immunities
     void ApplySpellImmune(uint32 spellId, uint32 op, uint32 type, bool apply, SpellImmuneBlockType blockType = SPELL_BLOCK_TYPE_ALL);
@@ -1758,6 +1766,7 @@ public:
     void KnockbackFrom(float x, float y, float speedXY, float speedZ);
     void JumpTo(float speedXY, float speedZ, bool forward = true);
     void JumpTo(WorldObject* obj, float speedZ);
+    [[nodiscard]] bool IsImmuneToForcedMovement() const;
 
     void  UpdateSpeed(UnitMoveType mtype, bool forced);
     [[nodiscard]] float GetSpeed(UnitMoveType mtype) const;

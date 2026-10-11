@@ -24,6 +24,7 @@
 #include "GameTime.h"
 #include "Item.h"
 #include "Language.h"
+#include "LocalLevelScaling.h"
 #include "Log.h"
 #include "Mail.h"
 #include "MailMgr.h"
@@ -608,6 +609,7 @@ void WorldSession::HandleMailTakeItem(WorldPacket& recvData)
         player->m_mailsUpdated = true;
         player->RemoveMItem(it->GetGUID().GetCounter());
 
+        uint32 const itemEntry = it->GetEntry();
         uint32 count = it->GetCount();                      // save counts before store and possible merge with deleting
         it->SetState(ITEM_UNCHANGED);                       // need to set this state, otherwise item cannot be removed later, if neccessary
         player->MoveItemToInventory(dest, it, true);
@@ -623,6 +625,7 @@ void WorldSession::HandleMailTakeItem(WorldPacket& recvData)
         CharacterDatabase.CommitTransaction(trans);
 
         player->SendMailResult(mailId, MAIL_ITEM_TAKEN, MAIL_OK, 0, itemLowGuid, count);
+        sScriptMgr->OnPlayerTakeMailItem(player, m, itemEntry);
     }
     else
         player->SendMailResult(mailId, MAIL_ITEM_TAKEN, MAIL_ERR_EQUIP_ERROR, msg);
@@ -682,6 +685,8 @@ void WorldSession::HandleGetMailList(WorldPacket& recvData)
         return;
 
     Player* player = _player;
+
+    LocalLevelScaling::NotifyMailListed(player);
 
     uint8 mailsCount = 0;
     uint32 realCount = 0;

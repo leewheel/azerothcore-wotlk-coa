@@ -114,6 +114,16 @@ void SyncSpirits(Player* player)
             }
         }
     }
+    uint8 orbIndex = 0;
+    for (uint32 orb : {SpiritOrbOne, SpiritOrbTwo, SpiritOrbThree, SpiritOrbFour, SpiritOrbFive})
+    {
+        if (orbIndex++ >= count)
+            player->RemoveAurasDueToSpell(orb);
+        else if (Aura* shown = player->GetAura(orb))
+            shown->RefreshDuration();
+        else
+            player->AddAura(orb, player);
+    }
     if (AuraEffect* effect = player->GetAuraEffect(JujuSpirits, EFFECT_0))
         effect->ChangeAmount(Amount(JujuSpirits) * count);
     if (count && player->HasAura(SpiritWalk))
@@ -131,6 +141,8 @@ void GainSpirit(Player* player, uint8 count)
     for (uint8 i = 0; i < count; ++i)
     {
         Cast(player, player, Spirit);
+        if (player->HasAura(TrueSpirit))
+            Cast(player, player, TrueSpiritReady);
         if (player->HasAura(SpiritDevotee))
             Cast(player, player, SpiritMana);
     }
@@ -292,7 +304,11 @@ void ApplyContracts(SpellInfo* info)
         }
     }
     if (Family(info, 0, 33554432))
+    {
         dummy(EFFECT_1);
+        if (info->Effects[EFFECT_2].ApplyAuraName == SPELL_AURA_MOD_RESISTANCE_EXCLUSIVE)
+            info->Effects[EFFECT_2].ApplyAuraName = SPELL_AURA_MOD_RESISTANCE;
+    }
     if (id == Frenzy)
     {
         dummy(EFFECT_2);
@@ -362,7 +378,7 @@ void ApplyContracts(SpellInfo* info)
     if (id == Vigil)
         periodic(EFFECT_1, 1000);
     if (id == Slither)
-        info->Effects[EFFECT_2].Effect = 0;
+        info->AttributesCu &= ~SPELL_ATTR0_CU_NEGATIVE;
     if (id == StalkerSpeed)
         periodic(EFFECT_1, 500);
     if (id == Mirage)
