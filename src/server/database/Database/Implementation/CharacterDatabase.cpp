@@ -49,6 +49,8 @@ void CharacterDatabaseConnection::DoPrepareStatements()
 
     PrepareStatement(CHAR_INS_ACCOUNT_VANITY_COLLECTION,
         "INSERT IGNORE INTO account_vanity_collection (account_id, item_id) VALUES (?, ?)", CONNECTION_ASYNC);
+    PrepareStatement(CHAR_DEL_WORLDFORGED_LOOT,
+        "DELETE FROM character_worldforged_loot WHERE guid = ?", CONNECTION_ASYNC);
     PrepareStatement(CHAR_SEL_LOTTERY_RECENT_WINNERS,
         "SELECT winner_name, gold_copper, winner_tickets, house_win, complimentary_tickets FROM coa_lottery_winner "
         "ORDER BY drawn_at DESC, round_id DESC LIMIT 5", CONNECTION_SYNCH);
@@ -154,6 +156,15 @@ void CharacterDatabaseConnection::DoPrepareStatements()
     PrepareStatement(CHAR_DEL_COA_BUILD_CREATOR_VOTES, "DELETE FROM coa_build_creator_vote WHERE entry = ?",
         CONNECTION_ASYNC);
     PrepareStatement(CHAR_UPD_COA_BUILD_CREATOR_UPVOTES, "UPDATE coa_build_creator SET upvotes = ? WHERE entry = ?",
+        CONNECTION_ASYNC);
+    PrepareStatement(CHAR_SEL_COA_BUILD_CREATOR_ACTIVE,
+        "SELECT spec, build_id, flag_1, flag_2 FROM coa_build_creator_active WHERE guid = ?", CONNECTION_ASYNC);
+    PrepareStatement(CHAR_REP_COA_BUILD_CREATOR_ACTIVE,
+        "REPLACE INTO coa_build_creator_active (guid, spec, build_id, flag_1, flag_2) VALUES (?, ?, ?, ?, ?)",
+        CONNECTION_ASYNC);
+    PrepareStatement(CHAR_DEL_COA_BUILD_CREATOR_ACTIVE,
+        "DELETE FROM coa_build_creator_active WHERE guid = ? AND spec = ?", CONNECTION_ASYNC);
+    PrepareStatement(CHAR_DEL_COA_BUILD_CREATOR_ACTIVE_ALL, "DELETE FROM coa_build_creator_active WHERE guid = ?",
         CONNECTION_ASYNC);
 
     // Read-only safety gate for the unregistered, never-saved Create probe.
