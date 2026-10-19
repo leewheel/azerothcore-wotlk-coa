@@ -12,10 +12,12 @@
 #include "AscensionVenomancer.h"
 #include "AscensionTinker.h"
 #include "AscensionSunCleric.h"
+#include "AscensionXoroth.h"
 #include "AllCreatureScript.h"
 #include "AllItemScript.h"
 #include "AllSpellScript.h"
 #include "AscensionChangelogCompat.h"
+#include "AscensionAverageItemLevel.h"
 #include "AscensionCompatOpcodes.h"
 #include "AscensionCharacterSelection.h"
 #include "AscensionManastorm.h"
@@ -1087,8 +1089,24 @@ public:
                     ++learned;
             }
         }
+        bool barChanged = false;
         for (auto const& [id, replacement] : replacements)
+        {
             player->SetTemporarySpellReplacement(id, replacement);
+            if (!replacement)
+                continue;
+            for (uint8 button = 0; button < MAX_ACTION_BUTTONS; ++button)
+            {
+                ActionButton const* action = player->GetActionButton(button);
+                if (action && action->GetType() == ACTION_BUTTON_SPELL && action->GetAction() == id)
+                {
+                    player->addActionButton(button, replacement, ACTION_BUTTON_SPELL);
+                    barChanged = true;
+                }
+            }
+        }
+        if (barChanged)
+            player->SendInitialActionButtons();
         return learned;
     }
 
@@ -1480,10 +1498,14 @@ public:
     WorldSession* session = player->GetSession();
     uint32 const slot = ActiveSlot(player);
     session->GetQueryProcessor().AddCallback(CharacterDatabase.AsyncQuery(actionsStmt)
-        .WithPreparedCallback([session, slot](PreparedQueryResult result)
+        .WithPreparedCallback([this, session, slot](PreparedQueryResult result)
         {
             if (Player* owner = session->GetPlayer(); owner && ActiveSlot(owner) == slot)
+            {
                 owner->LoadActions(result);
+                SynchronizeTalentReplacements(owner);
+                owner->SendInitialActionButtons();
+            }
         }));
   }
 
@@ -2497,6 +2519,8 @@ public:
     uint32 granted = SynchronizeProgression(player);
     if (restoreStoredBuild)
       RestoreBarButtons(player, specializationId, previousSpecialization);
+    else
+      player->SendInitialActionButtons();
     ChatHandler(player->GetSession())
         .PSendSysMessage(
             "Activated specialization {}. Stored the build of specialization {}, removed {} old talent "
@@ -4064,6 +4088,7 @@ private:
   static constexpr uint32 SPELL_CASTER_AURA_SPELL_FIELD = 24;
   static constexpr uint32 SPELL_EXCLUDE_CASTER_AURA_SPELL_FIELD = 26;
   static constexpr uint32 SPELL_CAST_TIME_INDEX_FIELD = 28;
+  static constexpr uint32 SPELL_INTERRUPT_FLAGS_FIELD = 31;
   static constexpr uint32 SPELL_FAMILY_NAME_FIELD = 208;
   static constexpr std::array<uint32, 18> RANGED_PREPARATION_CLIENT_SPELLS = {
       504582, 572343, 572344, 572345, 572383, 680902, 680903, 680904, 680905, 806288,
@@ -4878,18 +4903,26 @@ private:
     return row == rows.end() ? 0 : row->second;
   }
 
+  static bool IsChromaticShardRank(uint32 id)
+  {
+      return id == 801292 || (id >= 501836 && id <= 501840) || id == 574346 || id == 567543 ||
+          id == 567544;
+  }
+
   static void ApplyServerSpellSelectors(SpellPatchRow &row) {
     SpellInfo const *info = sSpellMgr->GetSpellInfo(row.Values[0]);
     if (!info)
       return;
 
-    if (info->Id == AscensionSunCleric::DawnCast)
+    if (info->Id == AscensionSunCleric::DawnCast || info->Id == AscensionXoroth::SPELL_SACRIFICIAL_CIRCLE)
     {
       row.Values[SPELL_WIRE_SLOT(SPELL_CASTER_AURA_SPELL_FIELD)] = info->CasterAuraSpell;
       row.Values[SPELL_WIRE_SLOT(SPELL_EXCLUDE_CASTER_AURA_SPELL_FIELD)] = info->ExcludeCasterAuraSpell;
     }
     if (info->Id == AscensionSunCleric::Dawn)
       row.Values[4] = info->Attributes;
+    if (IsChromaticShardRank(info->Id))
+      row.Values[SPELL_WIRE_SLOT(SPELL_INTERRUPT_FLAGS_FIELD)] &= ~uint32(SPELL_INTERRUPT_FLAG_MOVEMENT);
 
     if ((info->Attributes & SPELL_ATTR0_USES_RANGED_SLOT) && !info->IsAutoRepeatRangedSpell() &&
         info->CastTimeEntry && (info->CastTimeEntry->CastTime > 0 || !info->IsChanneled()))
@@ -4962,6 +4995,8 @@ private:
         LoadClientSpellDescriptions();
     std::unordered_set<uint32> descriptionIds;
     for (uint32 const spellId : RANGED_PREPARATION_CLIENT_SPELLS)
+      Ascension::ClientSpellPatches::Instance().Register(spellId);
+    for (uint32 const spellId : {801292u, 501836u, 501837u, 501838u, 501839u, 501840u, 574346u, 567543u, 567544u})
       Ascension::ClientSpellPatches::Instance().Register(spellId);
     std::unordered_set<uint32> requested = Ascension::ClientSpellPatches::Instance().GetIds(true);
     for (auto const& tier : blacksmithingTiers)
@@ -5700,7 +5735,7 @@ public:
             if (sSpellMgr->GetSpellInfo(spellId) && !player->HasSpell(spellId))
                 player->learnSpell(spellId, false);
 
-        player->SetSkill(SKILL_RIDING, 4, 300, 300);
+        player->SetSkill(SKILL_RIDING, 5, RIDING_SKILL_ARTISAN, RIDING_SKILL_ARTISAN);
     }
 
     void PrepareOwnedCompanionsBeforeMap(Player* player)
@@ -7198,7 +7233,8 @@ public:
 
         static std::unordered_set<std::string_view> const secureAscensionAddons = {
             "AscensionUI", "Ascension_Collections", "Ascension_CompactRaidFrames", "Ascension_EnchantCollection",
-            "Ascension_HelpUI", "Ascension_InspectUI", "Ascension_MythicPlus", "Ascension_SeasonCollection",
+            "Ascension_HelpUI", "Ascension_InspectUI", "Ascension_Manastorm", "Ascension_MythicPlus",
+            "Ascension_SeasonCollection",
             "Ascension_TicketUI", "Ascension_UIDevelopmentTools", "Ascension_WildCard",
         };
 
@@ -7935,8 +7971,8 @@ public:
         MODULE_EXTENSION_OPCODES.end())
       return true;
 
-    if (QueueAscensionManastormPacket(session, packet))
-      return false;
+    if (opcode == 0x651 || opcode == 0x665 || opcode == 0x689)
+      return true;
 
     if (opcode == CMSG_QUERY_CUSTOM_STORE || opcode == CMSG_PURCHASE_CUSTOM_STORE_ITEM)
     {
@@ -9623,12 +9659,12 @@ class spell_ascension_local_mount : public SpellScript
             return;
 
         uint16 riding = player->GetBaseSkillValue(SKILL_RIDING);
-        if (riding < 75)
+        if (riding < RIDING_SKILL_NOVICE)
         {
             PreventHitAura();
             return;
         }
-        uint32 selected = riding >= 150 ? _mount->Ground100 : _mount->Ground60;
+        uint32 selected = riding >= RIDING_SKILL_JOURNEYMAN ? _mount->Ground100 : _mount->Ground60;
         uint32 map = GetVirtualMapForMapAndZone(player->GetMapId(), player->GetZoneId());
         bool canFly = map == MAP_OUTLAND || (map == MAP_NORTHREND && player->HasSpell(SPELL_COLD_WEATHER_FLYING));
         AreaTableEntry const* area = sAreaTableStore.LookupEntry(player->GetAreaId());
@@ -9637,9 +9673,9 @@ class spell_ascension_local_mount : public SpellScript
             player->InBattleground())
             canFly = false;
 
-        if (canFly && riding >= 225)
+        if (canFly && riding >= RIDING_SKILL_EXPERT)
         {
-            uint32 flying = riding >= 300 ? (_mount->Flying310 ? _mount->Flying310 : _mount->Flying280) :
+            uint32 flying = riding >= RIDING_SKILL_ARTISAN ? (_mount->Flying310 ? _mount->Flying310 : _mount->Flying280) :
                 _mount->Flying150;
             if (!flying)
                 flying = _mount->Flying150;
@@ -9657,7 +9693,7 @@ class spell_ascension_local_mount : public SpellScript
         player->SetTemporaryUnsummonedPetNumber(0);
         player->RemoveAurasByType(SPELL_AURA_MOUNTED, ObjectGuid::Empty, GetHitAura());
         PreventHitAura();
-        player->CastSpell(player, selected, true);
+        player->CastRidingMount(selected);
         if (petNumber)
             player->SetTemporaryUnsummonedPetNumber(petNumber);
     }
