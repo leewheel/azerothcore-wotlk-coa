@@ -90,6 +90,143 @@ namespace
 {
     using namespace CoaMythicPlus;
 
+    // ------------------------------------------------------------------ strings
+    // Every player-facing string lives in the world database, the same way
+    // mod-worldforged-upgrades and mod-transmog do it: the ids below are rows
+    // of `module_string` (English) and `module_string_locale` (one row per
+    // locale), resolved at runtime by the player's session locale. Ids are
+    // stable: append, never reorder - they are primary keys in the database.
+    constexpr char const* MODULE_NAME = "mod-coa-mythic-plus";
+
+    enum MythicStrings : uint32
+    {
+        // Keystone errors, returned by CheckKeystone()/TryStart() as ids.
+        STR_ERR_NOT_KEYSTONE         = 1,  // This is not a keystone.
+        STR_ERR_WRONG_PLACE          = 2,  // Use your keystone inside its dungeon.
+        STR_ERR_OTHER_DUNGEON        = 3,  // This keystone is for another dungeon:
+        STR_ERR_WRONG_DIFFICULTY     = 4,  // Keystones only work on Mythic difficulty.
+        STR_ERR_NOT_LEADER           = 5,  // Only the group leader can start the keystone.
+        STR_ERR_LFG_GROUP            = 6,  // Keystones cannot be used in a Dungeon Finder group.
+        STR_ERR_ALREADY_USED         = 7,  // A keystone was already used in this instance.
+        STR_ERR_BOSS_DEAD            = 8,  // A boss in this instance is already dead. Reset the instance first.
+        STR_ERR_IN_COMBAT            = 9,  // Somebody is in combat.
+        STR_ERR_PREFIX               = 10, // Mythic+: {}{}{}
+
+        // Player chat.
+        STR_BAGS_FULL                = 11, // Mythic+: your bags are full, {} x item {} was lost.
+        STR_BONUS_COINS              = 12, // You have received {} Bonus Mythic Coins for first time completion...
+        STR_COINS_PROGRESS           = 13, // You've obtained {} out of {} mythic coins.
+        STR_RUN_AFFIXES              = 14, // Mythic+ {} +{}: affixes {}.
+        STR_KEYSTONE_RECEIVED        = 15, // Mythic+: you received a Mythic Keystone.
+        STR_CACHES_WEEK              = 16, // You have opened {} of {} Mythical Caches this week.
+        STR_CACHE_EMPTY              = 17, // The cache is empty.
+        STR_CACHES_SUMMARY           = 18, // Mythical Caches opened this week: {} / {}.
+        STR_NEED_COINS               = 19, // You need {} Mythic Coins.
+        STR_RECYCLE_LEVEL            = 20, // Only Mythic 1 and higher items can be recycled.
+        STR_WEEKLY_CAP               = 21, // You have reached the weekly cap of {} Mythic Coins.
+        STR_NO_KEYSTONE              = 22, // You have no Mythic Keystone.
+        STR_NO_KEYSTONE_ABOVE_1      = 23, // You have no Mythic Keystone above level 1.
+        STR_BOONS_NEED_KEYSTONE      = 24, // Mythical Boons work only inside a Mythic Keystone.
+        STR_EDRIM_MYTHIC_ONLY        = 25, // Edrim Skysong only takes Mythic items.
+        STR_USE_KEYSTONE_FIRST       = 26, // Use your keystone first.
+        STR_NO_RUN_HERE              = 27, // No keystone run in this instance.
+        STR_KEYSTONE_NOW             = 28, // Mythic+: your keystone is now {} +{}.
+
+        // GM commands.
+        STR_GM_RUN_STATE             = 29, // Mythic+ +{} lfg {} state {}: ...
+        STR_GM_WEEK_AFFIXES          = 30, // Week {}, affixes: {}
+        STR_GM_WING_FORCES            = 31, // Forces: {} in this wing, each kill x{:.2f}
+        STR_GM_ROTATION_ROW          = 32, // Week {} +{}: {}
+        STR_GM_AFFIX_WEEK            = 33, // Mythic+ affix week: {}{}
+        STR_GM_KEYSTONES_DESTROYED   = 34, // Mythic+: {} keystone(s) destroyed.
+        STR_GM_NO_KEYSTONE_MATCH     = 35, // No keystone for that dungeon and level.
+        STR_GM_GAVE_KEYSTONE         = 36, // Gave keystone {}.
+        STR_GM_SELECT_CREATURE       = 37, // Select a creature.
+        STR_GM_CREATURE_FORCES       = 38, // {} ({}): {} enemy forces ({})
+        STR_GM_WING_DEBUG            = 39, // WING {} {} map {}: ...
+        STR_GM_BEST_OF               = 40, // Highest Mythic Level Completed of {}: {}
+        STR_GM_NO_OTHER_DUNGEON      = 41, // No other dungeon has a keystone at this level.
+        STR_GM_CHAMPION_POINT_A      = 42, // Champion point A set at ...
+        STR_GM_CHAMPION_NEED_A       = 43, // Set point A on this map first: ...
+        STR_GM_CHAMPION_PATH_SAVED   = 44, // Champion path {} saved ...
+        STR_GM_NO_CHAMPION_PATHS     = 45, // No champion paths on this map.
+        STR_GM_CHAMPION_PATH_INFO    = 46, // Champion path {}: ... yd long, ... yd away
+        STR_GM_CHAMPIONS_PLACED      = 47, // Mythic+: {} champion(s) placed.
+        STR_GM_CHAMPION_PATH_DELETED = 48, // Champion path {} deleted.
+        STR_GM_DATA_RELOADED         = 49, // Mythic+ data reloaded.
+
+        // Edrim Skysong gossip.
+        STR_GOSSIP_CACHES_INFO       = 50, // Mythical Caches Opened: {} / {}
+        STR_GOSSIP_COINS_INFO        = 51, // Mythic Coins Obtained: {} / {}
+        STR_GOSSIP_BEST_INFO         = 52, // Highest Mythic Level Completed: {}
+        STR_GOSSIP_PURCHASE          = 53, // Purchase Items
+        STR_GOSSIP_UPGRADE           = 54, // Upgrade Items
+        STR_GOSSIP_UPGRADE_ALL       = 55, // Upgrade Items to Highest Level ({})
+        STR_GOSSIP_UPGRADE_ALL_CONFIRM = 56, // Upgrade {} items to Mythic {} for {} Mythic Coins?
+        STR_GOSSIP_RANDOMIZE         = 57, // Randomize your Mythic Keystone
+        STR_GOSSIP_RANDOMIZE_CONFIRM = 58, // Randomize the dungeon of your Mythic Keystone?
+        STR_GOSSIP_DOWNGRADE         = 59, // Downgrade Keystone
+        STR_GOSSIP_DOWNGRADE_CONFIRM = 60, // Lower your Mythic Keystone by one level?
+        STR_GOSSIP_RECYCLE           = 61, // Recycle Items
+        STR_GOSSIP_RECYCLE_HINT      = 62, // You can MASS recycle items by selling them to me.
+        STR_GOSSIP_RECYCLE_CONFIRM   = 63, // Are you sure you would like to recycle your {} ({})? ...
+        STR_GOSSIP_UPGRADE_ONE_CONFIRM = 64, // Upgrade {} to {} for {} Mythic Coins?
+        STR_GOSSIP_BACK              = 65, // Back
+
+        // Markus / Mar'toge gossip.
+        STR_GOSSIP_MARK_OF_TRIUMPH   = 66, // Mark of Triumph
+        STR_GOSSIP_HEROIC_ITEMS      = 67, // Heroic Dungeon Items
+
+        // Level names.
+        STR_LEVEL_NAME               = 68, // Mythic {}
+        STR_LEVEL_NAME_BASE          = 69, // Mythic Dungeon
+
+        // Slot names, in the order of SLOT_* below.
+        STR_SLOT_HEAD                = 70,
+        STR_SLOT_NECK                = 71,
+        STR_SLOT_SHOULDERS           = 72,
+        STR_SLOT_BACK                = 73,
+        STR_SLOT_CHEST               = 74,
+        STR_SLOT_WRISTS              = 75,
+        STR_SLOT_MAIN_HAND           = 76,
+        STR_SLOT_TWO_HAND            = 77,
+        STR_SLOT_OFF_HAND            = 78,
+        STR_SLOT_RANGED              = 79,
+        STR_SLOT_GLOVES              = 80,
+        STR_SLOT_BELT                = 81,
+        STR_SLOT_PANTS               = 82,
+        STR_SLOT_BOOTS               = 83,
+        STR_SLOT_RINGS               = 84,
+        STR_SLOT_TRINKETS            = 85,
+
+        // Item row in the upgrade / recycle menus.
+        STR_GOSSIP_ITEM_LEVEL        = 86, // {} ({})
+    };
+
+    /// One row of `module_string`, in the given session locale. A missing row
+    /// is a deployment error the core logs; the literal "error" is shown.
+    std::string MLStr(uint32 id, int32 locale)
+    {
+        std::string const* str = sObjectMgr->GetModuleString(MODULE_NAME, id,
+            locale >= 0 && size_t(locale) < TOTAL_LOCALES ? LocaleConstant(locale) : LOCALE_enUS);
+        return str ? *str : "error";
+    }
+
+    /// The same row, with `{}` placeholders filled in.
+    template<typename... Args>
+    std::string MLStrFmt(uint32 id, int32 locale, Args&&... args)
+    {
+        return Acore::StringFormat(MLStr(id, locale), std::forward<Args>(args)...);
+    }
+
+    /// "Mythic+: <error> <detail>" for a keystone failure, in the player's locale.
+    void SendKeystoneError(WorldSession* session, uint32 errorId, std::string const& detail)
+    {
+        ChatHandler handler(session);
+        handler.PSendModuleSysMessage(MODULE_NAME, STR_ERR_PREFIX,
+            handler.PGetParseModuleString(MODULE_NAME, errorId), detail.empty() ? "" : " ", detail);
+    }
+
     // Ascension opcodes (live client numbering, same table the core uses).
     constexpr uint16 CMSG_CUSTOM_MYTHIC_PLUS_ACTIVATE = 0x0527;
     constexpr uint16 SMSG_CUSTOM_WINDOW_SET_VISIBILITY = 0x0906;
@@ -325,7 +462,7 @@ namespace
         if (Data::Instance().IsKeystone(item))
             DestroyKeystones(player);
         if (!player->AddItem(item, count))
-            ChatHandler(player->GetSession()).PSendSysMessage("Mythic+: your bags are full, {} x item {} was lost.", count, item);
+            ChatHandler(player->GetSession()).PSendModuleSysMessage(MODULE_NAME, STR_BAGS_FULL, count, item);
     }
 
     // LFG dungeons new keys never point at (MythicPlus.ExcludedDungeons), e.g.
@@ -607,7 +744,7 @@ namespace
         return affix == AFFIX_PACK_TACTICS ? affix : 0;
     }
 
-    std::string AffixNames(std::vector<uint32> const& affixes)
+    std::string AffixNames(std::vector<uint32> const& affixes, int32 locale = 0)
     {
         std::string out;
         for (uint32 id : affixes)
@@ -615,7 +752,18 @@ namespace
             SpellInfo const* info = sSpellMgr->GetSpellInfo(id);
             if (!out.empty())
                 out += ", ";
-            std::string name = info && info->SpellName[0] ? info->SpellName[0] : std::to_string(id);
+            // The affix name is the spell name; MythicAffixes.dbc spells are
+            // client data, so the player's locale sits in the DBC as well.
+            std::string name;
+            if (info)
+            {
+                if (locale >= 0 && size_t(locale) < info->SpellName.size() && info->SpellName[locale])
+                    name = info->SpellName[locale];
+                else if (info->SpellName[0])
+                    name = info->SpellName[0];
+            }
+            if (name.empty())
+                name = std::to_string(id);
             while (!name.empty() && name.back() == ' ')
                 name.pop_back();
             out += name;
@@ -656,44 +804,49 @@ namespace
 
     // ---------------------------------------------------------------- wings
 
-    std::string DungeonName(uint32 lfgId)
+    std::string DungeonName(uint32 lfgId, int32 locale = 0)
     {
         LFGDungeonEntry const* entry = sLFGDungeonStore.LookupEntry(lfgId);
+        if (entry && locale >= 0 && size_t(locale) < 16 && entry->Name[locale])
+            return entry->Name[locale];
         return entry && entry->Name[0] ? entry->Name[0] : std::to_string(lfgId);
     }
 
     // Whether this keystone can be started here and now. Returns an error for
     // the player, or nullptr.
-    char const* CheckKeystone(Player* player, uint32 item, Keystone const*& key, TimedDungeon const*& dungeon,
+    // Returns a MythicStrings id, 0 when the keystone may be used. On
+    // STR_ERR_OTHER_DUNGEON the dungeon's name is put in `detail`, in the
+    // player's locale.
+    uint32 CheckKeystone(Player* player, uint32 item, Keystone const*& key, TimedDungeon const*& dungeon,
         std::string& detail)
     {
         Map* map = player->GetMap();
         key = Data::Instance().GetKeystone(item);
         dungeon = key ? Data::Instance().GetDungeon(key->lfgId) : nullptr;
         if (!key || !dungeon)
-            return "This is not a keystone.";
+            return STR_ERR_NOT_KEYSTONE;
         if (!map || !map->IsDungeon() || map->IsRaid())
-            return "Use your keystone inside its dungeon.";
+            return STR_ERR_WRONG_PLACE;
         if (dungeon->mapId != map->GetId())
         {
-            detail = DungeonName(key->lfgId);
-            return "This keystone is for another dungeon:";
+            detail = DungeonName(key->lfgId, player->GetSession()->GetSessionDbLocaleIndex());
+            return STR_ERR_OTHER_DUNGEON;
         }
         if (RequiredDifficulty() >= 0 && int32(map->GetDifficulty()) != RequiredDifficulty())
-            return "Keystones only work on Mythic difficulty.";
+            return STR_ERR_WRONG_DIFFICULTY;
         if (Group* group = player->GetGroup())
         {
             if (!group->IsLeader(player->GetGUID()))
-                return "Only the group leader can start the keystone.";
+                return STR_ERR_NOT_LEADER;
             if (group->isLFGGroup() && !sConfigMgr->GetOption<bool>("MythicPlus.AllowInDungeonFinder", true))
-                return "Keystones cannot be used in a Dungeon Finder group.";
+                return STR_ERR_LFG_GROUP;
         }
         if (Run* existing = RunFor(map); existing && existing->state != STATE_INACTIVE)
-            return "A keystone was already used in this instance.";
+            return STR_ERR_ALREADY_USED;
         if (InstanceScript* script = map->ToInstanceMap()->GetInstanceScript())
             if (script->GetCompletedEncounterMask())
-                return "A boss in this instance is already dead. Reset the instance first.";
-        return nullptr;
+                return STR_ERR_BOSS_DEAD;
+        return 0;
     }
 
     // ---------------------------------------------------------------- rewards
@@ -783,15 +936,14 @@ namespace
         uint32 const base = perLevel * level;
         uint32 const bonus = base * bonusPercent / 100;
         if (bonus)
-            ChatHandler(player->GetSession()).PSendSysMessage("You have received {} Bonus Mythic Coins for first time "
-                "completion, because the Keystone holder has unlocked a new highest Mythic Level for the first time.", bonus);
+            ChatHandler(player->GetSession()).PSendModuleSysMessage(MODULE_NAME, STR_BONUS_COINS, bonus);
         uint32 const amount = std::min(base + bonus, cap > weekly.coins ? cap - weekly.coins : 0);
         if (amount)
         {
             Give(player, coinItem, amount);
             AddWeekly(player->GetGUID(), amount, 0);
         }
-        ChatHandler(player->GetSession()).PSendSysMessage("You've obtained {} out of {} mythic coins.",
+        ChatHandler(player->GetSession()).PSendModuleSysMessage(MODULE_NAME, STR_COINS_PROGRESS,
             weekly.coins + amount, cap);
     }
 
@@ -1016,24 +1168,24 @@ namespace
     }
 
     // Returns an error for the player, or nullptr when the run started.
-    char const* TryStart(Player* player, std::string& detail)
+    uint32 TryStart(Player* player, std::string& detail)
     {
         Map* map = player->GetMap();
         auto socketed = g_socketed.find(player->GetGUID());
         if (socketed == g_socketed.end() || !player->HasItemCount(socketed->second, 1, true))
-            return "Use your keystone first.";
+            return STR_USE_KEYSTONE_FIRST;
         uint32 item = socketed->second;
 
         Keystone const* key = nullptr;
         TimedDungeon const* dungeon = nullptr;
-        if (char const* error = CheckKeystone(player, item, key, dungeon, detail))
+        if (uint32 error = CheckKeystone(player, item, key, dungeon, detail))
             return error;
 
-        char const* error = nullptr;
+        uint32 error = 0;
         map->DoForAllPlayers([&error](Player* p)
         {
             if (p->IsInCombat())
-                error = "Somebody is in combat.";
+                error = STR_ERR_IN_COMBAT;
         });
         if (error)
             return error;
@@ -1098,12 +1250,14 @@ namespace
             SendState(p, run, STATE_COUNTDOWN);
             SendProgress(p, run);
             SendTimer(p, run);
-            ChatHandler(p->GetSession()).PSendSysMessage("Mythic+ {} +{}: affixes {}.", DungeonName(run.lfgId), run.level, affixText);
+            ChatHandler(p->GetSession()).PSendModuleSysMessage(MODULE_NAME, STR_RUN_AFFIXES,
+                DungeonName(run.lfgId, p->GetSession()->GetSessionDbLocaleIndex()), run.level,
+                AffixNames(run.affixes, p->GetSession()->GetSessionDbLocaleIndex()));
         });
 
         LOG_INFO("module", "Mythic+: {} started +{} (lfg {}) in instance {} map {}, week {}, affixes {}",
             player->GetName(), run.level, run.lfgId, run.instanceId, run.mapId, run.rotation, affixText);
-        return nullptr;
+        return 0;
     }
 
     bool HandleActivate(WorldSession* session, WorldPacket const& /*packet*/)
@@ -1115,8 +1269,8 @@ namespace
 
         std::lock_guard<std::recursive_mutex> guard(g_lock);
         std::string detail;
-        if (char const* error = TryStart(player, detail))
-            ChatHandler(session).PSendSysMessage("Mythic+: {}{}{}", error, detail.empty() ? "" : " ", detail);
+        if (uint32 error = TryStart(player, detail))
+            SendKeystoneError(session, error, detail);
         return true;
     }
 
@@ -1503,7 +1657,7 @@ private:
             }
             Give(p, item, 1);
             LOG_INFO("module", "Mythic+ first key: map {}: {} received keystone {}", mapId, p->GetName(), item);
-            ChatHandler(p->GetSession()).SendSysMessage("Mythic+: you received a Mythic Keystone.");
+            ChatHandler(p->GetSession()).PSendModuleSysMessage(MODULE_NAME, STR_KEYSTONE_RECEIVED);
         });
     }
 };
@@ -1567,11 +1721,11 @@ public:
         Keystone const* key = nullptr;
         TimedDungeon const* dungeon = nullptr;
         std::string detail;
-        if (char const* error = CheckKeystone(player, item, key, dungeon, detail))
+        if (uint32 error = CheckKeystone(player, item, key, dungeon, detail))
         {
             g_socketed.erase(player->GetGUID());
-            ChatHandler(player->GetSession()).PSendSysMessage("Mythic+: {}{}{}", error, detail.empty() ? "" : " ", detail);
-            LOG_INFO("module", "Mythic+: {} used keystone {} on map {}: {} {}", player->GetName(), item,
+            SendKeystoneError(player->GetSession(), error, detail);
+            LOG_INFO("module", "Mythic+: {} used keystone {} on map {}: error {} {}", player->GetName(), item,
                 player->GetMapId(), error, detail);
             return;
         }
@@ -1625,7 +1779,7 @@ public:
             Weekly const weekly = GetWeekly(player->GetGUID());
             if (weekly.caches >= WeeklyCacheCap())
             {
-                ChatHandler(player->GetSession()).PSendSysMessage("You have opened {} of {} Mythical Caches this week.",
+                ChatHandler(player->GetSession()).PSendModuleSysMessage(MODULE_NAME, STR_CACHES_WEEK,
                     weekly.caches, WeeklyCacheCap());
                 return true;
             }
@@ -1635,7 +1789,7 @@ public:
         std::erase(rewards, 0u);
         if (rewards.empty())
         {
-            ChatHandler(player->GetSession()).SendSysMessage("The cache is empty.");
+            ChatHandler(player->GetSession()).PSendModuleSysMessage(MODULE_NAME, STR_CACHE_EMPTY);
             return true;
         }
         for (uint32 reward : rewards)
@@ -1655,7 +1809,7 @@ public:
         if (!spoils)
         {
             AddWeekly(player->GetGUID(), 0, 1);
-            ChatHandler(player->GetSession()).PSendSysMessage("Mythical Caches opened this week: {} / {}.",
+            ChatHandler(player->GetSession()).PSendModuleSysMessage(MODULE_NAME, STR_CACHES_SUMMARY,
                 GetWeekly(player->GetGUID()).caches, WeeklyCacheCap());
         }
         return true;
@@ -1706,11 +1860,24 @@ namespace
     constexpr uint32 TEXT_MARKUS = 9414500;
     constexpr uint32 RANDOMIZE_COST = 10 * GOLD;
 
-    char const* const SLOT_NAMES[17] = { "", "Head", "Neck", "Shoulders", "Back", "Chest", "Wrists", "Main Hand",
-        "Two-Hand", "Off Hand", "Ranged", "Gloves", "Belt", "Pants", "Boots", "Rings", "Trinkets" };
     char const* const SLOT_ICONS[17] = { "", "INV_Helmet_03", "INV_Jewelry_Necklace_07", "INV_Shoulder_02", "INV_Misc_Cape_02",
         "INV_Chest_Chain_05", "INV_Bracer_07", "INV_Sword_04", "INV_Axe_09", "INV_Shield_06", "INV_Weapon_Bow_07",
         "INV_Gauntlets_04", "INV_Belt_03", "INV_Pants_03", "INV_Boots_05", "INV_Jewelry_Ring_03", "INV_Jewelry_Talisman_07" };
+
+    // Slot labels are module strings, so the menus follow the player's locale.
+    std::string SlotName(uint32 slot, int32 locale)
+    {
+        return slot >= 1 && slot <= 16 ? MLStr(STR_SLOT_HEAD + slot - 1, locale) : std::string();
+    }
+
+    // ItemTemplate::Name1 is enUS only; the player's own name is a locale row.
+    std::string LocalizedItemName(Player* player, ItemTemplate const* proto)
+    {
+        std::string name = proto->Name1;
+        if (ItemLocale const* locale = sObjectMgr->GetItemLocale(proto->ItemId))
+            ObjectMgr::GetLocaleString(locale->Name, player->GetSession()->GetSessionDbLocaleIndex(), name);
+        return name;
+    }
 
     // Ascension menus paint their own icon into the option text, hanging over the row's left edge (as the Destiny
     // Weaver menus do): |TInterface/ICONS/<icon>:<size>:<size>:<shift>:0|t|r<label>.
@@ -1778,9 +1945,11 @@ namespace
         return 45 + level;
     }
 
-    std::string LevelName(uint32 level)
+    std::string LevelName(uint32 level, int32 locale)
     {
-        return level ? Acore::StringFormat("Mythic {}", level) : "Mythic Dungeon";
+        if (!level)
+            return MLStr(STR_LEVEL_NAME_BASE, locale);
+        return Acore::StringFormat(MLStr(STR_LEVEL_NAME, locale), level);
     }
 
     uint32 NextLevelItem(uint32 entry, uint32& nextLevel)
@@ -1851,7 +2020,7 @@ namespace
         uint32 const coinItem = sConfigMgr->GetOption<uint32>("MythicPlus.CoinItem", 1414500);
         if (!player->HasItemCount(coinItem, coins))
         {
-            ChatHandler(player->GetSession()).PSendSysMessage("You need {} Mythic Coins.", coins);
+            ChatHandler(player->GetSession()).PSendModuleSysMessage(MODULE_NAME, STR_NEED_COINS, coins);
             return false;
         }
         player->DestroyItemCount(coinItem, coins, true);
@@ -1867,14 +2036,14 @@ namespace
             return false;
         if (!itr->second.second)
         {
-            ChatHandler(player->GetSession()).SendSysMessage("Only Mythic 1 and higher items can be recycled.");
+            ChatHandler(player->GetSession()).PSendModuleSysMessage(MODULE_NAME, STR_RECYCLE_LEVEL);
             return false;
         }
         uint32 const value = RecycleValue(itr->second.second);
         Weekly const weekly = GetWeekly(player->GetGUID());
         if (weekly.coins + value > WeeklyCoinCap())
         {
-            ChatHandler(player->GetSession()).PSendSysMessage("You have reached the weekly cap of {} Mythic Coins.", WeeklyCoinCap());
+            ChatHandler(player->GetSession()).PSendModuleSysMessage(MODULE_NAME, STR_WEEKLY_CAP, WeeklyCoinCap());
             return false;
         }
         player->DestroyItem(item->GetBagSlot(), item->GetSlot(), true);
@@ -1961,41 +2130,45 @@ private:
     static void AddInfo(Player* player)
     {
         Weekly const weekly = GetWeekly(player->GetGUID());
-        AddGossipItemFor(player, GOSSIP_ICON_MONEY_BAG, Opt("inv_legion_chest_legionfall", Acore::StringFormat("Mythical Caches Opened: {} / {}", weekly.caches,
-            WeeklyCacheCap()), 30), MENU_MAIN, 0);
-        AddGossipItemFor(player, GOSSIP_ICON_MONEY_BAG, Opt("timelesscoin", Acore::StringFormat("Mythic Coins Obtained: {} / {}", weekly.coins,
-            WeeklyCoinCap()), 30), MENU_MAIN, 0);
-        AddGossipItemFor(player, GOSSIP_ICON_BATTLE, Opt("inv_relics_hourglass", Acore::StringFormat("Highest Mythic Level Completed: {}\n",
-            GetBestLevel(player->GetGUID())), 30), MENU_MAIN, 0);
+        int32 const locale = player->GetSession()->GetSessionDbLocaleIndex();
+        AddGossipItemFor(player, GOSSIP_ICON_MONEY_BAG, Opt("inv_legion_chest_legionfall",
+            MLStrFmt(STR_GOSSIP_CACHES_INFO, locale, weekly.caches, WeeklyCacheCap()), 30), MENU_MAIN, 0);
+        AddGossipItemFor(player, GOSSIP_ICON_MONEY_BAG, Opt("timelesscoin",
+            MLStrFmt(STR_GOSSIP_COINS_INFO, locale, weekly.coins, WeeklyCoinCap()), 30), MENU_MAIN, 0);
+        AddGossipItemFor(player, GOSSIP_ICON_BATTLE, Opt("inv_relics_hourglass",
+            MLStrFmt(STR_GOSSIP_BEST_INFO, locale, GetBestLevel(player->GetGUID())), 30), MENU_MAIN, 0);
     }
 
     static void ShowMain(Player* player, Creature* creature)
     {
         ClearGossipMenuFor(player);
         AddInfo(player);
-        AddGossipItemFor(player, GOSSIP_ICON_VENDOR, Opt("inv__faction_championsofazeroth", "Purchase Items"), MENU_PURCHASE, 0);
-        AddGossipItemFor(player, GOSSIP_ICON_INTERACT_1, Opt("garrison_greenarmorupgrade", "Upgrade Items"), MENU_UPGRADE, 0);
+        int32 const locale = player->GetSession()->GetSessionDbLocaleIndex();
+        AddGossipItemFor(player, GOSSIP_ICON_VENDOR, Opt("inv__faction_championsofazeroth", MLStr(STR_GOSSIP_PURCHASE, locale)), MENU_PURCHASE, 0);
+        AddGossipItemFor(player, GOSSIP_ICON_INTERACT_1, Opt("garrison_greenarmorupgrade", MLStr(STR_GOSSIP_UPGRADE, locale)), MENU_UPGRADE, 0);
         uint32 const highest = std::min(HighestOwnedLevel(player), GetBestLevel(player->GetGUID()));
         uint32 count = 0, cost = 0;
         UpgradeAllPlan(player, highest, count, cost);
         if (count)
-            AddGossipItemFor(player, GOSSIP_ICON_INTERACT_1, Opt("garrison_purplearmorupgrade", Acore::StringFormat("Upgrade Items to Highest Level ({})", highest)),
-                DO_UPGRADE_ALL, 0, Acore::StringFormat("Upgrade {} items to Mythic {} for {} Mythic Coins?", count, highest, cost), 0, false);
-        AddGossipItemFor(player, GOSSIP_ICON_INTERACT_2, Opt("INV_Misc_Dice_01", "Randomize your Mythic Keystone"), DO_RANDOMIZE, 0,
-            "Randomize the dungeon of your Mythic Keystone?", RANDOMIZE_COST, false);
-        AddGossipItemFor(player, GOSSIP_ICON_INTERACT_2, Opt("misc_arrowdown", "Downgrade Keystone"), DO_DOWNGRADE, 0,
-            "Lower your Mythic Keystone by one level?", 0, false);
-        AddGossipItemFor(player, GOSSIP_ICON_TRAINER, Opt("inv_enchant_alchemistcauldron", "Recycle Items"), MENU_RECYCLE, 0);
+            AddGossipItemFor(player, GOSSIP_ICON_INTERACT_1, Opt("garrison_purplearmorupgrade",
+                MLStrFmt(STR_GOSSIP_UPGRADE_ALL, locale, highest)),
+                DO_UPGRADE_ALL, 0, MLStrFmt(STR_GOSSIP_UPGRADE_ALL_CONFIRM, locale, count, highest, cost), 0, false);
+        AddGossipItemFor(player, GOSSIP_ICON_INTERACT_2, Opt("INV_Misc_Dice_01", MLStr(STR_GOSSIP_RANDOMIZE, locale)), DO_RANDOMIZE, 0,
+            MLStr(STR_GOSSIP_RANDOMIZE_CONFIRM, locale), RANDOMIZE_COST, false);
+        AddGossipItemFor(player, GOSSIP_ICON_INTERACT_2, Opt("misc_arrowdown", MLStr(STR_GOSSIP_DOWNGRADE, locale)), DO_DOWNGRADE, 0,
+            MLStr(STR_GOSSIP_DOWNGRADE_CONFIRM, locale), 0, false);
+        AddGossipItemFor(player, GOSSIP_ICON_TRAINER, Opt("inv_enchant_alchemistcauldron", MLStr(STR_GOSSIP_RECYCLE, locale)), MENU_RECYCLE, 0);
         SendGossipMenuFor(player, TEXT_EDRIM, creature->GetGUID());
     }
 
     static void ShowPurchase(Player* player, Creature* creature)
     {
         ClearGossipMenuFor(player);
+        int32 const locale = player->GetSession()->GetSessionDbLocaleIndex();
         for (uint32 slot = 1; slot <= 16; ++slot)
             if (VendorItemData const* items = sObjectMgr->GetNpcVendorItemList(EDRIM_VENDOR_BASE + slot); items && !items->Empty())
-                AddGossipItemFor(player, GOSSIP_ICON_VENDOR, Opt(SLOT_ICONS[slot], SLOT_NAMES[slot]), DO_BUY, slot);
-        AddGossipItemFor(player, GOSSIP_ICON_CHAT, Opt("Spell_Shadow_Teleport", "Back"), MENU_MAIN, 0);
+                AddGossipItemFor(player, GOSSIP_ICON_VENDOR, Opt(SLOT_ICONS[slot], SlotName(slot, locale)), DO_BUY, slot);
+        AddGossipItemFor(player, GOSSIP_ICON_CHAT, Opt("Spell_Shadow_Teleport", MLStr(STR_GOSSIP_BACK, locale)), MENU_MAIN, 0);
         SendGossipMenuFor(player, TEXT_EDRIM, creature->GetGUID());
     }
 
@@ -2003,6 +2176,7 @@ private:
     {
         ClearGossipMenuFor(player);
         AddInfo(player);
+        int32 const locale = player->GetSession()->GetSessionDbLocaleIndex();
         uint32 const cap = GetBestLevel(player->GetGUID());
         ForEachOwnedItem(player, true, [&](Item* item)
         {
@@ -2010,12 +2184,14 @@ private:
             uint32 const next = NextLevelItem(item->GetEntry(), nextLevel);
             if (!next || nextLevel > cap)
                 return;
-            std::string const name = item->GetTemplate()->Name1;
-            AddGossipItemFor(player, GOSSIP_ICON_INTERACT_1, ItemOpt(item->GetTemplate(), Acore::StringFormat("{} ({})", name, LevelName(nextLevel - 1))),
-                DO_UPGRADE, item->GetGUID().GetCounter(), Acore::StringFormat("Upgrade {} to {} for {} Mythic Coins?", name,
-                LevelName(nextLevel), UpgradeCost(nextLevel)), 0, false);
+            std::string const name = LocalizedItemName(player, item->GetTemplate());
+            AddGossipItemFor(player, GOSSIP_ICON_INTERACT_1, ItemOpt(item->GetTemplate(),
+                MLStrFmt(STR_GOSSIP_ITEM_LEVEL, locale, name, LevelName(nextLevel - 1, locale))),
+                DO_UPGRADE, item->GetGUID().GetCounter(),
+                MLStrFmt(STR_GOSSIP_UPGRADE_ONE_CONFIRM, locale, name, LevelName(nextLevel, locale),
+                    UpgradeCost(nextLevel)), 0, false);
         });
-        AddGossipItemFor(player, GOSSIP_ICON_CHAT, Opt("Spell_Shadow_Teleport", "Back"), MENU_MAIN, 0);
+        AddGossipItemFor(player, GOSSIP_ICON_CHAT, Opt("Spell_Shadow_Teleport", MLStr(STR_GOSSIP_BACK, locale)), MENU_MAIN, 0);
         SendGossipMenuFor(player, TEXT_EDRIM, creature->GetGUID());
     }
 
@@ -2023,20 +2199,21 @@ private:
     {
         ClearGossipMenuFor(player);
         AddInfo(player);
-        AddGossipItemFor(player, GOSSIP_ICON_MONEY_BAG, Opt("INV_Misc_Bag_07", "You can MASS recycle items by selling them to me.", 24), MENU_RECYCLE, 0);
+        int32 const locale = player->GetSession()->GetSessionDbLocaleIndex();
+        AddGossipItemFor(player, GOSSIP_ICON_MONEY_BAG, Opt("INV_Misc_Bag_07", MLStr(STR_GOSSIP_RECYCLE_HINT, locale), 24), MENU_RECYCLE, 0);
         ForEachOwnedItem(player, false, [&](Item* item)
         {
             auto itr = g_chainOf.find(item->GetEntry());
             if (itr == g_chainOf.end() || !itr->second.second)
                 return;
-            std::string const name = item->GetTemplate()->Name1;
-            std::string const level = LevelName(itr->second.second);
-            AddGossipItemFor(player, GOSSIP_ICON_TRAINER, ItemOpt(item->GetTemplate(), Acore::StringFormat("{} ({})", name, level)), DO_RECYCLE,
-                item->GetGUID().GetCounter(), Acore::StringFormat("Are you sure you would like to recycle your {} ({})? This "
-                "process is irreversible, but it will reward you with {} Mythic Coin.", name, level,
-                RecycleValue(itr->second.second)), 0, false);
+            std::string const name = LocalizedItemName(player, item->GetTemplate());
+            std::string const level = LevelName(itr->second.second, locale);
+            AddGossipItemFor(player, GOSSIP_ICON_TRAINER, ItemOpt(item->GetTemplate(),
+                MLStrFmt(STR_GOSSIP_ITEM_LEVEL, locale, name, level)), DO_RECYCLE,
+                item->GetGUID().GetCounter(),
+                MLStrFmt(STR_GOSSIP_RECYCLE_CONFIRM, locale, name, level, RecycleValue(itr->second.second)), 0, false);
         });
-        AddGossipItemFor(player, GOSSIP_ICON_CHAT, Opt("Spell_Shadow_Teleport", "Back"), MENU_MAIN, 0);
+        AddGossipItemFor(player, GOSSIP_ICON_CHAT, Opt("Spell_Shadow_Teleport", MLStr(STR_GOSSIP_BACK, locale)), MENU_MAIN, 0);
         SendGossipMenuFor(player, TEXT_EDRIM, creature->GetGUID());
     }
 
@@ -2090,7 +2267,7 @@ private:
         Keystone const* info = key ? Data::Instance().GetKeystone(key) : nullptr;
         if (!info)
         {
-            ChatHandler(player->GetSession()).SendSysMessage("You have no Mythic Keystone.");
+            ChatHandler(player->GetSession()).PSendModuleSysMessage(MODULE_NAME, STR_NO_KEYSTONE);
             return;
         }
         if (!player->HasEnoughMoney(RANDOMIZE_COST))
@@ -2111,7 +2288,7 @@ private:
         Keystone const* info = key ? Data::Instance().GetKeystone(key) : nullptr;
         if (!info || info->level <= 1)
         {
-            ChatHandler(player->GetSession()).SendSysMessage("You have no Mythic Keystone above level 1.");
+            ChatHandler(player->GetSession()).PSendModuleSysMessage(MODULE_NAME, STR_NO_KEYSTONE_ABOVE_1);
             return;
         }
         if (uint32 lower = Data::Instance().GetKeystoneItem(info->lfgId, info->level - 1))
@@ -2128,8 +2305,9 @@ public:
     bool OnGossipHello(Player* player, Creature* creature) override
     {
         ClearGossipMenuFor(player);
-        AddGossipItemFor(player, GOSSIP_ICON_VENDOR, Opt("pvecurrency-valor", "Mark of Triumph"), 2, 0);
-        AddGossipItemFor(player, GOSSIP_ICON_VENDOR, Opt("pvecurrency-valor", "Heroic Dungeon Items"), 1, 0);
+        int32 const locale = player->GetSession()->GetSessionDbLocaleIndex();
+        AddGossipItemFor(player, GOSSIP_ICON_VENDOR, Opt("pvecurrency-valor", MLStr(STR_GOSSIP_MARK_OF_TRIUMPH, locale)), 2, 0);
+        AddGossipItemFor(player, GOSSIP_ICON_VENDOR, Opt("pvecurrency-valor", MLStr(STR_GOSSIP_HEROIC_ITEMS, locale)), 1, 0);
         SendGossipMenuFor(player, TEXT_MARKUS, creature->GetGUID());
         return true;
     }
@@ -2139,10 +2317,11 @@ public:
         ClearGossipMenuFor(player);
         if (sender == 1)
         {
+            int32 const locale = player->GetSession()->GetSessionDbLocaleIndex();
             for (uint32 slot = 1; slot <= 16; ++slot)
                 if (VendorItemData const* items = sObjectMgr->GetNpcVendorItemList(MARK_VENDOR + slot); items && !items->Empty())
-                    AddGossipItemFor(player, GOSSIP_ICON_VENDOR, Opt(SLOT_ICONS[slot], SLOT_NAMES[slot]), 2, slot);
-            AddGossipItemFor(player, GOSSIP_ICON_CHAT, Opt("Spell_Shadow_Teleport", "Back"), 3, 0);
+                    AddGossipItemFor(player, GOSSIP_ICON_VENDOR, Opt(SLOT_ICONS[slot], SlotName(slot, locale)), 2, slot);
+            AddGossipItemFor(player, GOSSIP_ICON_CHAT, Opt("Spell_Shadow_Teleport", MLStr(STR_GOSSIP_BACK, locale)), 3, 0);
             SendGossipMenuFor(player, TEXT_MARKUS, creature->GetGUID());
             return true;
         }
@@ -2240,7 +2419,7 @@ public:
         if (!InRunningKey(player->GetMap()))
         {
             player->SendEquipError(EQUIP_ERR_CANT_DO_RIGHT_NOW, item, nullptr);
-            ChatHandler(player->GetSession()).SendSysMessage("Mythical Boons work only inside a Mythic Keystone.");
+            ChatHandler(player->GetSession()).PSendModuleSysMessage(MODULE_NAME, STR_BOONS_NEED_KEYSTONE);
             return true;
         }
         uint32 const spellId = item->GetTemplate()->Spells[0].SpellId;
@@ -2263,7 +2442,7 @@ public:
         std::lock_guard<std::recursive_mutex> guard(g_lock);
         if (!g_chainOf.count(item->GetEntry()))
         {
-            ChatHandler(player->GetSession()).SendSysMessage("Edrim Skysong only takes Mythic items.");
+            ChatHandler(player->GetSession()).PSendModuleSysMessage(MODULE_NAME, STR_EDRIM_MYTHIC_ONLY);
             return false;
         }
         Recycle(player, item);
@@ -2636,7 +2815,7 @@ public:
         std::lock_guard<std::recursive_mutex> guard(g_lock);
         if (!g_socketed.count(player->GetGUID()))
         {
-            handler->SendSysMessage("Use your keystone first.");
+            handler->PSendModuleSysMessage(MODULE_NAME, STR_USE_KEYSTONE_FIRST);
             return true;
         }
         SendWindow(player, true);
@@ -2650,15 +2829,16 @@ public:
         Run* run = RunFor(player->GetMap());
         if (!run)
         {
-            handler->SendSysMessage("No keystone run in this instance.");
+            handler->PSendModuleSysMessage(MODULE_NAME, STR_NO_RUN_HERE);
             return true;
         }
-        handler->PSendSysMessage("Mythic+ +{} lfg {} state {}: {} / {} s, forces {} / {}, encounters {} / {} (final {})",
+        handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_RUN_STATE,
             run->level, run->lfgId, uint32(run->state), run->elapsedMs / 1000, run->dungeon.timeLimitMs / 1000,
             run->forces, run->dungeon.forcesTotal, uint32(run->encounters.size()), run->dungeon.encountersRequired,
             run->finalKilled ? "down" : "alive");
-        handler->PSendSysMessage("Week {}, affixes: {}", run->rotation, AffixNames(run->affixes));
-        handler->PSendSysMessage("Forces: {} in this wing, each kill x{:.2f}", run->forcesAvailable, run->forcesScale);
+        handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_WEEK_AFFIXES, run->rotation,
+            AffixNames(run->affixes, handler->GetSessionDbLocaleIndex()));
+        handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_WING_FORCES, run->forcesAvailable, run->forcesScale);
         return true;
     }
 
@@ -2667,7 +2847,8 @@ public:
     {
         uint32 const week = CurrentRotation();
         for (uint32 l : level ? std::vector<uint32> { *level } : std::vector<uint32> { 2, 4, 7, 10, 15, 20 })
-            handler->PSendSysMessage("Week {} +{}: {}", week, l, AffixNames(Data::Instance().GetAffixes(week, l)));
+            handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_ROTATION_ROW, week, l,
+                AffixNames(Data::Instance().GetAffixes(week, l), handler->GetSessionDbLocaleIndex()));
         return true;
     }
 
@@ -2677,7 +2858,7 @@ public:
     {
         std::lock_guard<std::recursive_mutex> guard(g_lock);
         g_weekOverride = week ? std::clamp<int32>(*week, -1, 52) : -1;
-        handler->PSendSysMessage("Mythic+ affix week: {}{}", CurrentRotation(), g_weekOverride < 0 ? " (calendar)" : " (forced)");
+        handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_AFFIX_WEEK, CurrentRotation(), g_weekOverride < 0 ? " (calendar)" : " (forced)");
         return true;
     }
 
@@ -2687,7 +2868,7 @@ public:
         Player* player = handler->GetSession()->GetPlayer();
         std::lock_guard<std::recursive_mutex> guard(g_lock);
         g_socketed.erase(player->GetGUID());
-        handler->PSendSysMessage("Mythic+: {} keystone(s) destroyed.", DestroyKeystones(player));
+        handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_KEYSTONES_DESTROYED, DestroyKeystones(player));
         return true;
     }
 
@@ -2698,11 +2879,11 @@ public:
         uint32 item = lfgId ? Data::Instance().GetKeystoneItem(*lfgId, level) : RandomKeystone(level);
         if (!item)
         {
-            handler->SendSysMessage("No keystone for that dungeon and level.");
+            handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_NO_KEYSTONE_MATCH);
             return true;
         }
         Give(player, item, 1);
-        handler->PSendSysMessage("Gave keystone {}.", item);
+        handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_GAVE_KEYSTONE, item);
         return true;
     }
 
@@ -2712,12 +2893,12 @@ public:
         Creature* creature = handler->getSelectedCreature();
         if (!creature)
         {
-            handler->SendSysMessage("Select a creature.");
+            handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_SELECT_CREATURE);
             return true;
         }
         std::lock_guard<std::recursive_mutex> guard(g_lock);
         bool fromTable = g_forces.count(creature->GetEntry()) || g_forces.count(BaseEntry(creature->GetEntry()));
-        handler->PSendSysMessage("{} ({}): {} enemy forces ({})", creature->GetName(), creature->GetEntry(),
+        handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_CREATURE_FORCES, creature->GetName(), creature->GetEntry(),
             ForcesFor(creature), fromTable ? "coa_mythic_forces" : "default");
         return true;
     }
@@ -2759,7 +2940,7 @@ public:
         if (!target)
             return false;
         CharacterDatabase.DirectExecute("REPLACE INTO coa_mythic_best (guid, level) VALUES ({}, {})", target->GetGUID().GetCounter(), level);
-        handler->PSendSysMessage("Highest Mythic Level Completed of {}: {}", target->GetName(), level);
+        handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_BEST_OF, target->GetName(), level);
         return true;
     }
 
@@ -2772,7 +2953,7 @@ public:
         Keystone const* info = key ? Data::Instance().GetKeystone(key) : nullptr;
         if (!info)
         {
-            handler->SendSysMessage("You have no Mythic Keystone.");
+            handler->PSendModuleSysMessage(MODULE_NAME, STR_NO_KEYSTONE);
             return true;
         }
         uint32 next = 0;
@@ -2781,12 +2962,13 @@ public:
         Keystone const* nextInfo = next ? Data::Instance().GetKeystone(next) : nullptr;
         if (!nextInfo || next == key)
         {
-            handler->SendSysMessage("No other dungeon has a keystone at this level.");
+            handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_NO_OTHER_DUNGEON);
             return true;
         }
         g_socketed.erase(player->GetGUID());
         Give(player, next, 1);
-        handler->PSendSysMessage("Mythic+: your keystone is now {} +{}.", DungeonName(nextInfo->lfgId), nextInfo->level);
+        handler->PSendModuleSysMessage(MODULE_NAME, STR_KEYSTONE_NOW,
+            DungeonName(nextInfo->lfgId, handler->GetSessionDbLocaleIndex()), nextInfo->level);
         return true;
     }
 
@@ -2799,7 +2981,7 @@ public:
         if (point == 1)
         {
             pending[player->GetGUID()] = { player->GetMapId(), player->GetPosition() };
-            handler->PSendSysMessage("Champion point A set at {:.1f} {:.1f} {:.1f}. Walk to point B and use .mythic setchampionpos 2.",
+            handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_CHAMPION_POINT_A,
                 player->GetPositionX(), player->GetPositionY(), player->GetPositionZ());
             return true;
         }
@@ -2808,7 +2990,7 @@ public:
         auto itr = pending.find(player->GetGUID());
         if (itr == pending.end() || itr->second.first != player->GetMapId())
         {
-            handler->SendSysMessage("Set point A on this map first: .mythic setchampionpos 1");
+            handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_CHAMPION_NEED_A);
             return true;
         }
         Position const& a = itr->second.second;
@@ -2824,7 +3006,7 @@ public:
             id = result->Fetch()[0].Get<uint32>();
             count = uint32(result->Fetch()[1].Get<uint64>());
         }
-        handler->PSendSysMessage("Champion path {} saved ({:.0f} yd). Map {} now has {} champion path(s).", id,
+        handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_CHAMPION_PATH_SAVED, id,
             a.GetExactDist(player), player->GetMapId(), count);
         return true;
     }
@@ -2837,7 +3019,7 @@ public:
             player->GetMapId());
         if (!result)
         {
-            handler->SendSysMessage("No champion paths on this map.");
+            handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_NO_CHAMPION_PATHS);
             return true;
         }
         std::vector<std::tuple<float, uint32, float>> paths;
@@ -2850,7 +3032,7 @@ public:
         } while (result->NextRow());
         std::sort(paths.begin(), paths.end());
         for (auto const& [distance, id, length] : paths)
-            handler->PSendSysMessage("Champion path {}: {:.0f} yd long, {:.0f} yd away", id, length, distance);
+            handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_CHAMPION_PATH_INFO, id, length, distance);
         return true;
     }
 
@@ -2864,7 +3046,7 @@ public:
             if (dungeon.mapId == map->GetId())
                 expansion = dungeon.expansion;
         std::lock_guard<std::recursive_mutex> guard(g_lock);
-        handler->PSendSysMessage("Mythic+: {} champion(s) placed.", SpawnChampions(map, expansion, 0));
+        handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_CHAMPIONS_PLACED, SpawnChampions(map, expansion, 0));
         return true;
     }
 
@@ -2872,7 +3054,7 @@ public:
     static bool HandleDelChampion(ChatHandler* handler, uint32 id)
     {
         WorldDatabase.DirectExecute("DELETE FROM coa_mythic_champion_path WHERE id = {}", id);
-        handler->PSendSysMessage("Champion path {} deleted.", id);
+        handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_CHAMPION_PATH_DELETED, id);
         return true;
     }
 
@@ -2881,7 +3063,7 @@ public:
         std::lock_guard<std::recursive_mutex> guard(g_lock);
         Data::Instance().Load();
         LoadTables();
-        handler->SendSysMessage("Mythic+ data reloaded.");
+        handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_DATA_RELOADED);
         return true;
     }
 };
