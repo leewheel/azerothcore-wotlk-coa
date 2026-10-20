@@ -69,6 +69,7 @@
 #include "AscensionSpecLoot.h"
 #include "CoADungeonCompletion.h"
 #include "SpellMgr.h"
+#include "SpellScript.h"
 #include "TemporarySummon.h"
 #include "Timer.h"
 
@@ -1703,6 +1704,32 @@ public:
 // Using a keystone casts "Activate Keystone" (161). The client does not open the socket by itself; the
 // server opens it only when this very key can be started here: its dungeon (any wing), Mythic difficulty,
 // the group leader, no run and no dead boss in the instance yet.
+class spell_coa_mythic_life_steal : public SpellScript
+{
+    PrepareSpellScript(spell_coa_mythic_life_steal);
+
+    void PreventSelfHeal(SpellEffIndex effIndex)
+    {
+        PreventHitDefaultEffect(effIndex);
+    }
+
+    void HealCaster()
+    {
+        Unit* caster = GetCaster();
+        int32 const drained = GetHitDamage();
+        if (!caster || !caster->IsAlive() || drained <= 0)
+            return;
+        HealInfo healInfo(caster, caster, uint32(drained), GetSpellInfo(), GetSpellInfo()->GetSchoolMask());
+        caster->HealBySpell(healInfo);
+    }
+
+    void Register() override
+    {
+        OnEffectHitTarget += SpellEffectFn(spell_coa_mythic_life_steal::PreventSelfHeal, EFFECT_1, SPELL_EFFECT_APPLY_AURA);
+        AfterHit += SpellHitFn(spell_coa_mythic_life_steal::HealCaster);
+    }
+};
+
 class coa_mythic_plus_keystone_use : public AllSpellScript
 {
 public:
@@ -2204,7 +2231,8 @@ private:
         ForEachOwnedItem(player, false, [&](Item* item)
         {
             auto itr = g_chainOf.find(item->GetEntry());
-            if (itr == g_chainOf.end() || !itr->second.second)
+            if (itr == g_chainOf.end() || !itr->second.second ||
+                player->PlayerTalkClass->GetGossipMenu().GetMenuItemCount() >= GOSSIP_MAX_MENU_ITEMS - 1)
                 return;
             std::string const name = LocalizedItemName(player, item->GetTemplate());
             std::string const level = LevelName(itr->second.second, locale);
@@ -3088,4 +3116,5 @@ void AddCoaMythicPlusScripts()
     new coa_mythic_plus_boss_casts();
     new coa_mythic_plus_boss_kills();
     new coa_mythic_plus_keystone_use();
+    RegisterSpellScript(spell_coa_mythic_life_steal);
 }
