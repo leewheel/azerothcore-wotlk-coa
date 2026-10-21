@@ -220,15 +220,12 @@ namespace CoAChallenges
             return;
         if (!sConfigMgr->GetOption<bool>("CoAChallenges.AnnounceCompletion", true))
             return;
-        std::string msg = ChatTimestamp() + ChallengeIconTag(challengeID);
-        msg += Acore::StringFormat("{}{}|r {} has completed their Trial!",
-            TRIAL_COLOR, ChallengeBracket(challengeID, level), PlayerNameLink(player));
-        // ChatHandler(nullptr).SendWorldText dereferences a null m_session, so
-        // build the system chat packet and broadcast it through the session
-        // manager (same path the core uses for world announcements).
-        WorldPacket data;
-        ChatHandler::BuildChatPacket(data, CHAT_MSG_SYSTEM, LANG_UNIVERSAL, nullptr, nullptr, msg);
-        sWorldSessionMgr->SendGlobalMessage(&data);
+        // Per-locale broadcast: the colored bracket/name link is built here,
+        // the natural-language tail comes from the module string system.
+        BroadcastModuleSysMessage(ChatTimestamp() + ChallengeIconTag(challengeID),
+            STR_BC_COMPLETED,
+            Acore::StringFormat("{}{}|r {}", TRIAL_COLOR,
+                ChallengeBracket(challengeID, level), PlayerNameLink(player)));
     }
 
     std::mutex PendingFailMutex;
@@ -246,25 +243,30 @@ namespace CoAChallenges
 
     // Record the death cause for a player. Mechanic deaths call this right
     // before applying the lethal damage, so FailChallenge (which runs later on
-    // OnPlayerJustDied) reads the correct label.
-    void SetDeathCause(Player* player, KillerKind kind, uint32 entry, std::string const& name)
+    // OnPlayerJustDied) reads the correct label. `strId` is a ChallengeStrings
+    // id for causes that must render in the reader's locale (Starved, Falling,
+    // ...); `name` stays for creature/player killers (already locale-aware).
+    void SetDeathCause(Player* player, KillerKind kind, uint32 entry, std::string const& name, uint32 strId)
     {
         if (!player)
             return;
         std::lock_guard<std::mutex> lock(LastKillerMutex);
-        LastKiller[player->GetGUID().GetCounter()] = PendingKiller{ kind, entry, name };
+        LastKiller[player->GetGUID().GetCounter()] = PendingKiller{ kind, entry, name, strId };
     }
 
     // Test helper: label recorded for the player's last death (mechanic causes
     // like "Fell Asleep"/"Starved"); empty when none/unknown. Used by the E2E
-    // harness to assert the broadcast cause.
+    // harness to assert the broadcast cause. Localized causes resolve to their
+    // enUS row, so the assertions keep comparing English text.
     std::string Test_LastKillerLabel(Player* player)
     {
         if (!player)
             return {};
         std::lock_guard<std::mutex> lock(LastKillerMutex);
         auto it = LastKiller.find(player->GetGUID().GetCounter());
-        return it == LastKiller.end() ? std::string() : it->second.name;
+        if (it == LastKiller.end())
+            return std::string();
+        return it->second.strId ? MLStr(it->second.strId, LOCALE_enUS) : it->second.name;
     }
 
     // Test helper: does a cast of `spellId` get blocked by the player's rules
@@ -307,11 +309,11 @@ namespace CoAChallenges
             return;
         }
 
-        std::string msg = ChatTimestamp();
+        std::string prefix = ChatTimestamp();
         if (!fail.displayName.empty())
-            msg += IconTagFor(fail.displayIcon);
+            prefix += IconTagFor(fail.displayIcon);
         else
-            msg += ChallengeIconTag(fail.challengeID);
+            prefix += ChallengeIconTag(fail.challengeID);
 
         std::string bracket = !fail.displayName.empty()
             ? Acore::StringFormat("{}[{}]|r", TRIAL_COLOR, fail.displayName)
@@ -320,36 +322,38 @@ namespace CoAChallenges
         // A rule failure (e.g. FAILABLE_NO_KILL_BEASTS) is not a death: the
         // player failed the trial by slaying a forbidden creature.
         bool const slaying = (fail.killerKind == KillerKind::Rule);
-        msg += Acore::StringFormat("{} {} (Level {}) {} ",
-            bracket, PlayerNameLink(name, klass), level,
-            slaying ? "has failed the challenge by slaying" : "has been killed by");
+        std::string const aura = sConfigMgr->GetOption<std::string>(
+            "CoAChallenges.Spell." + std::to_string(fail.challengeID), "");
+        std::string const link = PlayerNameLink(name, klass);
 
-        if (fail.killerKind == KillerKind::Creature || fail.killerKind == KillerKind::Rule)
-            msg += Acore::StringFormat("{}|Hcreature:{}|h[{}]|h|r.",
-                KILLER_COLOR, fail.killerEntry, fail.killerName);
-        else if (fail.killerKind == KillerKind::Player)
-            msg += Acore::StringFormat("{}|Hplayer:{}|h[{}]|h|r.",
-                KILLER_COLOR, fail.killerName, fail.killerName);
-        else if (fail.killerKind == KillerKind::Mechanic)
+        // The body is assembled per session locale: the killer link carries a
+        // localized cause label for mechanic/environment deaths.
+        auto body = [&](int32 locale) -> std::string
         {
-            // Link the cause to the challenge's aura so hovering explains it.
-            std::string label = fail.killerName.empty() ? "Unknown" : fail.killerName;
-            std::string aura = sConfigMgr->GetOption<std::string>(
-                "CoAChallenges.Spell." + std::to_string(fail.challengeID), "");
-            if (!aura.empty())
-                msg += Acore::StringFormat("{}|Hspell:{}|h{}|h|r.", KILLER_COLOR, aura, label);
+            std::string killer;
+            if (fail.killerKind == KillerKind::Creature || fail.killerKind == KillerKind::Rule)
+                killer = Acore::StringFormat("{}|Hcreature:{}|h[{}]|h|r",
+                    KILLER_COLOR, fail.killerEntry, fail.killerName);
+            else if (fail.killerKind == KillerKind::Player)
+                killer = Acore::StringFormat("{}|Hplayer:{}|h[{}]|h|r",
+                    KILLER_COLOR, fail.killerName, fail.killerName);
             else
-                msg += Acore::StringFormat("{}{}|r.", KILLER_COLOR, label);
-        }
-        else
-            msg += Acore::StringFormat("{}{}|r.",
-                KILLER_COLOR, fail.killerName.empty() ? "Unknown" : fail.killerName);
+            {
+                std::string label = fail.killerStrId
+                    ? MLStr(fail.killerStrId, locale)
+                    : (fail.killerName.empty() ? MLStr(STR_CAUSE_UNKNOWN, locale) : fail.killerName);
+                if (fail.killerKind == KillerKind::Mechanic && !aura.empty())
+                    killer = Acore::StringFormat("{}|Hspell:{}|h{}|h|r", KILLER_COLOR, aura, label);
+                else
+                    killer = Acore::StringFormat("{}{}|r", KILLER_COLOR, label);
+            }
+            std::string verb = MLStrFmt(slaying ? STR_BC_SLAYING : STR_BC_KILLED, locale, killer);
+            return MLStrFmt(STR_BC_FAIL_HEAD, locale, bracket, link, level, verb);
+        };
 
-        WorldPacket data;
-        ChatHandler::BuildChatPacket(data, CHAT_MSG_SYSTEM, LANG_UNIVERSAL, nullptr, nullptr, msg);
-        sWorldSessionMgr->SendGlobalMessage(&data);
+        BroadcastModuleSysMessage(prefix, body);
         LOG_INFO("module.coa_challenges", "Failure broadcast for {} (challenge {}): {}",
-            name, fail.challengeID, msg);
+            name, fail.challengeID, body(LOCALE_enUS));
     }
 
     // Called each world tick: broadcast and clear pending failures (by now the

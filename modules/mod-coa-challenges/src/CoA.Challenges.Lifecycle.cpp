@@ -387,13 +387,13 @@ namespace CoAChallenges
 
         if (!ChallengeExists(challengeID))                       // 1 NOT_FOUND
         {
-            ChatHandler(player->GetSession()).PSendSysMessage("Challenge {} was not found.", challengeID);
+            ChatHandler(player->GetSession()).PSendModuleSysMessage(MODULE_NAME, STR_ACT_NOT_FOUND, challengeID);
             return 1;
         }
         if (sConfigMgr->GetOption<bool>("CoAChallenges.EnforceNoRewards", false)
             && NoRewards(challengeID))                           // 2 NO_REWARDS
         {
-            ChatHandler(player->GetSession()).PSendSysMessage("{} has no rewards.", ChallengeName(challengeID));
+            ChatHandler(player->GetSession()).PSendModuleSysMessage(MODULE_NAME, STR_ACT_NO_REWARDS, ChallengeName(challengeID));
             return 2;
         }
         // 3 WRONG_GAME_MODE is intentionally not enforced here: game modes are
@@ -402,7 +402,7 @@ namespace CoAChallenges
         // active), so requiring it beforehand would block its own activation.
         if (ActiveChallenges(guid).count(challengeID))           // 4 ALREADY_ACTIVE
         {
-            ChatHandler(player->GetSession()).PSendSysMessage("{} is already active.", ChallengeName(challengeID));
+            ChatHandler(player->GetSession()).PSendModuleSysMessage(MODULE_NAME, STR_ACT_ALREADY_ACTIVE, ChallengeName(challengeID));
             return 4;
         }
         {
@@ -410,8 +410,8 @@ namespace CoAChallenges
             uint32 conflictCode = ConflictingExclusiveChallenge(guid, challengeID, conflictId);
             if (conflictCode)                                    // 5/13/14 EXCLUSIVE/TRIAL/CHALLENGE
             {
-                ChatHandler(player->GetSession()).PSendSysMessage(
-                    "You already have an active challenge that conflicts ({}).", conflictId);
+                ChatHandler(player->GetSession()).PSendModuleSysMessage(
+                    MODULE_NAME, STR_ACT_CONFLICT, conflictId);
                 return conflictCode;
             }
         }
@@ -419,15 +419,15 @@ namespace CoAChallenges
         {
             if (!sGameEventMgr->IsActiveEvent(eventId))
             {
-                ChatHandler(player->GetSession()).PSendSysMessage(
-                    "{} requires a game event that is not active.", ChallengeName(challengeID));
+                ChatHandler(player->GetSession()).PSendModuleSysMessage(
+                    MODULE_NAME, STR_ACT_EVENT, ChallengeName(challengeID));
                 return 6;
             }
         }
         if (std::string reason = CheckActivationConditions(player, challengeID); !reason.empty())
         {                                                        // 8 CONDITIONS_NOT_MET
-            ChatHandler(player->GetSession()).PSendSysMessage(
-                "Cannot start {}: {}", ChallengeName(challengeID), reason);
+            ChatHandler(player->GetSession()).PSendModuleSysMessage(
+                MODULE_NAME, STR_ACT_CONDITIONS, ChallengeName(challengeID), reason);
             return 8;
         }
         // NO_GROUP (solo-only, e.g. Ironman): cannot start while grouped.
@@ -436,8 +436,8 @@ namespace CoAChallenges
             std::string const rules = ChallengeRules(challengeID);
             if (CoAParse::ListContains(rules, "CHALLENGE_RULES_TYPE_NO_GROUP"))
             {
-                ChatHandler(player->GetSession()).PSendSysMessage(
-                    "You must leave your group before starting {}.", ChallengeName(challengeID));
+                ChatHandler(player->GetSession()).PSendModuleSysMessage(
+                    MODULE_NAME, STR_ACT_LEAVE_GROUP, ChallengeName(challengeID));
                 return 12; // RULE_BROKEN
             }
         }
@@ -446,8 +446,8 @@ namespace CoAChallenges
         if (CoAParse::ListContains(ChallengeRules(challengeID), "CHALLENGE_RULES_TYPE_HIGH_RISK_ONLY")
             && HighRiskActivationBlocked(player))
         {
-            ChatHandler(player->GetSession()).PSendSysMessage(
-                "{} requires you to be in High Risk.", ChallengeName(challengeID));
+            ChatHandler(player->GetSession()).PSendModuleSysMessage(
+                MODULE_NAME, STR_ACT_HIGH_RISK, ChallengeName(challengeID));
             return 12; // RULE_BROKEN
         }
         // Multi-level challenges are difficulty picks, not a ladder: any level can be
@@ -456,7 +456,7 @@ namespace CoAChallenges
         // per completed (challenge, level) row, so entering high only buys a harder fight.
         if (IsPrestigeChallenge(challengeID) && !IsPrestiged(player))  // 11 NOT_PRESTIGE
         {
-            ChatHandler(player->GetSession()).PSendSysMessage("{} requires prestige.", ChallengeName(challengeID));
+            ChatHandler(player->GetSession()).PSendModuleSysMessage(MODULE_NAME, STR_ACT_PRESTIGE, ChallengeName(challengeID));
             return 11;
         }
         if (sConfigMgr->GetOption<bool>("CoAChallenges.BlockAllAfterFailure", true)
@@ -464,15 +464,15 @@ namespace CoAChallenges
         {
             LOG_INFO("module.coa_challenges", "Blocked activation of {} for {}: character already failed a challenge",
                 challengeID, player->GetName());
-            ChatHandler(player->GetSession()).PSendSysMessage(
-                "You have already failed a challenge and cannot start another.");
+            ChatHandler(player->GetSession()).PSendModuleSysMessage(
+                MODULE_NAME, STR_ACT_ANY_FAILED);
             return 12;
         }
         if (sConfigMgr->GetOption<bool>("CoAChallenges.BlockFailedReactivate", true)
             && HasFailure(guid, challengeID))                    // 12 RULE_BROKEN
         {
-            ChatHandler(player->GetSession()).PSendSysMessage(
-                "You have already failed {} and cannot retake it.", ChallengeName(challengeID));
+            ChatHandler(player->GetSession()).PSendModuleSysMessage(
+                MODULE_NAME, STR_ACT_FAILED_RETAKE, ChallengeName(challengeID));
             return 12;
         }
         // Level-scoped: a multi-level challenge must stay activatable at level N
@@ -483,8 +483,8 @@ namespace CoAChallenges
         {
             LOG_INFO("module.coa_challenges", "Blocked reactivation of completed challenge {} for {}",
                 challengeID, player->GetName());
-            ChatHandler(player->GetSession()).PSendSysMessage(
-                "You have already completed this trial ({}).", ChallengeName(challengeID));
+            ChatHandler(player->GetSession()).PSendModuleSysMessage(
+                MODULE_NAME, STR_ACT_COMPLETED, ChallengeName(challengeID));
             return 12;
         }
         return 0;
@@ -520,8 +520,8 @@ namespace CoAChallenges
             Player* member = ObjectAccessor::FindPlayer(g);
             if (!member)
                 continue;
-            ChatHandler(member->GetSession()).PSendSysMessage(
-                "You have been removed from the group: it now requires the same challenge set.");
+            ChatHandler(member->GetSession()).PSendModuleSysMessage(
+                MODULE_NAME, STR_GRP_KICKED);
             member->RemoveFromGroup();
         }
     }
@@ -976,19 +976,20 @@ namespace CoAChallenges
         return LoadedConditionFlags(guid);
     }
 
-    // Human label for an OUTSIDE_INTERACTION facet flag (nullptr = not one).
+    // Label for an OUTSIDE_INTERACTION facet flag as a ChallengeStrings id
+    // (0 = not one).
     // OUTSIDE_INTERACTION is the legacy aggregate flag (kept for old rows).
-    char const* OutsideFacetLabel(std::string const& flag)
+    uint32 OutsideFacetLabelId(std::string const& flag)
     {
-        if (flag == "OUTSIDE_MAIL")        return "taken items or money from the mailbox";
-        if (flag == "OUTSIDE_TRADE")       return "traded with another player";
-        if (flag == "OUTSIDE_AH")          return "used the auction house";
-        if (flag == "OUTSIDE_VENDOR")      return "used a vendor";
-        if (flag == "OUTSIDE_GUILD_BANK")  return "withdrawn from the guild bank";
-        if (flag == "OUTSIDE_BANK")        return "withdrawn from your bank";
-        if (flag == "OUTSIDE_REALM_BANK")  return "withdrawn from your realm bank";
-        if (flag == "OUTSIDE_INTERACTION") return "interacted with the outside world";
-        return nullptr;
+        if (flag == "OUTSIDE_MAIL")        return STR_FACET_MAIL;
+        if (flag == "OUTSIDE_TRADE")       return STR_FACET_TRADE;
+        if (flag == "OUTSIDE_AH")          return STR_FACET_AH;
+        if (flag == "OUTSIDE_VENDOR")      return STR_FACET_VENDOR;
+        if (flag == "OUTSIDE_GUILD_BANK")  return STR_FACET_GUILD_BANK;
+        if (flag == "OUTSIDE_BANK")        return STR_FACET_BANK;
+        if (flag == "OUTSIDE_REALM_BANK")  return STR_FACET_REALM_BANK;
+        if (flag == "OUTSIDE_INTERACTION") return STR_FACET_OUTSIDE;
+        return 0;
     }
 
     // Every facet OUTSIDE_INTERACTION aggregates (the trailing entry is the
@@ -1025,25 +1026,26 @@ namespace CoAChallenges
     }
 
     // Broken when any of `allowed` facet flags is present; `message` names
-    // exactly what the character did before the trial.
+    // exactly what the character did before the trial, in the player's locale.
     bool OutsideInteractionBroken(std::set<std::string> const& flags,
-        std::vector<char const*> const& allowed, std::string& message)
+        std::vector<char const*> const& allowed, std::string& message, int32 locale)
     {
         std::string list;
         for (char const* f : allowed)
         {
             if (!flags.count(f))
                 continue;
-            char const* label = OutsideFacetLabel(f);
-            if (!label)
+            uint32 labelId = OutsideFacetLabelId(f);
+            if (!labelId)
                 continue;
+            std::string label = MLStr(labelId, locale);
             if (!list.empty())
                 list += ", ";
             list += label;
         }
         if (list.empty())
             return false;
-        message = "You have already " + list + " before starting this trial.";
+        message = MLStrFmt(STR_COND_ALREADY, locale, list);
         return true;
     }
 
@@ -1086,6 +1088,10 @@ namespace CoAChallenges
     {
         std::vector<ConditionState> out;
         uint32 guid = player->GetGUID().GetCounter();
+        // Messages and details are shown to the player (activation reason) and
+        // to GMs (`.coa check`), so build them in the session locale.
+        int32 locale = player->GetSession()
+            ? int32(player->GetSession()->GetSessionDbLocaleIndex()) : int32(LOCALE_enUS);
         bool hasOutside = false;
         size_t start = 0;
         while (!conds.empty() && start <= conds.size())
@@ -1116,17 +1122,15 @@ namespace CoAChallenges
                     // "Your group must have 0 members" -> must be solo.
                     s.broken = (player->GetGroup() != nullptr);
                     s.detail = s.broken
-                        ? "requires solo, current group of " + std::to_string(g)
-                        : "solo";
-                    s.message = "This trial must be started solo (you are in a group of "
-                        + std::to_string(g) + ").";
+                        ? MLStrFmt(STR_DET_SOLO, locale, g)
+                        : MLStr(STR_DET_SOLO_OK, locale);
+                    s.message = MLStrFmt(STR_COND_SOLO, locale, g);
                 }
                 else
                 {
                     s.broken = (g != v1);
-                    s.detail = "requires " + std::to_string(v1) + ", current " + std::to_string(g);
-                    s.message = "This trial requires a group of " + std::to_string(v1)
-                        + " (you have " + std::to_string(g) + ").";
+                    s.detail = MLStrFmt(STR_DET_REQUIRES, locale, v1, g);
+                    s.message = MLStrFmt(STR_COND_GROUP, locale, v1, g);
                 }
             }
             else if (type == "CHALLENGE_CONDITIONS_TYPE_HAVE_FREE_INVENTORY_SLOTS")
@@ -1134,9 +1138,8 @@ namespace CoAChallenges
                 uint32 f = FreeInventorySlots(player);
                 s.label = "HAVE_FREE_INVENTORY_SLOTS";
                 s.broken = (f < v1);
-                s.detail = "requires " + std::to_string(v1) + ", current " + std::to_string(f);
-                s.message = "You need at least " + std::to_string(v1)
-                    + " free inventory slots (you have " + std::to_string(f) + ").";
+                s.detail = MLStrFmt(STR_DET_REQUIRES, locale, v1, f);
+                s.message = MLStrFmt(STR_COND_SLOTS, locale, v1, f);
             }
             else if (type == "CHALLENGE_CONDITIONS_TYPE_HAVE_TWO_PRIMARY_PROFESSIONS")
             {
@@ -1145,9 +1148,8 @@ namespace CoAChallenges
                 uint32 const n = PrimaryProfessionCount(player);
                 s.label = "HAVE_TWO_PRIMARY_PROFESSIONS";
                 s.broken = (n >= 2);
-                s.detail = "primary professions: " + std::to_string(n);
-                s.message = "You cannot have two primary professions (you have "
-                    + std::to_string(n) + ").";
+                s.detail = MLStrFmt(STR_DET_PROF, locale, n);
+                s.message = MLStrFmt(STR_COND_PROF2, locale, n);
             }
             else if (type == "CHALLENGE_CONDITIONS_TYPE_LOOT_INTERACTION")
             {
@@ -1161,9 +1163,9 @@ namespace CoAChallenges
                 bool looted = !ladder && HasConditionFlag(guid, "LOOTED");
                 s.label = "LOOT_INTERACTION";
                 s.broken = looted;
-                s.detail = ladder ? "not required for a multi-level challenge"
-                                  : (looted ? "LOOTED" : "clean");
-                s.message = "You have already looted something; this trial must be started before any loot interaction.";
+                s.detail = ladder ? MLStr(STR_DET_LADDER, locale)
+                                  : (looted ? MLStr(STR_DET_LOOTED, locale) : MLStr(STR_DET_CLEAN, locale));
+                s.message = MLStr(STR_COND_LOOTED, locale);
             }
             else if (type == "CHALLENGE_CONDITIONS_TYPE_LEVEL_UP")
             {
@@ -1172,8 +1174,8 @@ namespace CoAChallenges
                 bool leveled = player->GetLevel() > 1;
                 s.label = "LEVEL_UP";
                 s.broken = leveled;
-                s.detail = "requires level 1, current " + std::to_string(player->GetLevel());
-                s.message = "You have already gained experience; this trial must be started at level 1.";
+                s.detail = MLStrFmt(STR_DET_LEVEL1, locale, player->GetLevel());
+                s.message = MLStr(STR_COND_XP, locale);
             }
             else if (type == "CHALLENGE_CONDITIONS_TYPE_CANNOT_HAVE_GAINED_EXPERIENCE")
             {
@@ -1181,8 +1183,8 @@ namespace CoAChallenges
                 bool leveled = player->GetLevel() > 1;
                 s.label = "CANNOT_HAVE_GAINED_EXPERIENCE";
                 s.broken = leveled;
-                s.detail = "requires level 1, current " + std::to_string(player->GetLevel());
-                s.message = "You have already gained experience; this trial must be started at level 1.";
+                s.detail = MLStrFmt(STR_DET_LEVEL1, locale, player->GetLevel());
+                s.message = MLStr(STR_COND_XP, locale);
             }
             else if (auto facets = OutsideFacetsForType(type); !facets.empty())
             {
@@ -1190,10 +1192,10 @@ namespace CoAChallenges
                 // auction house, vendor, guild bank) share the same persistent
                 // facet flags; declaring one of them must not fail closed.
                 std::string message;
-                bool const outside = OutsideInteractionBroken(ConditionFlags(guid), facets, message);
+                bool const outside = OutsideInteractionBroken(ConditionFlags(guid), facets, message, locale);
                 s.label = type.substr(std::string("CHALLENGE_CONDITIONS_TYPE_").size());
                 s.broken = outside;
-                s.detail = outside ? "INTERACTED" : "clean";
+                s.detail = outside ? MLStr(STR_DET_INTERACTED, locale) : MLStr(STR_DET_CLEAN, locale);
                 if (outside)
                     s.message = message;
                 if (type == "CHALLENGE_CONDITIONS_TYPE_OUTSIDE_INTERACTION")
@@ -1205,8 +1207,8 @@ namespace CoAChallenges
                 // silently allow activation.
                 s.label = type;
                 s.broken = true;
-                s.detail = "unhandled condition type";
-                s.message = "This trial has an unsupported activation requirement and cannot be started.";
+                s.detail = MLStr(STR_DET_UNHANDLED, locale);
+                s.message = MLStr(STR_COND_UNSUPPORTED, locale);
                 LOG_WARN("module.coa_challenges",
                     "Unhandled activation condition type '{}' (challenge {}) -> blocked",
                     type, challengeID);
@@ -1226,11 +1228,11 @@ namespace CoAChallenges
             && IsTrialChallenge(challengeID) && !IsPrestigeChallenge(challengeID))
         {
             std::string message;
-            bool const outside = OutsideInteractionBroken(ConditionFlags(guid), AllOutsideFacets(), message);
+            bool const outside = OutsideInteractionBroken(ConditionFlags(guid), AllOutsideFacets(), message, locale);
             ConditionState s;
             s.label = "OUTSIDE_INTERACTION";
             s.broken = outside;
-            s.detail = outside ? "INTERACTED" : "clean";
+            s.detail = outside ? MLStr(STR_DET_INTERACTED, locale) : MLStr(STR_DET_CLEAN, locale);
             if (outside)
                 s.message = message;
             out.push_back(s);
@@ -1576,15 +1578,17 @@ namespace CoAChallenges
 
     // Short labels for the failure broadcast when a level-restricted objective
     // is missed (the player is killed for it).
-    std::string ObjectiveFailLabel(std::string const& type)
+    // Death-cause label for an unmet level-gated objective, as a
+    // ChallengeStrings id (the failure broadcast resolves it per locale).
+    uint32 ObjectiveFailLabelId(std::string const& type)
     {
-        if (type == "CHALLENGE_REQUIREMENT_TYPE_EARN_MONEY_BEFORE_LEVEL")     return "Greedy";
-        if (type == "CHALLENGE_REQUIREMENT_TYPE_KILL_CREATURE_BEFORE_LEVEL")  return "Hunt Failed";
-        if (type == "CHALLENGE_REQUIREMENT_TYPE_LOOT_ITEM_BEFORE_LEVEL")      return "Loot Failed";
-        if (type == "CHALLENGE_REQUIREMENT_TYPE_COMPLETE_QUEST_BEFORE_LEVEL") return "Quest Failed";
-        if (type == "CHALLENGE_REQUIREMENT_TYPE_DUO")  return "Duo Broken";
-        if (type == "CHALLENGE_REQUIREMENT_TYPE_TRIO") return "Trio Broken";
-        return "Failed Objective";
+        if (type == "CHALLENGE_REQUIREMENT_TYPE_EARN_MONEY_BEFORE_LEVEL")     return STR_OBJ_GREEDY;
+        if (type == "CHALLENGE_REQUIREMENT_TYPE_KILL_CREATURE_BEFORE_LEVEL")  return STR_OBJ_HUNT;
+        if (type == "CHALLENGE_REQUIREMENT_TYPE_LOOT_ITEM_BEFORE_LEVEL")      return STR_OBJ_LOOT;
+        if (type == "CHALLENGE_REQUIREMENT_TYPE_COMPLETE_QUEST_BEFORE_LEVEL") return STR_OBJ_QUEST;
+        if (type == "CHALLENGE_REQUIREMENT_TYPE_DUO")  return STR_OBJ_DUO;
+        if (type == "CHALLENGE_REQUIREMENT_TYPE_TRIO") return STR_OBJ_TRIO;
+        return STR_OBJ_FAILED;
     }
 
     // On level up: every tracked objective whose V2 level has been reached is
@@ -1635,7 +1639,7 @@ namespace CoAChallenges
 
                 LOG_INFO("module.coa_challenges", "{} missed objective {} (challenge {}) at level {}",
                     player->GetName(), o.key, cid, player->GetLevel());
-                SetDeathCause(player, KillerKind::Mechanic, 0, ObjectiveFailLabel(o.type));
+                SetDeathCause(player, KillerKind::Mechanic, 0, "", ObjectiveFailLabelId(o.type));
                 player->EnvironmentalDamage(DAMAGE_EXHAUSTED, player->GetMaxHealth());
                 return false;
             }
@@ -1765,6 +1769,7 @@ namespace CoAChallenges
                     pending.killerKind = it->second.kind;
                     pending.killerEntry = it->second.entry;
                     pending.killerName = it->second.name;
+                    pending.killerStrId = it->second.strId;
                 }
             }
             std::lock_guard<std::mutex> lock(PendingFailMutex);
@@ -1989,8 +1994,8 @@ namespace CoAChallenges
                 if (bit == GAMEMODE_SURVIVALIST)
                     RemoveHungerChallenge(player, SURVIVALIST_HUNGER_ID);
                 SendGameModeState(player, mask);
-                ChatHandler(player->GetSession()).PSendSysMessage(
-                    "Your {} challenge has failed.", GameModeNameForBit(bit));
+                ChatHandler(player->GetSession()).PSendModuleSysMessage(
+                    MODULE_NAME, STR_MODE_FAILED, GameModeNameForBit(bit));
             }
         }
     }

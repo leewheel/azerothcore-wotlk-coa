@@ -568,8 +568,8 @@ namespace CoAChallenges
                 LOG_INFO("module.coa_challenges",
                     "SaveTrial {} by {} rejected: challenges {} and {} share an exclusive group",
                     trialID, player->GetName(), conflictA, conflictB);
-                ChatHandler(player->GetSession()).PSendSysMessage(
-                    "A trial cannot combine two mutually exclusive challenges ({} and {}).",
+                ChatHandler(player->GetSession()).PSendModuleSysMessage(
+                    MODULE_NAME, STR_TRIAL_SAVE_CONFLICT,
                     conflictA, conflictB);
                 // No dedicated save-conflict code in Enum.TrialSaveResponse.
                 SendTrialResult(player, SMSG_COA_TRIAL_SAVE_RESULT, trialID, "SAVE_CHALLENGE_CANNOT_EDIT_CHALLENGES");
@@ -719,8 +719,8 @@ namespace CoAChallenges
                 LOG_INFO("module.coa_challenges",
                     "ActivateTrial {} by {} rejected: challenges {} and {} share an exclusive group",
                     trialID, player->GetName(), conflictA, conflictB);
-                ChatHandler(player->GetSession()).PSendSysMessage(
-                    "This trial combines two mutually exclusive challenges ({} and {}).",
+                ChatHandler(player->GetSession()).PSendModuleSysMessage(
+                    MODULE_NAME, STR_TRIAL_ACT_CONFLICT,
                     conflictA, conflictB);
                 SendTrialResult(player, SMSG_COA_TRIAL_ACTIVATE_RESULT, trialID, "ACTIVATE_TRIAL_CANNOT_ACTIVATE_CHALLENGE");
                 // Same reasoning as the single-challenge path: the client
@@ -822,7 +822,7 @@ namespace CoAChallenges
                                 "SELECT deaths FROM coa_character_challenge WHERE guid = {} AND challengeId = {}",
                                 guid, cid))
                             deaths = dr->Fetch()[0].Get<uint32>();
-                        NotifyPlayer(player, "You have abandoned {} and failed it.", ChallengeName(cid));
+                        NotifyPlayer(player, STR_RULE_ABANDONED, ChallengeName(cid));
                         FailChallenge(player, cid, ActiveChallengeLevel(guid, cid), deaths);
                     }
                     else

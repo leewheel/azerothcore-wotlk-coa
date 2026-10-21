@@ -88,6 +88,61 @@ keys are appended automatically on deploy.
 .coa reset [all] <player>
 ```
 
+## Multi-language (i18n)
+
+Every string the player can read lives in the world database, the same way
+mod-transmog, mod-worldforged-upgrades and mod-coa-mythic-plus do it:
+
+| layer | where | what |
+|---|---|---|
+| id | `ChallengeStrings` enum in `src/CoA.Challenges.Review.h` | a plain `uint32`, e.g. `STR_RULE_NO_MAIL = 2` |
+| English | `module_string` row `('mod-coa-challenges', 2, '...')` | the fallback for every locale |
+| translations | `module_string_locale` rows `('mod-coa-challenges', 2, 'zhCN', '...')` | one row per locale |
+
+At runtime `ChatHandler::PSendModuleSysMessage` asks `WorldSession` for the
+string, and the session answers with the row for **the player's own client
+locale** (`GetSessionDbLocaleIndex`). Helpers in `CoA.Challenges.Review.h`:
+
+* `MLStr(id, locale)` / `MLStrFmt(id, locale, args...)` — one row, `{}`
+  placeholders filled in.
+* `BroadcastModuleSysMessage(prefix, id, args...)` — realm-wide trial
+  announcements (completion / failure). One packet is built **per distinct
+  session locale**, because a single pre-built packet would freeze every
+  client on the same language; the failure broadcast's killer link carries a
+  localized death-cause label, so it assembles its body per locale.
+
+Supported locales (same set as the core): `koKR frFR deDE zhCN zhTW esES
+esMX ruRU`, with `enUS` as the base. A missing row logs a `sql.sql` error and
+shows the literal `error`, so the SQL migration must be applied.
+
+Two things deliberately do **not** go through this system:
+
+* `ChallengeResponseString` (`CHALLENGE_START_*`) and the trial/sync response
+  strings — the client compares them against fixed English text, so
+  translating them would break the protocol.
+* The in-game E2E harness scaffolding (`CoAChallengeTests.cpp`
+  `SendTestLine` / `BroadcastTestLine` bodies) — developer-facing test
+  output, kept in English like the module's `LOG_INFO` lines.
+
+### Adding a string
+
+1. Append a new enumerator to `ChallengeStrings` — never reorder, the ids are
+   rows in the database.
+2. Use it: `ChatHandler(session).PSendModuleSysMessage(MODULE_NAME, id)` or,
+   when the text needs arguments, pass the `{}` arguments after the id.
+3. Add the rows to `data/sql/db-world/` as a new dated migration, English in
+   `module_string` and each translation in `module_string_locale`.
+
+### Death causes and condition messages
+
+Mechanic / environment death causes (Starved, Fell Asleep, Falling, ...) and
+the activation-condition messages (group size, inventory slots, professions,
+OUTSIDE_INTERACTION facets) are module string ids too: `SetDeathCause` takes
+an optional string id next to the literal name, and
+`EvaluateConditionsFor` builds its messages in the player's session locale.
+Creature and player killer names keep coming from the core locale tables
+(`creature_template_locale`).
+
 ## Scope / limitations
 
 - GroupRewards (`ChallengeGroupRewards.dbc`) — semantics not confirmed.

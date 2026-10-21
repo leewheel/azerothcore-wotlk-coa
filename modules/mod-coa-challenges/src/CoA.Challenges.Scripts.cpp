@@ -297,21 +297,24 @@ namespace CoAChallenges
             {
                 // Ascension rotates these 10 warning phrases; the spell name is
                 // a red spell link, shown big on screen + in chat.
-                static char const* const kWarnings[] = {
-                    "A new spell is bound by the roulette! {} is now a forbidden incantation.",
-                    "A dire warning: {} is now ensnared by the curse - cast it at your own peril.",
-                    "The curse has moved! {} is now perilous to cast - heed the warning.",
-                    "The roulette of fate has chosen its next victim: {}. Cast it not, lest death be your reward.",
-                    "The curse has found a new host! {} is now lethal to cast - heed this omen.",
-                    "Beware, traveler! The spell {} is now forbidden - cast it not, lest you perish.",
-                    "A new spell is bound by fate! Avoid casting {}, or meet your doom.",
-                    "The forbidden seal has shifted! {} is now a spell of certain demise.",
-                    "The roulette has spun! Casting {} is now a fatal gamble.",
-                    "The winds of fate have changed! {} is now deadly to invoke.",
+                // The phrases are module string ids, resolved in the player's
+                // own session locale.
+                static uint32 const kWarnings[] = {
+                    STR_ROULETTE_1,
+                    STR_ROULETTE_2,
+                    STR_ROULETTE_3,
+                    STR_ROULETTE_4,
+                    STR_ROULETTE_5,
+                    STR_ROULETTE_6,
+                    STR_ROULETTE_7,
+                    STR_ROULETTE_8,
+                    STR_ROULETTE_9,
+                    STR_ROULETTE_10,
                 };
                 std::string const link = "|cffff0000|Hspell:" + std::to_string(newMark)
                     + "|h[" + markInfo->SpellName[0] + "]|h|r";
-                std::string const msg = Acore::StringFormat(kWarnings[urand(0, 9)], link);
+                std::string const msg = MLStrFmt(kWarnings[urand(0, 9)],
+                    player->GetSession()->GetSessionDbLocaleIndex(), link);
                 // Big gold on-screen text + chat line = CHAT_MSG_RAID_BOSS_EMOTE
                 // (SendNotification/UIErrorsFrame is small and red).
                 WorldPacket data;
@@ -848,7 +851,7 @@ namespace CoAChallenges
                 "SELECT deaths FROM coa_character_challenge WHERE guid = {} AND challengeId = {}",
                 guid, cid))
             deaths = r->Fetch()[0].Get<uint32>();
-        NotifyPlayer(player, "You left High Risk and failed your challenge.");
+        NotifyPlayer(player, STR_RULE_LEFT_HIGH_RISK);
         FailChallenge(player, cid, level, deaths);
     }
 
@@ -1046,7 +1049,7 @@ namespace CoAChallenges
             && (PlayerHasRule(player, "CHALLENGE_RULES_TYPE_NO_MAIL")
                 || NoOutsideInteraction(player)))
         {
-            NotifyPlayer(player, "Your challenge forbids receiving mail.");
+            NotifyPlayer(player, STR_RULE_NO_MAIL);
             return true;
         }
         return false;
@@ -1340,7 +1343,7 @@ namespace CoAChallenges
             if (PlayerHasRule(player, "CHALLENGE_RULES_TYPE_NO_MANASTORM"))
             {
                 // player is non-null here: PlayerHasRule(nullptr) is false.
-                NotifyPlayer(player, "Your challenge forbids entering the Manastorm.");
+                NotifyPlayer(player, STR_RULE_NO_MANASTORM);
                 return false;
             }
             return true;
@@ -1386,24 +1389,27 @@ namespace CoAChallenges
 
         // Failure-broadcast label for an EnviromentalDamage type (the client has
         // no cause of its own: without this the death reads as "Unknown"/"Suicide").
-        static char const* EnvironmentalLabel(uint32 type)
+        // Returned as a ChallengeStrings id so the broadcast renders it in the
+        // reader's locale.
+        static uint32 EnvironmentalLabelId(uint32 type)
         {
             switch (type)
             {
-                case DAMAGE_EXHAUSTED:    return "Exhaustion";
-                case DAMAGE_DROWNING:     return "Drowning";
-                case DAMAGE_FALL:         return "Falling";
-                case DAMAGE_LAVA:         return "Lava";
-                case DAMAGE_SLIME:        return "Slime";
-                case DAMAGE_FIRE:         return "Fire";
-                case DAMAGE_FALL_TO_VOID: return "Falling";
-                default:                  return "Environment";
+                case DAMAGE_EXHAUSTED:    return STR_ENV_EXHAUSTION;
+                case DAMAGE_DROWNING:     return STR_ENV_DROWNING;
+                case DAMAGE_FALL:         return STR_ENV_FALLING;
+                case DAMAGE_LAVA:         return STR_ENV_LAVA;
+                case DAMAGE_SLIME:        return STR_ENV_SLIME;
+                case DAMAGE_FIRE:         return STR_ENV_FIRE;
+                case DAMAGE_FALL_TO_VOID: return STR_ENV_FALLING;
+                default:                  return STR_ENV_GENERIC;
             }
         }
 
         // Fails the first active challenge that carries `rule` (used by the
-        // environment rules, where death is not required to fail).
-        static void FailForEnvRule(Player* player, char const* rule, uint32 type, char const* message)
+        // environment rules, where death is not required to fail). `message` is
+        // a ChallengeStrings id shown to the failing player.
+        static void FailForEnvRule(Player* player, char const* rule, uint32 type, uint32 message)
         {
             uint32 level = 0;
             uint32 cid = ActiveChallengeWithRule(player, rule, level);
@@ -1416,7 +1422,7 @@ namespace CoAChallenges
                     guid, cid))
                 deaths = r->Fetch()[0].Get<uint32>();
 
-            NotifyPlayer(player, "{}", message);
+            NotifyPlayer(player, message);
             LOG_INFO("module.coa_challenges",
                 "{}: {} took environmental type {}, failing challenge {}",
                 rule, player->GetName(), type, cid);
@@ -1443,7 +1449,7 @@ namespace CoAChallenges
                 auto it = LastKiller.find(player->GetGUID().GetCounter());
                 if (it == LastKiller.end() || it->second.kind != KillerKind::Mechanic)
                     LastKiller[player->GetGUID().GetCounter()] =
-                        PendingKiller{ KillerKind::Environment, 0, EnvironmentalLabel(type) };
+                        PendingKiller{ KillerKind::Environment, 0, "", EnvironmentalLabelId(type) };
             }
 
             // FAILABLE_NO_FALLING (163 "If you fall any distance, you might die").
@@ -1452,11 +1458,11 @@ namespace CoAChallenges
             // "safe" fall does not fail the trial.
             if (type == DAMAGE_FALL || type == DAMAGE_FALL_TO_VOID)
                 FailForEnvRule(player, "CHALLENGE_RULES_TYPE_FAILABLE_NO_FALLING", type,
-                    "You have fallen and failed your challenge.");
+                    STR_RULE_FELL);
 
             if (type == DAMAGE_LAVA || type == DAMAGE_FIRE)
                 FailForEnvRule(player, "CHALLENGE_RULES_TYPE_FLOOR_IS_LAVA", type,
-                    "The floor is lava! Your challenge has failed.");
+                    STR_RULE_LAVA);
 
             return true;
         }
@@ -1468,7 +1474,7 @@ namespace CoAChallenges
             if (PlayerHasRule(player, "CHALLENGE_RULES_TYPE_NO_MAIL")
                 || NoOutsideInteraction(player))
             {
-                NotifyPlayer(player, "Your challenge forbids using the mailbox.");
+                NotifyPlayer(player, STR_RULE_NO_MAILBOX);
                 return false;
             }
             return true;
@@ -1509,7 +1515,7 @@ namespace CoAChallenges
                 || NoOutsideInteraction(player)
                 || NoOutsideInteraction(target))
             {
-                NotifyPlayer(player, "Your challenge forbids trading.");
+                NotifyPlayer(player, STR_RULE_NO_TRADE);
                 return false;
             }
             if (PlayerHasRule(player, "CHALLENGE_RULES_TYPE_ONLY_TRADE_IF_SAME_CHALLENGES")
@@ -1519,7 +1525,7 @@ namespace CoAChallenges
                     != ActiveChallenges(target->GetGUID().GetCounter()))
                 {
                     NotifyPlayer(player,
-                        "Trade is restricted: both players must share the same challenge(s).");
+                        STR_RULE_TRADE_SAME);
                     return false;
                 }
             }
@@ -1531,7 +1537,7 @@ namespace CoAChallenges
         {
             if (PlayerHasRule(player, "CHALLENGE_RULES_TYPE_NO_GROUP"))
             {
-                NotifyPlayer(player, "Your challenge forbids joining a group.");
+                NotifyPlayer(player, STR_RULE_NO_GROUP_JOIN);
                 return false;
             }
 
@@ -1539,12 +1545,12 @@ namespace CoAChallenges
 
             if (NoOutsideInteraction(player) || (target && NoOutsideInteraction(target)))
             {
-                NotifyPlayer(player, "Your challenge forbids interacting with other players.");
+                NotifyPlayer(player, STR_RULE_NO_INTERACT);
                 return false;
             }
             if (GroupForDungeonsBlocked(player, target))
             {
-                NotifyPlayer(player, "Your challenge forbids grouping inside a dungeon.");
+                NotifyPlayer(player, STR_RULE_NO_GROUP_DUNGEON);
                 return false;
             }
 
@@ -1557,7 +1563,7 @@ namespace CoAChallenges
                     != ActiveChallenges(target->GetGUID().GetCounter()))
             {
                 NotifyPlayer(player,
-                    "You can only group with players in the same challenge.");
+                    STR_RULE_GROUP_SAME);
                 return false;
             }
 
@@ -1567,7 +1573,7 @@ namespace CoAChallenges
                 if (diff < 0) diff = -diff;
                 if (diff > 3)
                 {
-                    NotifyPlayer(player, "Your challenge only allows grouping within 3 levels.");
+                    NotifyPlayer(player, STR_RULE_GROUP_3LEVEL);
                     return false;
                 }
             }
@@ -1578,7 +1584,7 @@ namespace CoAChallenges
         {
             if (PlayerHasRule(player, "CHALLENGE_RULES_TYPE_NO_GROUP"))
             {
-                NotifyPlayer(player, "Your challenge forbids joining a group.");
+                NotifyPlayer(player, STR_RULE_NO_GROUP_JOIN);
                 return false;
             }
 
@@ -1586,12 +1592,12 @@ namespace CoAChallenges
 
             if (NoOutsideInteraction(player) || (leader && NoOutsideInteraction(leader)))
             {
-                NotifyPlayer(player, "Your challenge forbids interacting with other players.");
+                NotifyPlayer(player, STR_RULE_NO_INTERACT);
                 return false;
             }
             if (GroupForDungeonsBlocked(player, leader))
             {
-                NotifyPlayer(player, "Your challenge forbids grouping inside a dungeon.");
+                NotifyPlayer(player, STR_RULE_NO_GROUP_DUNGEON);
                 return false;
             }
 
@@ -1602,7 +1608,7 @@ namespace CoAChallenges
                     != ActiveChallenges(leader->GetGUID().GetCounter()))
             {
                 NotifyPlayer(player,
-                    "You can only group with players in the same challenge.");
+                    STR_RULE_GROUP_SAME);
                 return false;
             }
 
@@ -1612,7 +1618,7 @@ namespace CoAChallenges
                 if (diff < 0) diff = -diff;
                 if (diff > 3)
                 {
-                    NotifyPlayer(player, "Your challenge only allows grouping within 3 levels.");
+                    NotifyPlayer(player, STR_RULE_GROUP_3LEVEL);
                     return false;
                 }
             }
@@ -1694,7 +1700,7 @@ namespace CoAChallenges
         {
             if (PlayerHasRule(player, "CHALLENGE_RULES_TYPE_NO_QUESTS"))
             {
-                NotifyPlayer(player, "Your challenge forbids completing quests.");
+                NotifyPlayer(player, STR_RULE_NO_QUESTS);
                 return false;
             }
             if (Quest const* quest = sObjectMgr->GetQuestTemplate(quest_id))
@@ -1707,7 +1713,7 @@ namespace CoAChallenges
                 std::string rule = std::string("CHALLENGE_RULES_TYPE_NO_") + colors[c] + "_QUESTS";
                 if (PlayerHasRule(player, rule.c_str()))
                 {
-                    NotifyPlayer(player, "Your challenge forbids completing this quest.");
+                    NotifyPlayer(player, STR_RULE_NO_QUEST);
                     return false;
                 }
             }
@@ -1856,7 +1862,7 @@ namespace CoAChallenges
             // Hearthstone (6948).
             if (proto->ItemId == 6948 && PlayerHasRule(player, "CHALLENGE_RULES_TYPE_NO_HEARTHSTONE"))
             {
-                NotifyPlayer(player, "Your challenge forbids using the hearthstone.");
+                NotifyPlayer(player, STR_RULE_NO_HEARTHSTONE);
                 return false;
             }
             // Boosting items (Tradesman's Scroll / Scroll of Experience).
@@ -1866,7 +1872,7 @@ namespace CoAChallenges
                 {
                     case 777998: case 2200018: case 1008036:
                     case 977065: case 991038:
-                        NotifyPlayer(player, "Your challenge forbids using boosting items.");
+                        NotifyPlayer(player, STR_RULE_NO_BOOST);
                         return false;
                     default:
                         break;
@@ -1880,7 +1886,7 @@ namespace CoAChallenges
                     case 818059: case 2200021: case 2818059:
                     case 135060: case 818046: case 3818046: case 8180460:
                     case 696666: case 818050:
-                        NotifyPlayer(player, "Your challenge forbids bonus experience items.");
+                        NotifyPlayer(player, STR_RULE_NO_XP_ITEMS);
                         return false;
                     default:
                         break;
@@ -1890,21 +1896,21 @@ namespace CoAChallenges
             if (proto->Class == ITEM_CLASS_MISC && proto->SubClass == ITEM_SUBCLASS_JUNK_MOUNT
                 && PlayerHasRule(player, "CHALLENGE_RULES_TYPE_NO_MOUNTS"))
             {
-                NotifyPlayer(player, "Your challenge forbids using mounts.");
+                NotifyPlayer(player, STR_RULE_NO_MOUNTS);
                 return false;
             }
             // Cosmetic pets.
             if (proto->Class == ITEM_CLASS_MISC && proto->SubClass == ITEM_SUBCLASS_JUNK_PET
                 && PlayerHasRule(player, "CHALLENGE_RULES_TYPE_NO_COSMETIC_PET_ITEMS"))
             {
-                NotifyPlayer(player, "Your challenge forbids cosmetic pets.");
+                NotifyPlayer(player, STR_RULE_NO_COSMETIC_PETS);
                 return false;
             }
             // Health potions.
             if (proto->Class == ITEM_CLASS_CONSUMABLE && proto->SubClass == ITEM_SUBCLASS_POTION
                 && PlayerHasRule(player, "CHALLENGE_RULES_TYPE_NO_HEALTH_POTIONS"))
             {
-                NotifyPlayer(player, "Your challenge forbids using potions.");
+                NotifyPlayer(player, STR_RULE_NO_POTIONS);
                 return false;
             }
             return true;
@@ -1942,7 +1948,7 @@ namespace CoAChallenges
             {
                 item = 0;
                 player->SendBuyError(BUY_ERR_SELLER_DONT_LIKE_YOU, vendor, proto ? proto->ItemId : 0, 0);
-                NotifyPlayer(player, "Your challenge forbids buying from vendors.");
+                NotifyPlayer(player, STR_RULE_NO_VENDOR_BUY);
                 return;
             }
             // NO_VENDOR_BUY_FOOD_OR_DRINK: block food/drink only.
@@ -1951,7 +1957,7 @@ namespace CoAChallenges
             {
                 item = 0;
                 player->SendBuyError(BUY_ERR_SELLER_DONT_LIKE_YOU, vendor, proto ? proto->ItemId : 0, 0);
-                NotifyPlayer(player, "Your challenge forbids buying food or drinks from vendors.");
+                NotifyPlayer(player, STR_RULE_NO_VENDOR_FOOD);
             }
         }
 
@@ -1962,7 +1968,7 @@ namespace CoAChallenges
             if (player && (PlayerHasRule(player, "CHALLENGE_RULES_TYPE_NO_VENDORS")
                 || NoOutsideInteraction(player)))
             {
-                NotifyPlayer(player, "Your challenge forbids using vendors.");
+                NotifyPlayer(player, STR_RULE_NO_VENDOR_USE);
                 return false;
             }
             return true;
@@ -1975,12 +1981,12 @@ namespace CoAChallenges
                 return true;
             if (entry->IsRaid() && PlayerHasRule(player, "CHALLENGE_RULES_TYPE_NO_RAIDS"))
             {
-                NotifyPlayer(player, "Your challenge forbids entering raids.");
+                NotifyPlayer(player, STR_RULE_NO_RAIDS);
                 return false;
             }
             if (entry->IsDungeon() && !entry->IsRaid() && PlayerHasRule(player, "CHALLENGE_RULES_TYPE_NO_DUNGEONS"))
             {
-                NotifyPlayer(player, "Your challenge forbids entering dungeons.");
+                NotifyPlayer(player, STR_RULE_NO_DUNGEONS);
                 return false;
             }
             return true;
@@ -2001,7 +2007,7 @@ namespace CoAChallenges
             if (dest && cur && dest->IsContinent() && cur->IsContinent()
                 && dest->MapID != cur->MapID)
             {
-                NotifyPlayer(player, "Your challenge forbids leaving the continent.");
+                NotifyPlayer(player, STR_RULE_NO_CONTINENT);
                 return false;
             }
             return true;
@@ -2019,7 +2025,7 @@ namespace CoAChallenges
             if (PlayerHasRule(player, "CHALLENGE_RULES_TYPE_NO_NON_SELF_CRAFTED_ITEMS")
                 && pItem->GetGuidValue(ITEM_FIELD_CREATOR) != player->GetGUID())
             {
-                NotifyPlayer(player, "Your challenge only allows items you crafted yourself.");
+                NotifyPlayer(player, STR_RULE_ONLY_CRAFTED);
                 return false;
             }
             // NO_NON_LOOTED_ITEMS (Scavenger): only item instances the character
@@ -2027,17 +2033,17 @@ namespace CoAChallenges
             if (PlayerHasRule(player, "CHALLENGE_RULES_TYPE_NO_NON_LOOTED_ITEMS")
                 && !ItemWasLooted(player->GetGUID().GetCounter(), pItem->GetGUID().GetCounter()))
             {
-                NotifyPlayer(player, "Your challenge only allows items you looted yourself.");
+                NotifyPlayer(player, STR_RULE_ONLY_LOOTED);
                 return false;
             }
             if (proto->Class == ITEM_CLASS_ARMOR && PlayerHasRule(player, "CHALLENGE_RULES_TYPE_NO_EQUIP_ARMOR"))
             {
-                NotifyPlayer(player, "Your challenge forbids equipping armor.");
+                NotifyPlayer(player, STR_RULE_NO_ARMOR);
                 return false;
             }
             if (proto->Class == ITEM_CLASS_CONTAINER && PlayerHasRule(player, "CHALLENGE_RULES_TYPE_NO_BAGS"))
             {
-                NotifyPlayer(player, "Your challenge forbids additional bags.");
+                NotifyPlayer(player, STR_RULE_NO_BAGS);
                 return false;
             }
             switch (proto->Quality)
@@ -2154,7 +2160,7 @@ namespace CoAChallenges
                 deaths = r->Fetch()[0].Get<uint32>();
 
             NotifyPlayer(player,
-                "You have slain a forbidden creature and failed your challenge.");
+                STR_RULE_SLAIN_FORBIDDEN);
             LOG_INFO("module.coa_challenges",
                 "{}: {} killed creature {} (type {}), failing challenge {}",
                 rule, player->GetName(), killed->GetEntry(), uint32(killed->GetCreatureType()), cid);
@@ -2396,7 +2402,7 @@ namespace CoAChallenges
                 if (player && IsProfessionSkill(skillId)
                     && PlayerHasRule(player, "CHALLENGE_RULES_TYPE_CANNOT_UNLEARN_PROFESSIONS"))
                 {
-                    NotifyPlayer(player, "Your profession choices are permanent.");
+                    NotifyPlayer(player, STR_RULE_PROF_LOCKED);
                     LOG_INFO("module.coa_challenges", "CMSG_UNLEARN_SKILL from {}: blocked profession skill {}",
                         player->GetName(), skillId);
                     return false;
@@ -2446,7 +2452,7 @@ namespace CoAChallenges
                     || PlayerHasRule(player, "CHALLENGE_RULES_TYPE_NO_VENDORS")
                     || NoOutsideInteraction(player)))
                 {
-                    NotifyPlayer(player, "Your challenge forbids vendor buyback.");
+                    NotifyPlayer(player, STR_RULE_NO_BUYBACK);
                     return false;
                 }
                 return true;
@@ -2457,7 +2463,7 @@ namespace CoAChallenges
                 if (player && (PlayerHasRule(player, "CHALLENGE_RULES_TYPE_NO_BANK")
                     || NoOutsideInteraction(player)))
                 {
-                    NotifyPlayer(player, "Your challenge forbids using banks.");
+                    NotifyPlayer(player, STR_RULE_NO_BANK);
                     return false;
                 }
                 return true;
@@ -2467,7 +2473,7 @@ namespace CoAChallenges
             {
                 if (player && PlayerHasRule(player, "CHALLENGE_RULES_TYPE_NO_REPAIR_ITEMS"))
                 {
-                    NotifyPlayer(player, "Your challenge forbids repairing items.");
+                    NotifyPlayer(player, STR_RULE_NO_REPAIR);
                     return false;
                 }
                 return true;
@@ -2479,7 +2485,7 @@ namespace CoAChallenges
             {
                 if (player && PlayerHasRule(player, "CHALLENGE_RULES_TYPE_CANNOT_LOOT_ITEMS"))
                 {
-                    NotifyPlayer(player, "Your challenge forbids looting items.");
+                    NotifyPlayer(player, STR_RULE_NO_LOOT);
                     return false;
                 }
                 return true;
@@ -2489,7 +2495,7 @@ namespace CoAChallenges
             {
                 if (player && PlayerHasRule(player, "CHALLENGE_RULES_TYPE_NO_FLIGHT_PATHS"))
                 {
-                    NotifyPlayer(player, "Your challenge forbids using flight paths.");
+                    NotifyPlayer(player, STR_RULE_NO_FLIGHT);
                     return false;
                 }
                 return true;
@@ -2514,7 +2520,7 @@ namespace CoAChallenges
                         std::string rule = std::string("CHALLENGE_RULES_TYPE_NO_") + colors[c] + "_QUESTS";
                         if (PlayerHasRule(player, rule.c_str()))
                         {
-                            NotifyPlayer(player, "Your challenge forbids accepting this quest.");
+                            NotifyPlayer(player, STR_RULE_NO_QUEST_ACCEPT);
                             return false;
                         }
                     }
@@ -2633,7 +2639,7 @@ namespace CoAChallenges
                                     guid, challengeID))
                                 deaths = dr->Fetch()[0].Get<uint32>();
                             NotifyPlayer(player,
-                                "You have abandoned {} and failed it.", ChallengeName(challengeID));
+                                STR_RULE_ABANDONED, ChallengeName(challengeID));
                             FailChallenge(player, challengeID, level, deaths);
                             return false;
                         }
@@ -2786,7 +2792,8 @@ namespace CoAChallenges
                 player = PlayerIdentifier::FromTargetOrSelf(handler);
             if (!player)
             {
-                handler->SendErrorMessage("No player (target someone or run it yourself).");
+                handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_NO_PLAYER);
+                handler->SetSentErrorMessage(true);
                 return false;
             }
 
@@ -2802,11 +2809,12 @@ namespace CoAChallenges
             {
                 if (Player* online = player->GetConnectedPlayer())
                     SendFailureList(online);
-                handler->PSendSysMessage("Unlocked {} from challenge {}.", player->GetName(), challengeId);
+                handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_UNLOCKED, player->GetName(), challengeId);
             }
             else
             {
-                handler->SendErrorMessage("{} had no failure lock on challenge {}.", player->GetName(), challengeId);
+                handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_NO_LOCK, player->GetName(), challengeId);
+                handler->SetSentErrorMessage(true);
             }
             return true;
         }
@@ -2819,28 +2827,35 @@ namespace CoAChallenges
             Player* p = player ? player->GetConnectedPlayer() : nullptr;
             if (!p)
             {
-                handler->SendErrorMessage("Player must be online to check conditions.");
+                handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_ONLINE_CHECK);
+                handler->SetSentErrorMessage(true);
                 return false;
             }
 
-            handler->PSendSysMessage("Conditions for challenge {} ({}):", challengeId, p->GetName());
+            handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_COND_HEAD, challengeId, p->GetName());
 
             std::vector<ConditionState> states = EvaluateConditions(p, challengeId);
             if (states.empty())
-                handler->PSendSysMessage("  (none)");
+                handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_COND_NONE);
             for (ConditionState const& s : states)
             {
                 if (s.broken)
-                    handler->SendErrorMessage("  {}: BROKEN ({})", s.label, s.detail);
+                {
+                    handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_COND_BROKEN, s.label, s.detail);
+                    handler->SetSentErrorMessage(true);
+                }
                 else
-                    handler->PSendSysMessage("  {}: ok ({})", s.label, s.detail);
+                    handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_COND_OK, s.label, s.detail);
             }
 
             std::string reason = CheckActivationConditions(p, challengeId);
             if (reason.empty())
-                handler->PSendSysMessage("  => OK (can activate)");
+                handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_COND_ACTIVATE);
             else
-                handler->SendErrorMessage("  => BLOCKED: {}", reason);
+            {
+                handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_COND_BLOCKED, reason);
+                handler->SetSentErrorMessage(true);
+            }
             return true;
         }
 
@@ -2856,19 +2871,21 @@ namespace CoAChallenges
             Player* p = player ? player->GetConnectedPlayer() : nullptr;
             if (!p)
             {
-                handler->SendErrorMessage("Player must be online to send a sync request.");
+                handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_ONLINE_SYNC);
+                handler->SetSentErrorMessage(true);
                 return false;
             }
             if (!p->GetGroup())
             {
-                handler->SendErrorMessage("{} is not in a group.", p->GetName());
+                handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_NO_GROUP, p->GetName());
+                handler->SetSentErrorMessage(true);
                 return false;
             }
 
             uint32 lvl = level.value_or(ActiveChallengeLevel(p->GetGUID().GetCounter(), challengeId));
             std::vector<std::pair<uint32, uint32>> pairs = { { challengeId, lvl } };
             SendChallengeSyncToGroup(p, 60000, false, pairs, false, {});
-            handler->PSendSysMessage("Sent CHALLENGES_SYNC (0x59B) for challenge {} level {} to {}'s party.",
+            handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_SYNC_SENT,
                 challengeId, lvl, p->GetName());
             return true;
         }
@@ -2880,7 +2897,7 @@ namespace CoAChallenges
         static bool HandleCoAReloadCommand(ChatHandler* handler)
         {
             LoadChallengeDefinitions();
-            handler->PSendSysMessage("Reloaded {} challenge definition(s) from the database.",
+            handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_RELOADED,
                 DefCount());
             return true;
         }
@@ -2896,21 +2913,23 @@ namespace CoAChallenges
             Player* p = player ? player->GetConnectedPlayer() : nullptr;
             if (!p)
             {
-                handler->SendErrorMessage("Player must be online.");
+                handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_ONLINE);
+                handler->SetSentErrorMessage(true);
                 return false;
             }
 
             GameModeDef const* mode = FindGameMode(modeName);
             if (!mode)
             {
-                handler->SendErrorMessage("Unknown game mode '{}'.", modeName);
+                handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_UNKNOWN_MODE, modeName);
+                handler->SetSentErrorMessage(true);
                 return false;
             }
 
             bool enable = (onOff == "on" || onOff == "1" || onOff == "true" || onOff == "enable");
             ApplyGameModeToggle(p, mode, enable);
-            handler->PSendSysMessage("Game mode {} {} for {}.", modeName,
-                enable ? "enabled" : "disabled", p->GetName());
+            handler->PSendModuleSysMessage(MODULE_NAME,
+                enable ? STR_GM_MODE_ON : STR_GM_MODE_OFF, modeName, p->GetName());
             return true;
         }
 
@@ -2924,7 +2943,8 @@ namespace CoAChallenges
             Player* p = player ? player->GetConnectedPlayer() : nullptr;
             if (!p)
             {
-                handler->SendErrorMessage("Player must be online.");
+                handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_ONLINE);
+                handler->SetSentErrorMessage(true);
                 return false;
             }
 
@@ -2938,7 +2958,8 @@ namespace CoAChallenges
                 auto it = FatigueStates.find(guid);
                 if (it == FatigueStates.end())
                 {
-                    handler->SendErrorMessage("{} has no active FATIGUED_UNLESS_RESTED challenge.", p->GetName());
+                    handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_NO_FATIGUE, p->GetName());
+                    handler->SetSentErrorMessage(true);
                     return false;
                 }
                 if (value)
@@ -2951,8 +2972,9 @@ namespace CoAChallenges
             }
 
             SendFatigueBar(p, fatigue);
-            handler->PSendSysMessage("Fatigue[{}] = {}/{} (resting={})",
-                p->GetName(), fatigue, FatigueMax(), resting ? "yes" : "no");
+            handler->PSendModuleSysMessage(MODULE_NAME,
+                resting ? STR_GM_FATIGUE_RESTING : STR_GM_FATIGUE_AWAKE,
+                p->GetName(), fatigue, FatigueMax());
             return true;
         }
 
@@ -2966,13 +2988,14 @@ namespace CoAChallenges
             std::vector<RewardDef> rewards = GetChallengeRewards(challengeId, lvl);
             if (rewards.empty())
             {
-                handler->SendErrorMessage("Challenge {} level {} has no reward data.", challengeId, lvl);
+                handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_NO_REWARD_DATA, challengeId, lvl);
+                handler->SetSentErrorMessage(true);
                 return false;
             }
-            handler->PSendSysMessage("Rewards for challenge {} level {} ({} entries):",
+            handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_REWARD_HEAD,
                 challengeId, lvl, rewards.size());
             for (RewardDef const& r : rewards)
-                handler->PSendSysMessage("  item={} x{} ach={} special={} first={}",
+                handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_REWARD_ROW,
                     r.itemId, r.amount, r.achievement, r.isSpecial ? 1 : 0, r.isFirst ? 1 : 0);
 
             Player* p = playerName ? ObjectAccessor::FindPlayerByName(*playerName) : nullptr;
@@ -2983,11 +3006,11 @@ namespace CoAChallenges
             }
             if (!p)
             {
-                handler->PSendSysMessage("Listed only (no online player; usage: .coa reward <id> [level] [player]).");
+                handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_REWARD_LISTED);
                 return true;
             }
             GrantChallengeRewards(p, challengeId, lvl, true, true);
-            handler->PSendSysMessage("Delivered to {} (check the mailbox / achievements).", p->GetName());
+            handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_REWARD_DELIVERED, p->GetName());
             return true;
         }
 
@@ -2999,7 +3022,8 @@ namespace CoAChallenges
             Player* p = ObjectAccessor::FindPlayerByName(playerName);
             if (!p)
             {
-                handler->SendErrorMessage("Player '{}' is not online.", playerName);
+                handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_OFFLINE, playerName);
+                handler->SetSentErrorMessage(true);
                 return false;
             }
             uint32 pauseMs = stepMs ? *stepMs : sConfigMgr->GetOption<uint32>("CoAChallenges.TestStepMs", 0);
@@ -3008,13 +3032,13 @@ namespace CoAChallenges
             // (challenge auras, gamemode/mode-lives, per-character tables,
             // client push, leaderboard, resurrect). Custom trials are kept.
             ResetCoaCharacterState(p);
-            handler->PSendSysMessage("E2E: reset '{}' before running trial {}.", playerName, challengeId);
+            handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_E2E_RESET, playerName, challengeId);
 
             // Money challenges run asynchronously (one step per world tick) so
             // the client renders every change.
             if (Test_StartVisualE2E(p, challengeId, pauseMs))
             {
-                handler->PSendSysMessage("E2E trial {} ({}): scheduled, interval {} ms. Watch the client.",
+                handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_E2E_RUN,
                     challengeId, playerName, pauseMs);
                 return true;
             }
@@ -3027,9 +3051,12 @@ namespace CoAChallenges
             if (int lg = Test_RunLevelGateE2E(p, challengeId); lg >= 0)
             {
                 if (lg == 1)
-                    handler->PSendSysMessage("E2E PASS");
+                    handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_E2E_PASS);
                 else
-                    handler->SendErrorMessage("E2E FAIL");
+                {
+                    handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_E2E_FAIL);
+                    handler->SetSentErrorMessage(true);
+                }
                 return true;
             }
 
@@ -3037,7 +3064,7 @@ namespace CoAChallenges
             // (also used by `.coa e2emiss` with missPass=true).
             if (Test_StartLevelGateVisualE2E(p, challengeId, pauseMs, false))
             {
-                handler->PSendSysMessage("E2E level-gate {} ({}): scheduled, interval {} ms. Watch the client.",
+                handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_E2E_LEVELGATE,
                     challengeId, playerName, pauseMs);
                 return true;
             }
@@ -3045,16 +3072,19 @@ namespace CoAChallenges
             // Fatigue trials (Narcolepsy): fill the bar -> sleep death.
             if (Test_StartFatigueVisualE2E(p, challengeId, pauseMs))
             {
-                handler->PSendSysMessage("E2E fatigue {} ({}): scheduled, interval {} ms. Watch the client.",
+                handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_E2E_FATIGUE,
                     challengeId, playerName, pauseMs);
                 return true;
             }
 
             // Non-money challenges: synchronous completion smoke test.
             if (Test_RunCompletionE2E(p, challengeId))
-                handler->PSendSysMessage("E2E PASS");
+                handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_E2E_PASS);
             else
-                handler->SendErrorMessage("E2E FAIL");
+            {
+                handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_E2E_FAIL);
+                handler->SetSentErrorMessage(true);
+            }
             return true;
         }
 
@@ -3067,22 +3097,24 @@ namespace CoAChallenges
             Player* p = ObjectAccessor::FindPlayerByName(playerName);
             if (!p)
             {
-                handler->SendErrorMessage("Player '{}' is not online.", playerName);
+                handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_OFFLINE, playerName);
+                handler->SetSentErrorMessage(true);
                 return false;
             }
             uint32 pauseMs = stepMs ? *stepMs : sConfigMgr->GetOption<uint32>("CoAChallenges.TestStepMs", 0);
 
             ResetCoaCharacterState(p);
-            handler->PSendSysMessage("E2E(miss): reset '{}' before running trial {}.", playerName, challengeId);
+            handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_E2E_MISS_RESET, playerName, challengeId);
 
             if (Test_StartLevelGateVisualE2E(p, challengeId, pauseMs, true))
             {
-                handler->PSendSysMessage("E2E miss {} ({}): scheduled, interval {} ms. Watch the client.",
+                handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_E2E_MISS_RUN,
                     challengeId, playerName, pauseMs);
                 return true;
             }
 
-            handler->SendErrorMessage("Trial {} is not a level-gated trial (no miss path).", challengeId);
+            handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_NOT_GATED, challengeId);
+            handler->SetSentErrorMessage(true);
             return false;
         }
 
@@ -3094,13 +3126,17 @@ namespace CoAChallenges
             Player* p = ObjectAccessor::FindPlayerByName(playerName);
             if (!p)
             {
-                handler->SendErrorMessage("Player '{}' is not online.", playerName);
+                handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_OFFLINE, playerName);
+                handler->SetSentErrorMessage(true);
                 return false;
             }
             if (Test_CheckRuleGate(p, challengeId))
-                handler->PSendSysMessage("RULE TEST PASS (challenge {})", challengeId);
+                handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_RULE_PASS, challengeId);
             else
-                handler->SendErrorMessage("RULE TEST FAIL (challenge {})", challengeId);
+            {
+                handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_RULE_FAIL, challengeId);
+                handler->SetSentErrorMessage(true);
+            }
             return true;
         }
 
@@ -3112,13 +3148,17 @@ namespace CoAChallenges
             Player* p = ObjectAccessor::FindPlayerByName(playerName);
             if (!p)
             {
-                handler->SendErrorMessage("Player '{}' is not online.", playerName);
+                handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_OFFLINE, playerName);
+                handler->SetSentErrorMessage(true);
                 return false;
             }
             if (Test_RuleGates(p))
-                handler->PSendSysMessage("RULE GATES PASS");
+                handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_RULE_GATES_PASS);
             else
-                handler->SendErrorMessage("RULE GATES FAIL (see per-rule lines above)");
+            {
+                handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_RULE_GATES_FAIL);
+                handler->SetSentErrorMessage(true);
+            }
             return true;
         }
 
@@ -3130,13 +3170,17 @@ namespace CoAChallenges
             Player* p = ObjectAccessor::FindPlayerByName(playerName);
             if (!p)
             {
-                handler->SendErrorMessage("Player '{}' is not online.", playerName);
+                handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_OFFLINE, playerName);
+                handler->SetSentErrorMessage(true);
                 return false;
             }
             if (Test_ConditionGates(p))
-                handler->PSendSysMessage("CONDITION GATES PASS");
+                handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_COND_GATES_PASS);
             else
-                handler->SendErrorMessage("CONDITION GATES FAIL (see per-condition lines above)");
+            {
+                handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_COND_GATES_FAIL);
+                handler->SetSentErrorMessage(true);
+            }
             return true;
         }
 
@@ -3150,19 +3194,20 @@ namespace CoAChallenges
             Player* p = ObjectAccessor::FindPlayerByName(playerName);
             if (!p)
             {
-                handler->SendErrorMessage("Player '{}' is not online.", playerName);
+                handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_OFFLINE, playerName);
+                handler->SetSentErrorMessage(true);
                 return false;
             }
             uint32 const guid = p->GetGUID().GetCounter();
             if (!on || *on)
             {
                 SetConditionFlag(guid, flag.c_str());
-                handler->PSendSysMessage("Set condition flag '{}' for {}.", flag, p->GetName());
+                handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_FLAG_SET, flag, p->GetName());
             }
             else
             {
                 ClearConditionFlag(guid, flag);
-                handler->PSendSysMessage("Cleared condition flag '{}' for {}.", flag, p->GetName());
+                handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_FLAG_CLEARED, flag, p->GetName());
             }
             return true;
         }
@@ -3176,13 +3221,17 @@ namespace CoAChallenges
             Player* b = ObjectAccessor::FindPlayerByName(p2);
             if (!a || !b)
             {
-                handler->SendErrorMessage("Both players must be online ('{}' / '{}').", p1, p2);
+                handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_BOTH_ONLINE, p1, p2);
+                handler->SetSentErrorMessage(true);
                 return false;
             }
             if (Test_PartyRuleGates(a, b))
-                handler->PSendSysMessage("PARTY RULE GATES PASS");
+                handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_PARTY_PASS);
             else
-                handler->SendErrorMessage("PARTY RULE GATES FAIL (see lines above)");
+            {
+                handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_PARTY_FAIL);
+                handler->SetSentErrorMessage(true);
+            }
             return true;
         }
 
@@ -3194,11 +3243,12 @@ namespace CoAChallenges
             Player* p = ObjectAccessor::FindPlayerByName(playerName);
             if (!p)
             {
-                handler->SendErrorMessage("Player '{}' is not online.", playerName);
+                handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_OFFLINE, playerName);
+                handler->SetSentErrorMessage(true);
                 return false;
             }
             Test_AuditAllRules(p);
-            handler->PSendSysMessage("Rule audit finished for {} (check chat/log for divergences).", playerName);
+            handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_RULE_AUDIT, playerName);
             return true;
         }
 
@@ -3210,11 +3260,12 @@ namespace CoAChallenges
             Player* p = ObjectAccessor::FindPlayerByName(playerName);
             if (!p)
             {
-                handler->SendErrorMessage("Player '{}' is not online.", playerName);
+                handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_OFFLINE, playerName);
+                handler->SetSentErrorMessage(true);
                 return false;
             }
             Test_AuditAllDefs(p);
-            handler->PSendSysMessage("Definition audit finished for {} (check chat/log for divergences).", playerName);
+            handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_DEF_AUDIT, playerName);
             return true;
         }
 
@@ -3227,13 +3278,17 @@ namespace CoAChallenges
             Player* p = ObjectAccessor::FindPlayerByName(playerName);
             if (!p)
             {
-                handler->SendErrorMessage("Player '{}' is not online.", playerName);
+                handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_OFFLINE, playerName);
+                handler->SetSentErrorMessage(true);
                 return false;
             }
             if (Test_CacheToctou(p))
-                handler->PSendSysMessage("CACHE TOCTOU PASS");
+                handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_TOCTOU_PASS);
             else
-                handler->SendErrorMessage("CACHE TOCTOU FAIL (see lines above)");
+            {
+                handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_TOCTOU_FAIL);
+                handler->SetSentErrorMessage(true);
+            }
             return true;
         }
 
@@ -3244,13 +3299,17 @@ namespace CoAChallenges
             Player* p = ObjectAccessor::FindPlayerByName(playerName);
             if (!p)
             {
-                handler->SendErrorMessage("Player '{}' is not online.", playerName);
+                handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_OFFLINE, playerName);
+                handler->SetSentErrorMessage(true);
                 return false;
             }
             if (Test_PetTrialAuras(p))
-                handler->PSendSysMessage("PET TRIAL AURAS PASS");
+                handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_PET_PASS);
             else
-                handler->SendErrorMessage("PET TRIAL AURAS FAIL (see lines above)");
+            {
+                handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_PET_FAIL);
+                handler->SetSentErrorMessage(true);
+            }
             return true;
         }
 
@@ -3267,7 +3326,8 @@ namespace CoAChallenges
             {
                 if (!second)
                 {
-                    handler->SendErrorMessage("Usage: .coa reset all <player>");
+                    handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_RESET_USAGE);
+                    handler->SetSentErrorMessage(true);
                     return false;
                 }
                 all = true;
@@ -3276,20 +3336,20 @@ namespace CoAChallenges
             Player* p = ObjectAccessor::FindPlayerByName(playerName);
             if (!p)
             {
-                handler->SendErrorMessage("Player '{}' is not online.", playerName);
+                handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_OFFLINE, playerName);
+                handler->SetSentErrorMessage(true);
                 return false;
             }
             if (all)
             {
                 HardResetCharacter(p);
-                handler->PSendSysMessage(
-                    "Hard reset ALL for {}: level 1, 0 money, no CoA state, repairs, "
-                    "spells/talents/skills unlearned, quest log cleared.", playerName);
+                handler->PSendModuleSysMessage(MODULE_NAME, 
+                    STR_GM_HARD_RESET, playerName);
             }
             else
             {
                 ResetChallengeState(p);
-                handler->PSendSysMessage("Reset challenge state for {} (level/money/items kept).", playerName);
+                handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_RESET_DONE, playerName);
             }
             return true;
         }
@@ -3305,14 +3365,16 @@ namespace CoAChallenges
             Player* p = player ? player->GetConnectedPlayer() : nullptr;
             if (!p)
             {
-                handler->SendErrorMessage("Player must be online.");
+                handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_ONLINE);
+                handler->SetSentErrorMessage(true);
                 return false;
             }
 
             if (!sSpellMgr->GetSpellInfo(COA_PRESTIGE_AURA))
             {
-                handler->SendErrorMessage(
-                    "Spell {} (prestige aura) is unknown to the server.", COA_PRESTIGE_AURA);
+                handler->PSendModuleSysMessage(MODULE_NAME, 
+                    STR_GM_PRESTIGE_SPELL, COA_PRESTIGE_AURA);
+                handler->SetSentErrorMessage(true);
                 return false;
             }
 
@@ -3320,12 +3382,12 @@ namespace CoAChallenges
             if (on)
             {
                 p->AddAura(COA_PRESTIGE_AURA, p);
-                handler->PSendSysMessage("{} is now PRESTIGED (aura {}).", p->GetName(), COA_PRESTIGE_AURA);
+                handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_PRESTIGE_ON, p->GetName(), COA_PRESTIGE_AURA);
             }
             else
             {
                 p->RemoveAurasDueToSpell(COA_PRESTIGE_AURA);
-                handler->PSendSysMessage("{} is no longer prestiged.", p->GetName());
+                handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_PRESTIGE_OFF, p->GetName());
             }
             return true;
         }
@@ -3346,13 +3408,14 @@ namespace CoAChallenges
             }
             if (!p)
             {
-                handler->SendErrorMessage("Player must be online (usage: .coa envtest <type> [damage] [player]).");
+                handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_ENVTEST_USAGE);
+                handler->SetSentErrorMessage(true);
                 return false;
             }
 
             uint32 dmg = damage.value_or(p->GetMaxHealth());
             uint32 applied = p->EnvironmentalDamage(static_cast<EnviromentalDamage>(type), dmg);
-            handler->PSendSysMessage("Applied environmental type {} ({} raw) to {}: {} applied.",
+            handler->PSendModuleSysMessage(MODULE_NAME, STR_GM_ENVTEST_DONE,
                 type, dmg, p->GetName(), applied);
             return true;
         }
@@ -3372,7 +3435,7 @@ namespace CoAChallenges
                 || NoOutsideInteraction(player))
             {
                 if (player)
-                    NotifyPlayer(player, "Your challenge forbids using the auction house.");
+                    NotifyPlayer(player, STR_RULE_NO_AH);
                 return false;
             }
             return true;
@@ -3392,7 +3455,7 @@ namespace CoAChallenges
                 || NoOutsideInteraction(player))
             {
                 if (player)
-                    NotifyPlayer(player, "Your challenge forbids using the guild bank.");
+                    NotifyPlayer(player, STR_RULE_NO_GUILD_BANK);
                 return false;
             }
             return true;
@@ -3562,14 +3625,14 @@ namespace CoAChallenges
                                 pl->GetGUID().GetCounter(), mark.challengeId))
                             pending.deaths = r->Fetch()[0].Get<uint32>();
                         SpellbindQueueKill(pl->GetGUID().GetCounter(), pending);
-                        NotifyPlayer(pl, "You cast a spell marked for death and it kills you.");
+                        NotifyPlayer(pl, STR_RULE_MARK_DEATH);
                         LOG_INFO("module.coa_challenges",
                             "Spellbind: {} cast marked spell {}, queued fail+death (challenge {})",
                             pl->GetName(), info->Id, mark.challengeId);
                     }
                     else
                     {
-                        NotifyPlayer(pl, "That spell is forbidden by your challenge.");
+                        NotifyPlayer(pl, STR_RULE_SPELL_FORBIDDEN);
                         res = SPELL_FAILED_CANT_DO_THAT_RIGHT_NOW;
                         return;
                     }
@@ -3596,7 +3659,7 @@ namespace CoAChallenges
                 }
                 if (portal)
                 {
-                    NotifyPlayer(pl, "Your challenge forbids using portals.");
+                    NotifyPlayer(pl, STR_RULE_NO_PORTALS);
                     res = SPELL_FAILED_CANT_DO_THAT_RIGHT_NOW;
                     return;
                 }
@@ -3610,7 +3673,7 @@ namespace CoAChallenges
                                                 info->GetMaxRange(true, pl, spell));
                 if (maxRange > NOMINAL_MELEE_RANGE)
                 {
-                    NotifyPlayer(pl, "Your challenge limits your cast range to melee.");
+                    NotifyPlayer(pl, STR_RULE_MELEE_ONLY);
                     res = SPELL_FAILED_OUT_OF_RANGE;
                     return;
                 }
@@ -3619,7 +3682,7 @@ namespace CoAChallenges
             // NO_PROFESSIONS: unable to learn or use professions of any kind.
             if (professionSpell && PlayerHasRule(pl, "CHALLENGE_RULES_TYPE_NO_PROFESSIONS"))
             {
-                NotifyPlayer(pl, "Your challenge forbids using professions.");
+                NotifyPlayer(pl, STR_RULE_NO_PROFESSIONS);
                 res = SPELL_FAILED_CANT_DO_THAT_RIGHT_NOW;
                 return;
             }
@@ -3627,7 +3690,7 @@ namespace CoAChallenges
             // (trainer-gossip unlearning; the spellbook path is dropped in CanPacketReceive).
             if (unlearnSpec && PlayerHasRule(pl, "CHALLENGE_RULES_TYPE_CANNOT_UNLEARN_PROFESSIONS"))
             {
-                NotifyPlayer(pl, "Your profession choices are permanent.");
+                NotifyPlayer(pl, STR_RULE_PROF_LOCKED);
                 res = SPELL_FAILED_CANT_DO_THAT_RIGHT_NOW;
                 return;
             }
@@ -3637,7 +3700,7 @@ namespace CoAChallenges
             // NO_COMPANIONS: no vanity companion pets (combat minions still allowed).
             if (companion && PlayerHasRule(pl, "CHALLENGE_RULES_TYPE_NO_COMPANIONS"))
             {
-                NotifyPlayer(pl, "Your challenge forbids companion pets.");
+                NotifyPlayer(pl, STR_RULE_NO_COMPANIONS);
                 res = SPELL_FAILED_CANT_DO_THAT_RIGHT_NOW;
                 return;
             }
@@ -3645,7 +3708,7 @@ namespace CoAChallenges
             // non-combat (vanity) companions are explicitly allowed, as on Ascension.
             if (!companion && PlayerHasRule(pl, "CHALLENGE_RULES_TYPE_NO_PETS_OR_MINIONS"))
             {
-                NotifyPlayer(pl, "Your challenge forbids pets and minions.");
+                NotifyPlayer(pl, STR_RULE_NO_MINIONS);
                 res = SPELL_FAILED_CANT_DO_THAT_RIGHT_NOW;
             }
         }
@@ -3761,7 +3824,7 @@ namespace CoAChallenges
                         if (!notice->Last || now - notice->Last >= TappingNoticeIntervalMs)
                         {
                             notice->Last = now;
-                            NotifyPlayer(a, "This target is already tapped by another challenge.");
+                            NotifyPlayer(a, STR_RULE_TAPPED);
                         }
                     }
                     return false;
@@ -3785,7 +3848,7 @@ namespace CoAChallenges
                         && CoreAllowsAttack(attacker, target, spell))
                     {
                         notice->Last = now;
-                        NotifyPlayer(a, "Your challenge is PvE only: you cannot fight players.");
+                        NotifyPlayer(a, STR_RULE_PVE_ONLY);
                     }
                 }
                 return false;
@@ -3812,7 +3875,7 @@ namespace CoAChallenges
             }
             if (blocked && a->GetSession() && CoreAllowsAttack(attacker, target, spell))
                 NotifyPlayer(a,
-                    "Your challenge restricts who you may fight in PvP.");
+                    STR_RULE_PVP_LIMIT);
             return !blocked;
         }
 

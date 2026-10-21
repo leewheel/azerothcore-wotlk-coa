@@ -32,10 +32,12 @@
 #include "CoAChallengeParse.h"
 #include "CoAChallengeInternal.h"
 #include "MiscScript.h"
+#include "ObjectMgr.h"
 #include "TaskScheduler.h"
 #include "StringFormat.h"
 #include "SmartEnum.h"
 #include "Timer.h"
+#include "WorldSessionMgr.h"
 #include <algorithm>
 #include <array>
 #include <atomic>
@@ -55,6 +57,274 @@
 
 namespace CoAChallenges
 {
+    // ------------------------------------------------------------------ strings
+    // Every player-facing string lives in the world database, the same way
+    // mod-worldforged-upgrades and mod-coa-mythic-plus do it: the ids below are
+    // rows of `module_string` (English) and `module_string_locale` (one row per
+    // locale), resolved at runtime by the player's session locale. Ids are
+    // stable: append, never reorder - they are primary keys in the database.
+    // The matching SQL is
+    // data/sql/db-world/2026_10_19_00_mod_coa_challenges_module_strings.sql.
+    constexpr char const* MODULE_NAME = "mod-coa-challenges";
+
+    enum ChallengeStrings : uint32
+    {
+        STR_RULE_LEFT_HIGH_RISK      =   1, // You left High Risk and failed your challenge.
+        STR_RULE_NO_MAIL             =   2, // Your challenge forbids receiving mail.
+        STR_RULE_NO_MANASTORM        =   3, // Your challenge forbids entering the Manastorm.
+        STR_RULE_TRADE_SAME          =   4, // Trade is restricted: both players must share the same challenge(s).
+        STR_RULE_NO_TRADE            =   5, // Your challenge forbids trading.
+        STR_RULE_NO_MAILBOX          =   6, // Your challenge forbids using the mailbox.
+        STR_RULE_NO_GROUP_JOIN       =   7, // Your challenge forbids joining a group.
+        STR_RULE_NO_INTERACT         =   8, // Your challenge forbids interacting with other players.
+        STR_RULE_NO_GROUP_DUNGEON    =   9, // Your challenge forbids grouping inside a dungeon.
+        STR_RULE_GROUP_SAME          =  10, // You can only group with players in the same challenge.
+        STR_RULE_GROUP_3LEVEL        =  11, // Your challenge only allows grouping within 3 levels.
+        STR_RULE_NO_QUESTS           =  12, // Your challenge forbids completing quests.
+        STR_RULE_NO_QUEST            =  13, // Your challenge forbids completing this quest.
+        STR_RULE_NO_QUEST_ACCEPT     =  14, // Your challenge forbids accepting this quest.
+        STR_RULE_NO_HEARTHSTONE      =  15, // Your challenge forbids using the hearthstone.
+        STR_RULE_NO_BOOST            =  16, // Your challenge forbids using boosting items.
+        STR_RULE_NO_XP_ITEMS         =  17, // Your challenge forbids bonus experience items.
+        STR_RULE_NO_MOUNTS           =  18, // Your challenge forbids using mounts.
+        STR_RULE_NO_COSMETIC_PETS    =  19, // Your challenge forbids cosmetic pets.
+        STR_RULE_NO_POTIONS          =  20, // Your challenge forbids using potions.
+        STR_RULE_NO_VENDOR_BUY       =  21, // Your challenge forbids buying from vendors.
+        STR_RULE_NO_VENDOR_FOOD      =  22, // Your challenge forbids buying food or drinks from vendors.
+        STR_RULE_NO_VENDOR_USE       =  23, // Your challenge forbids using vendors.
+        STR_RULE_NO_BUYBACK          =  24, // Your challenge forbids vendor buyback.
+        STR_RULE_NO_RAIDS            =  25, // Your challenge forbids entering raids.
+        STR_RULE_NO_DUNGEONS         =  26, // Your challenge forbids entering dungeons.
+        STR_RULE_NO_CONTINENT        =  27, // Your challenge forbids leaving the continent.
+        STR_RULE_ONLY_CRAFTED        =  28, // Your challenge only allows items you crafted yourself.
+        STR_RULE_ONLY_LOOTED         =  29, // Your challenge only allows items you looted yourself.
+        STR_RULE_NO_ARMOR            =  30, // Your challenge forbids equipping armor.
+        STR_RULE_NO_BAGS             =  31, // Your challenge forbids additional bags.
+        STR_RULE_PROF_LOCKED         =  32, // Your profession choices are permanent.
+        STR_RULE_NO_BANK             =  33, // Your challenge forbids using banks.
+        STR_RULE_NO_REPAIR           =  34, // Your challenge forbids repairing items.
+        STR_RULE_NO_LOOT             =  35, // Your challenge forbids looting items.
+        STR_RULE_NO_FLIGHT           =  36, // Your challenge forbids using flight paths.
+        STR_RULE_NO_AH               =  37, // Your challenge forbids using the auction house.
+        STR_RULE_NO_GUILD_BANK       =  38, // Your challenge forbids using the guild bank.
+        STR_RULE_SLAIN_FORBIDDEN     =  39, // You have slain a forbidden creature and failed your challenge.
+        STR_RULE_ABANDONED           =  40, // You have abandoned {} and failed it.
+        STR_RULE_MARK_DEATH          =  41, // You cast a spell marked for death and it kills you.
+        STR_RULE_SPELL_FORBIDDEN     =  42, // That spell is forbidden by your challenge.
+        STR_RULE_NO_PORTALS          =  43, // Your challenge forbids using portals.
+        STR_RULE_MELEE_ONLY          =  44, // Your challenge limits your cast range to melee.
+        STR_RULE_NO_PROFESSIONS      =  45, // Your challenge forbids using professions.
+        STR_RULE_NO_COMPANIONS       =  46, // Your challenge forbids companion pets.
+        STR_RULE_NO_MINIONS          =  47, // Your challenge forbids pets and minions.
+        STR_RULE_TAPPED              =  48, // This target is already tapped by another challenge.
+        STR_RULE_PVE_ONLY            =  49, // Your challenge is PvE only: you cannot fight players.
+        STR_RULE_PVP_LIMIT           =  50, // Your challenge restricts who you may fight in PvP.
+        STR_RULE_FELL                =  51, // You have fallen and failed your challenge.
+        STR_RULE_LAVA                =  52, // The floor is lava! Your challenge has failed.
+        STR_ACT_NOT_FOUND            =  53, // Challenge {} was not found.
+        STR_ACT_NO_REWARDS           =  54, // {} has no rewards.
+        STR_ACT_ALREADY_ACTIVE       =  55, // {} is already active.
+        STR_ACT_CONFLICT             =  56, // You already have an active challenge that conflicts ({}).
+        STR_ACT_EVENT                =  57, // {} requires a game event that is not active.
+        STR_ACT_CONDITIONS           =  58, // Cannot start {}: {}
+        STR_ACT_LEAVE_GROUP          =  59, // You must leave your group before starting {}.
+        STR_ACT_HIGH_RISK            =  60, // {} requires you to be in High Risk.
+        STR_ACT_PRESTIGE             =  61, // {} requires prestige.
+        STR_ACT_ANY_FAILED           =  62, // You have already failed a challenge and cannot start another.
+        STR_ACT_FAILED_RETAKE        =  63, // You have already failed {} and cannot retake it.
+        STR_ACT_COMPLETED            =  64, // You have already completed this trial ({}).
+        STR_GRP_KICKED               =  65, // You have been removed from the group: it now requires the same challenge set.
+        STR_MODE_FAILED              =  66, // Your {} challenge has failed.
+        STR_TRIAL_SAVE_CONFLICT      =  67, // A trial cannot combine two mutually exclusive challenges ({} and {}).
+        STR_TRIAL_ACT_CONFLICT       =  68, // This trial combines two mutually exclusive challenges ({} and {}).
+        STR_HUNGER_CRITICAL          =  69, // Challenge: your {} is critical ({})! Eat or drink soon.
+        STR_KIND_HUNGER              =  70, // hunger
+        STR_KIND_THIRST              =  71, // thirst
+        STR_CAUSE_ASLEEP             =  72, // Fell Asleep
+        STR_CAUSE_STARVED            =  73, // Starved
+        STR_OBJ_GREEDY               =  74, // Greedy
+        STR_OBJ_HUNT                 =  75, // Hunt Failed
+        STR_OBJ_LOOT                 =  76, // Loot Failed
+        STR_OBJ_QUEST                =  77, // Quest Failed
+        STR_OBJ_DUO                  =  78, // Duo Broken
+        STR_OBJ_TRIO                 =  79, // Trio Broken
+        STR_OBJ_FAILED               =  80, // Failed Objective
+        STR_ENV_EXHAUSTION           =  81, // Exhaustion
+        STR_ENV_DROWNING             =  82, // Drowning
+        STR_ENV_FALLING              =  83, // Falling
+        STR_ENV_LAVA                 =  84, // Lava
+        STR_ENV_SLIME                =  85, // Slime
+        STR_ENV_FIRE                 =  86, // Fire
+        STR_ENV_GENERIC              =  87, // Environment
+        STR_CAUSE_UNKNOWN            =  88, // Unknown
+        STR_BC_COMPLETED             =  89, // {} has completed their Trial!
+        STR_BC_FAIL_HEAD             =  90, // {} {} (Level {}) {}
+        STR_BC_KILLED                =  91, // has been killed by {}.
+        STR_BC_SLAYING               =  92, // has failed the challenge by slaying {}.
+        STR_GM_NO_PLAYER             =  93, // No player (target someone or run it yourself).
+        STR_GM_UNLOCKED              =  94, // Unlocked {} from challenge {}.
+        STR_GM_NO_LOCK               =  95, // {} had no failure lock on challenge {}.
+        STR_GM_ONLINE_CHECK          =  96, // Player must be online to check conditions.
+        STR_GM_COND_HEAD             =  97, // Conditions for challenge {} ({}):
+        STR_GM_COND_NONE             =  98, //   (none)
+        STR_GM_COND_BROKEN           =  99, //   {}: BROKEN ({})
+        STR_GM_COND_OK               = 100, //   {}: ok ({})
+        STR_GM_COND_ACTIVATE         = 101, //   => OK (can activate)
+        STR_GM_COND_BLOCKED          = 102, //   => BLOCKED: {}
+        STR_GM_ONLINE_SYNC           = 103, // Player must be online to send a sync request.
+        STR_GM_NO_GROUP              = 104, // {} is not in a group.
+        STR_GM_SYNC_SENT             = 105, // Sent CHALLENGES_SYNC (0x59B) for challenge {} level {} to {}'s party.
+        STR_GM_RELOADED              = 106, // Reloaded {} challenge definition(s) from the database.
+        STR_GM_ONLINE                = 107, // Player must be online.
+        STR_GM_UNKNOWN_MODE          = 108, // Unknown game mode '{}'.
+        STR_GM_MODE_ON               = 109, // Game mode {} enabled for {}.
+        STR_GM_MODE_OFF              = 110, // Game mode {} disabled for {}.
+        STR_GM_NO_FATIGUE            = 111, // {} has no active FATIGUED_UNLESS_RESTED challenge.
+        STR_GM_FATIGUE_RESTING       = 112, // Fatigue[{}] = {}/{} (resting=yes)
+        STR_GM_FATIGUE_AWAKE         = 113, // Fatigue[{}] = {}/{} (resting=no)
+        STR_GM_NO_REWARD_DATA        = 114, // Challenge {} level {} has no reward data.
+        STR_GM_REWARD_HEAD           = 115, // Rewards for challenge {} level {} ({} entries):
+        STR_GM_REWARD_ROW            = 116, //   item={} x{} ach={} special={} first={}
+        STR_GM_REWARD_LISTED         = 117, // Listed only (no online player; usage: .coa reward <id> [level] [player]).
+        STR_GM_REWARD_DELIVERED      = 118, // Delivered to {} (check the mailbox / achievements).
+        STR_GM_OFFLINE               = 119, // Player '{}' is not online.
+        STR_GM_E2E_RESET             = 120, // E2E: reset '{}' before running trial {}.
+        STR_GM_E2E_RUN               = 121, // E2E trial {} ({}): scheduled, interval {} ms. Watch the client.
+        STR_GM_E2E_PASS              = 122, // E2E PASS
+        STR_GM_E2E_FAIL              = 123, // E2E FAIL
+        STR_GM_E2E_LEVELGATE         = 124, // E2E level-gate {} ({}): scheduled, interval {} ms. Watch the client.
+        STR_GM_E2E_FATIGUE           = 125, // E2E fatigue {} ({}): scheduled, interval {} ms. Watch the client.
+        STR_GM_E2E_MISS_RESET        = 126, // E2E(miss): reset '{}' before running trial {}.
+        STR_GM_E2E_MISS_RUN          = 127, // E2E miss {} ({}): scheduled, interval {} ms. Watch the client.
+        STR_GM_NOT_GATED             = 128, // Trial {} is not a level-gated trial (no miss path).
+        STR_GM_RULE_PASS             = 129, // RULE TEST PASS (challenge {})
+        STR_GM_RULE_FAIL             = 130, // RULE TEST FAIL (challenge {})
+        STR_GM_RULE_GATES_PASS       = 131, // RULE GATES PASS
+        STR_GM_RULE_GATES_FAIL       = 132, // RULE GATES FAIL (see per-rule lines above)
+        STR_GM_COND_GATES_PASS       = 133, // CONDITION GATES PASS
+        STR_GM_COND_GATES_FAIL       = 134, // CONDITION GATES FAIL (see per-condition lines above)
+        STR_GM_FLAG_SET              = 135, // Set condition flag '{}' for {}.
+        STR_GM_FLAG_CLEARED          = 136, // Cleared condition flag '{}' for {}.
+        STR_GM_BOTH_ONLINE           = 137, // Both players must be online ('{}' / '{}').
+        STR_GM_PARTY_PASS            = 138, // PARTY RULE GATES PASS
+        STR_GM_PARTY_FAIL            = 139, // PARTY RULE GATES FAIL (see lines above)
+        STR_GM_RULE_AUDIT            = 140, // Rule audit finished for {} (check chat/log for divergences).
+        STR_GM_DEF_AUDIT             = 141, // Definition audit finished for {} (check chat/log for divergences).
+        STR_GM_TOCTOU_PASS           = 142, // CACHE TOCTOU PASS
+        STR_GM_TOCTOU_FAIL           = 143, // CACHE TOCTOU FAIL (see lines above)
+        STR_GM_PET_PASS              = 144, // PET TRIAL AURAS PASS
+        STR_GM_PET_FAIL              = 145, // PET TRIAL AURAS FAIL (see lines above)
+        STR_GM_RESET_USAGE           = 146, // Usage: .coa reset all <player>
+        STR_GM_HARD_RESET            = 147, // Hard reset ALL for {}: level 1, 0 money, no CoA state, repairs, spells/talents/skills unlearned, quest log cleared.
+        STR_GM_RESET_DONE            = 148, // Reset challenge state for {} (level/money/items kept).
+        STR_GM_PRESTIGE_SPELL        = 149, // Spell {} (prestige aura) is unknown to the server.
+        STR_GM_PRESTIGE_ON           = 150, // {} is now PRESTIGED (aura {}).
+        STR_GM_PRESTIGE_OFF          = 151, // {} is no longer prestiged.
+        STR_GM_ENVTEST_USAGE         = 152, // Player must be online (usage: .coa envtest <type> [damage] [player]).
+        STR_GM_ENVTEST_DONE          = 153, // Applied environmental type {} ({} raw) to {}: {} applied.
+        STR_ROULETTE_1               = 154, // A new spell is bound by the roulette! {} is now a forbidden incantation.
+        STR_ROULETTE_2               = 155, // A dire warning: {} is now ensnared by the curse - cast it at your own peril.
+        STR_ROULETTE_3               = 156, // The curse has moved! {} is now perilous to cast - heed the warning.
+        STR_ROULETTE_4               = 157, // The roulette of fate has chosen its next victim: {}. Cast it not, lest death be your reward.
+        STR_ROULETTE_5               = 158, // The curse has found a new host! {} is now lethal to cast - heed this omen.
+        STR_ROULETTE_6               = 159, // Beware, traveler! The spell {} is now forbidden - cast it not, lest you perish.
+        STR_ROULETTE_7               = 160, // A new spell is bound by fate! Avoid casting {}, or meet your doom.
+        STR_ROULETTE_8               = 161, // The forbidden seal has shifted! {} is now a spell of certain demise.
+        STR_ROULETTE_9               = 162, // The roulette has spun! Casting {} is now a fatal gamble.
+        STR_ROULETTE_10              = 163, // The winds of fate have changed! {} is now deadly to invoke.
+        STR_COND_SOLO                = 164, // This trial must be started solo (you are in a group of {}).
+        STR_COND_GROUP               = 165, // This trial requires a group of {} (you have {}).
+        STR_COND_SLOTS               = 166, // You need at least {} free inventory slots (you have {}).
+        STR_COND_PROF2               = 167, // You cannot have two primary professions (you have {}).
+        STR_COND_LOOTED              = 168, // You have already looted something; this trial must be started before any loot interaction.
+        STR_COND_XP                  = 169, // You have already gained experience; this trial must be started at level 1.
+        STR_COND_UNSUPPORTED         = 170, // This trial has an unsupported activation requirement and cannot be started.
+        STR_COND_ALREADY             = 171, // You have already {} before starting this trial.
+        STR_FACET_MAIL               = 172, // taken items or money from the mailbox
+        STR_FACET_TRADE              = 173, // traded with another player
+        STR_FACET_AH                 = 174, // used the auction house
+        STR_FACET_VENDOR             = 175, // used a vendor
+        STR_FACET_GUILD_BANK         = 176, // withdrawn from the guild bank
+        STR_FACET_BANK               = 177, // withdrawn from your bank
+        STR_FACET_REALM_BANK         = 178, // withdrawn from your realm bank
+        STR_FACET_OUTSIDE            = 179, // interacted with the outside world
+        STR_DET_SOLO                 = 180, // requires solo, current group of {}
+        STR_DET_SOLO_OK              = 181, // solo
+        STR_DET_REQUIRES             = 182, // requires {}, current {}
+        STR_DET_PROF                 = 183, // primary professions: {}
+        STR_DET_LADDER               = 184, // not required for a multi-level challenge
+        STR_DET_LOOTED               = 185, // LOOTED
+        STR_DET_CLEAN                = 186, // clean
+        STR_DET_LEVEL1               = 187, // requires level 1, current {}
+        STR_DET_INTERACTED           = 188, // INTERACTED
+        STR_DET_UNHANDLED            = 189, // unhandled condition type
+    };
+
+    /// One row of `module_string`, in the given session locale. A missing row
+    /// is a deployment error the core logs; the literal "error" is shown.
+    inline std::string MLStr(uint32 id, int32 locale)
+    {
+        std::string const* str = sObjectMgr->GetModuleString(MODULE_NAME, id,
+            locale >= 0 && size_t(locale) < TOTAL_LOCALES ? LocaleConstant(locale) : LOCALE_enUS);
+        return str ? *str : "error";
+    }
+
+    /// The same row, with `{}` placeholders filled in.
+    template <typename... Args>
+    std::string MLStrFmt(uint32 id, int32 locale, Args const&... args)
+    {
+        return Acore::StringFormat(MLStr(id, locale), args...);
+    }
+
+    /// Realm-wide system-chat announcement in the player's own locale.
+    /// `prefix` carries locale-independent decoration (timestamp, challenge
+    /// icon tag) that goes in front of the translated body. A single pre-built
+    /// packet would freeze every client on the same language, so one packet is
+    /// built per distinct session locale (same recipient filter the core's
+    /// SendGlobalMessage uses).
+    template <typename... Args>
+    void BroadcastModuleSysMessage(std::string const& prefix, uint32 id, Args const&... args)
+    {
+        std::map<int32, WorldPacket> packets;
+        for (auto const& [_, session] : sWorldSessionMgr->GetAllSessions())
+        {
+            if (!session || !session->GetPlayer() || !session->GetPlayer()->IsInWorld())
+                continue;
+            int32 locale = session->GetSessionDbLocaleIndex();
+            auto it = packets.find(locale);
+            if (it == packets.end())
+            {
+                WorldPacket data;
+                ChatHandler::BuildChatPacket(data, CHAT_MSG_SYSTEM, LANG_UNIVERSAL,
+                    nullptr, nullptr, prefix + MLStrFmt(id, locale, args...));
+                it = packets.emplace(locale, std::move(data)).first;
+            }
+            session->SendPacket(&it->second);
+        }
+    }
+
+    /// Same, for bodies that must be assembled per locale (the failure
+    /// broadcast's killer link carries a localized cause label).
+    inline void BroadcastModuleSysMessage(std::string const& prefix,
+        std::function<std::string(int32)> const& body)
+    {
+        std::map<int32, WorldPacket> packets;
+        for (auto const& [_, session] : sWorldSessionMgr->GetAllSessions())
+        {
+            if (!session || !session->GetPlayer() || !session->GetPlayer()->IsInWorld())
+                continue;
+            int32 locale = session->GetSessionDbLocaleIndex();
+            auto it = packets.find(locale);
+            if (it == packets.end())
+            {
+                WorldPacket data;
+                ChatHandler::BuildChatPacket(data, CHAT_MSG_SYSTEM, LANG_UNIVERSAL,
+                    nullptr, nullptr, prefix + body(locale));
+                it = packets.emplace(locale, std::move(data)).first;
+            }
+            session->SendPacket(&it->second);
+        }
+    }
 
     // Broadcast colors, sampled from the live client's chat (2026-09-13):
     //   [TrialName] = FFA500, player name = 43C6DB, killer/cause = FF0000.
@@ -87,6 +357,8 @@ namespace CoAChallenges
         // trial, the announcement shows the trial's name/icon instead.
         std::string displayName;
         std::string displayIcon;
+        // Module string id for a localized death cause (see PendingKiller).
+        uint32 killerStrId = 0;
     };
 
     // Killer of a player's most recent death, captured by
@@ -99,6 +371,11 @@ namespace CoAChallenges
         KillerKind kind = KillerKind::Unknown;
         uint32 entry = 0;
         std::string name;
+        // When non-zero, the broadcast resolves this module string id in the
+        // reader's locale instead of showing `name` (mechanic/environment
+        // causes like "Starved"/"Falling"). `name` stays for creature/player
+        // killers, whose names already come from the locale tables.
+        uint32 strId = 0;
     };
 
     // Hunger tracking (server-driven; the client only renders).
@@ -297,12 +574,14 @@ extern std::atomic<bool> g_suppressSyncBroadcast; // defined in CoA.Challenges.C
 
 // Player-facing system message. The GM test harness sets g_testQuiet so a test
 // run only prints its PASS/FAIL lines (production always shows the message).
+// The text is a ChallengeStrings id: the row is resolved in the player's own
+// session locale (module_string / module_string_locale).
 template <typename... Args>
-void NotifyPlayer(Player* player, char const* fmt, Args&&... args)
+void NotifyPlayer(Player* player, uint32 id, Args&&... args)
 {
     if (g_testQuiet || !player || !player->GetSession())
         return;
-    ChatHandler(player->GetSession()).PSendSysMessage(fmt, std::forward<Args>(args)...);
+    ChatHandler(player->GetSession()).PSendModuleSysMessage(MODULE_NAME, id, std::forward<Args>(args)...);
 }
 
 // Forward declarations (generated by split.ps1; definitions live in CoA.Challenges.*.cpp).
@@ -316,7 +595,7 @@ char const* ClassToken(uint8 cls);
 char const* ClassColorForToken(std::string const& token);
 std::string PlayerNameLink(Player* player);
 void AnnounceCompletion(Player* player, uint32 challengeID, uint32 level);
-void SetDeathCause(Player* player, KillerKind kind, uint32 entry, std::string const& name);
+void SetDeathCause(Player* player, KillerKind kind, uint32 entry, std::string const& name, uint32 strId = 0);
 void AnnounceFailure(Player* player, PendingFail const& fail);
 void FlushFailureBroadcasts();
 void AppendConfigString(WorldPacket& data, std::string const& key);
@@ -380,7 +659,7 @@ void TakeHungerFlushLocked(uint32 guid, std::vector<HungerFlushRow>& out);
 void CommitHungerFlush(uint32 guid, std::vector<HungerFlushRow> const& rows);
 void TrackSurvivalist(Player* player);
 void UntrackHunger(Player* player);
-void WarnHunger(Player* player, char const* kind, int32 value);
+void WarnHunger(Player* player, uint32 kindId, int32 value);
 void HungerUpdate(Player* player, uint32 diff);
 void RefreshHungerTracking(Player* player);
 void RefreshHungerTracking(Player* player, std::vector<ActiveChallengeRow> const& rows);
@@ -534,7 +813,7 @@ void CompleteAtLevelCap(Player* player);
 int QuestColor(uint32 questLevel, uint32 playerLevel);
 uint32 NextGatedLevel(Player* player);
 void MarkObjectives(Player* player, char const* type, uint32 eventValue);
-std::string ObjectiveFailLabel(std::string const& type);
+uint32 ObjectiveFailLabelId(std::string const& type);
 bool CheckObjectiveLevels(Player* player);
 // killerSource is the guid whose death carries the killer info. causeKind (with
 // causeEntry/causeName) lets a rule failure name its own cause (e.g. the beast a

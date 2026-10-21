@@ -273,7 +273,7 @@ namespace CoAChallenges
             StopFatigueBar(player);
             LOG_INFO("module.coa_challenges", "{} fell asleep (fatigue drained, challenge {})",
                 player->GetName(), cid);
-            SetDeathCause(player, KillerKind::Mechanic, 0, "Fell Asleep");
+            SetDeathCause(player, KillerKind::Mechanic, 0, "", STR_CAUSE_ASLEEP);
             player->EnvironmentalDamage(DAMAGE_EXHAUSTED, player->GetMaxHealth());
             return;
         }

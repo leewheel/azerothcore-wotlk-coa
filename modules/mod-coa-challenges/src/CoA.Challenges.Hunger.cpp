@@ -101,13 +101,12 @@ namespace CoAChallenges
         HungerAccum.erase(guid);
     }
 
-    void WarnHunger(Player* player, char const* kind, int32 value)
+    void WarnHunger(Player* player, uint32 kindId, int32 value)
     {
         if (WorldSession* session = player->GetSession())
         {
-            char msg[128];
-            snprintf(msg, sizeof(msg), "Challenge: your %s is critical (%d)! Eat or drink soon.", kind, value);
-            ChatHandler(session).PSendSysMessage(msg);
+            ChatHandler(session).PSendModuleSysMessage(MODULE_NAME, STR_HUNGER_CRITICAL,
+                MLStr(kindId, session->GetSessionDbLocaleIndex()), value);
         }
     }
 
@@ -234,9 +233,9 @@ namespace CoAChallenges
             SetMeterAura(player, foodSpell, ch.hunger);
             SetMeterAura(player, drinkSpell, ch.thirst);
             if (hungerTick && (ch.hunger == warn75 || ch.hunger == warn90))
-                WarnHunger(player, "hunger", ch.hunger);
+                WarnHunger(player, STR_KIND_HUNGER, ch.hunger);
             if (thirstTick && (ch.thirst == warn75 || ch.thirst == warn90))
-                WarnHunger(player, "thirst", ch.thirst);
+                WarnHunger(player, STR_KIND_THIRST, ch.thirst);
         }
 
         if (starved)
@@ -245,7 +244,7 @@ namespace CoAChallenges
                 player->GetName());
             // Exhaustion damage (not raw Kill) so the death recap shows
             // a cause. No durability loss (only FALL applies it).
-            SetDeathCause(player, KillerKind::Mechanic, 0, "Starved");
+            SetDeathCause(player, KillerKind::Mechanic, 0, "", STR_CAUSE_STARVED);
             player->EnvironmentalDamage(DAMAGE_EXHAUSTED, player->GetMaxHealth());
         }
     }
