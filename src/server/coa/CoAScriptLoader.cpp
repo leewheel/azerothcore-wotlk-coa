@@ -329,6 +329,9 @@ void AddSC_AscensionRoamingCreatureGrids();
 void AddSC_AscensionNorthshireRuins();
 void AddSC_AscensionStormwindKeepDoor();
 void AddSC_AscensionShadewellClues();
+void AddSC_AscensionIdealsArePoisonClues();
+void AddSC_AscensionTransformPresets();
+void AddSC_AscensionAreaQuestOffers();
 void AddSC_AscensionBlackwoodRifts();
 void AddSC_AscensionCardensDiary();
 void AddSC_AscensionCainManor();
@@ -377,6 +380,7 @@ void AddSC_AscensionRunemasterTalentProcs();
 void AddSC_AscensionRunemasterTalentMechanics();
 void AddSC_AscensionWelcomeWarchest();
 void AddSC_AscensionClassBundleStore();
+void AddSC_AscensionHeirloomWeaponStore();
 void AddSC_AscensionLfgObjective();
 void AddSC_AscensionBushcraft();
 
@@ -615,6 +619,9 @@ void AddCoAScripts()
     AddSC_AscensionNorthshireRuins();
     AddSC_AscensionStormwindKeepDoor();
     AddSC_AscensionShadewellClues();
+    AddSC_AscensionIdealsArePoisonClues();
+    AddSC_AscensionTransformPresets();
+    AddSC_AscensionAreaQuestOffers();
     AddSC_AscensionBlackwoodRifts();
     AddSC_AscensionCardensDiary();
     AddSC_AscensionCainManor();
@@ -758,6 +765,7 @@ void AddCoAScripts()
     AddSC_AscensionKeepersScrollZoneBuff();
     AddSC_AscensionWelcomeWarchest();
     AddSC_AscensionClassBundleStore();
+    AddSC_AscensionHeirloomWeaponStore();
     AddSC_AscensionLfgObjective();
     AddSC_AscensionBushcraft();
 }

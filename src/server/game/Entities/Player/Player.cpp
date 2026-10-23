@@ -2706,15 +2706,12 @@ void Player::GiveLevel(uint8 level)
     UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_REACH_LEVEL);
 
     // Refer-A-Friend
-    if (GetSession()->GetRecruiterId())
-        if (level < sWorld->getIntConfig(CONFIG_MAX_RECRUIT_A_FRIEND_BONUS_PLAYER_LEVEL))
-            if (level % 2 == 0)
-            {
-                ++m_grantableLevels;
-
-                if (!HasByteFlag(PLAYER_FIELD_BYTES, 1, 0x01))
-                    SetByteFlag(PLAYER_FIELD_BYTES, 1, 0x01);
-            }
+    if (GetSession()->GetRecruiterId() && level > oldLevel)
+    {
+        uint32 const cap = sWorld->getIntConfig(CONFIG_MAX_RECRUIT_A_FRIEND_BONUS_PLAYER_LEVEL);
+        uint32 const earned = std::min<uint32>(level, cap) / 2 - std::min<uint32>(oldLevel, cap) / 2;
+        SetGrantableLevels(uint8(std::min<uint32>(255, uint32(m_grantableLevels) + earned)));
+    }
 
     SendQuestGiverStatusMultiple();
 
@@ -3475,7 +3472,7 @@ bool Player::_addSpell(uint32 spellId, uint8 addSpecMask, bool temporary, bool l
     // pussywizard: update free primary prof points
     if (uint32 freeProfs = GetFreePrimaryProfessionPoints())
     {
-        if (spellInfo->IsPrimaryProfessionFirstRank())
+        if (spellInfo->IsPrimaryProfessionFirstRank() && !(getClass() == CLASS_RANGER && spellInfo->IsAbilityOfSkillType(SKILL_SKINNING)))
             SetFreePrimaryProfessions(freeProfs - 1);
     }
 
@@ -3743,7 +3740,7 @@ void Player::removeSpell(uint32 spell_id, uint8 removeSpecMask, bool onlyTempora
     }
 
     // pussywizard: update free primary prof points
-    if (spellInfo->IsPrimaryProfessionFirstRank())
+    if (spellInfo->IsPrimaryProfessionFirstRank() && !(getClass() == CLASS_RANGER && spellInfo->IsAbilityOfSkillType(SKILL_SKINNING)))
     {
         uint32 freeProfs = GetFreePrimaryProfessionPoints() + 1;
         if (freeProfs <= sWorld->getIntConfig(CONFIG_MAX_PRIMARY_TRADE_SKILL))
@@ -6355,7 +6352,7 @@ float Player::CalculateReputationGain(ReputationSource source, uint32 creatureOr
         percent *= repRate;
     }
 
-    if (source != REPUTATION_SOURCE_SPELL && GetsRecruitAFriendBonus(false))
+    if (rep > 0.0f && source != REPUTATION_SOURCE_SPELL && GetsRecruitAFriendBonus(false))
         percent *= 1.0f + sWorld->getRate(RATE_REPUTATION_RECRUIT_A_FRIEND_BONUS);
 
     return CalculatePct(rep, percent);
@@ -9597,9 +9594,10 @@ Pet* Player::SummonPet(uint32 entry, float x, float y, float z, float ang, PetTy
 
     if (petType == SUMMON_PET)
     {
-        if (pet->GetCreatureTemplate()->type == CREATURE_TYPE_DEMON || pet->GetCreatureTemplate()->type == CREATURE_TYPE_UNDEAD)
+        if (pet->GetCreatureTemplate()->type == CREATURE_TYPE_DEMON ||
+            pet->GetCreatureTemplate()->type == CREATURE_TYPE_UNDEAD || IsAscensionClass(getClass()))
         {
-            pet->GetCharmInfo()->SetPetNumber(pet_number, true); // Show pet details tab (Shift+P) only for demons & undead
+            pet->GetCharmInfo()->SetPetNumber(pet_number, true); // Show pet details tab (Shift+P) for permanent pets
         }
         else
         {
@@ -13514,6 +13512,15 @@ bool Player::isHonorOrXPTarget(Unit* victim) const
     return true;
 }
 
+void Player::SetGrantableLevels(uint8 val)
+{
+    m_grantableLevels = val;
+    if (val)
+        SetByteFlag(PLAYER_FIELD_BYTES, 1, 0x01);
+    else
+        RemoveByteFlag(PLAYER_FIELD_BYTES, 1, 0x01);
+}
+
 bool Player::GetsRecruitAFriendBonus(bool forXP)
 {
     bool recruitAFriend = false;
@@ -17387,6 +17394,7 @@ std::string Player::GetPlayerName()
 
 void Player::SetSummonPoint(uint32 mapid, float x, float y, float z, uint32 delay /*= 0*/, bool asSpectator /*= false*/)
 {
+    GetSession()->SetRecruitAFriendSummoner(ObjectGuid::Empty);
     m_summon_expire = GameTime::GetGameTime().count() + (delay ? delay : MAX_PLAYER_SUMMON_DELAY);
     m_summon_mapid = mapid;
     m_summon_x = x;

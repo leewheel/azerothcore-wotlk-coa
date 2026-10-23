@@ -3,9 +3,10 @@
  *
  * His menu as live Ascension served it on Season 10: General Goods, Heirlooms (level 60), Upgrade Worldforged
  * and, for free-pick Heroes only, Mystic Scrolls with one store per class. Freepick and Warcraft Reborn realms
- * also sell the Mystic Enchanting altars. Every store is a vendor list held by
- * an unspawned creature (9781000 and on) that SendListInventory opens from the Guardian himself. The Worldforged
- * upgrades send SMSG_OPEN_CUSTOM_STORE and the client opens its own RPGItemStore window.
+ * also sell the Mystic Enchanting altars. Warcraft Reborn characters get their own Mystic Scrolls stores, one per
+ * original class, holding the enchants live Bronzebeard players found in the world. Every store is a vendor list
+ * held by an unspawned creature (9781000 and on) that SendListInventory opens from the Guardian himself. The
+ * Worldforged upgrades send SMSG_OPEN_CUSTOM_STORE and the client opens its own RPGItemStore window.
  *
  * Where he stood is not recovered. The client keeps the call board points of
  * interest, but only X and Y, so any spawn written here would be a guess. He is
@@ -15,6 +16,7 @@
 #include "WorldforgedUpgrades.h"
 
 #include "AscensionFreepick.h"
+#include "AscensionWarcraftReborn.h"
 #include "Chat.h"
 #include "Config.h"
 #include "Creature.h"
@@ -48,6 +50,7 @@ namespace
         ACTION_MYSTIC_SCROLLS = GOSSIP_ACTION_INFO_DEF + 5,
         ACTION_ALTARS = GOSSIP_ACTION_INFO_DEF + 6,
         ACTION_MYSTIC_SCROLL_CLASS = GOSSIP_ACTION_INFO_DEF + 100,
+        ACTION_REBORN_SCROLL_CLASS = GOSSIP_ACTION_INFO_DEF + 200,
     };
 
     struct ScrollStore
@@ -70,6 +73,18 @@ namespace
         { "Spell_Fire_FlameBolt",           8, 9781009 }, // Mage
         { "Spell_Shadow_ShadowBolt",        9, 9781010 }, // Warlock
         { "Spell_Nature_AbolishMagic",     11, 9781011 }, // Druid
+    } };
+
+    constexpr std::array<ScrollStore, 9> REBORN_SCROLL_STORES = { {
+        { "Ability_Rogue_Ambush",           1, 9781013 }, // Warrior
+        { "Ability_ThunderBolt",            2, 9781014 }, // Paladin
+        { "Ability_MeleeDamage",            3, 9781015 }, // Hunter
+        { "Spell_Shadow_RitualOfSacrifice", 4, 9781016 }, // Rogue
+        { "Spell_Holy_HolySmite",           5, 9781017 }, // Priest
+        { "Spell_Nature_Lightning",         7, 9781018 }, // Shaman
+        { "Spell_Fire_FlameBolt",           8, 9781019 }, // Mage
+        { "Spell_Shadow_ShadowBolt",        9, 9781020 }, // Warlock
+        { "Spell_Nature_AbolishMagic",     11, 9781021 }, // Druid
     } };
 
     std::string IconText(std::string const& icon, std::string const& text)
@@ -106,6 +121,12 @@ namespace
         return {};
     }
 
+    bool SellsScrolls(Player const* player)
+    {
+        return AscensionFreepick::IsFreepickHero(player) || AscensionWarcraftReborn::IsRebornCharacter(player);
+    }
+    }
+
     bool SellsAltars()
     {
         return AscensionFreepick::RealmOffersMysticAltars();
@@ -116,7 +137,7 @@ namespace
         ClearGossipMenuFor(player);
         AddLocalizedOption(player, "Inv_Misc_Coin_02", Worldforged::LANG_WORLDFORGED_MENU_GENERAL_GOODS, ACTION_GENERAL_GOODS);
         AddLocalizedOption(player, "inv_axe_09", Worldforged::LANG_WORLDFORGED_MENU_HEIRLOOMS, ACTION_HEIRLOOMS);
-        if (AscensionFreepick::IsFreepickHero(player))
+        if (SellsScrolls(player))
             AddLocalizedOption(player, "inv_misc_scrollunrolled01c", Worldforged::LANG_WORLDFORGED_MENU_MYSTIC_SCROLLS, ACTION_MYSTIC_SCROLLS);
         if (SellsAltars())
             AddLocalizedOption(player, "ability_racial_arcaneaffinity", Worldforged::LANG_WORLDFORGED_MENU_ALTARS, ACTION_ALTARS);
@@ -128,9 +149,14 @@ namespace
     void SendScrollMenu(Player* player, Creature* creature)
     {
         ClearGossipMenuFor(player);
-        for (uint32 index = 0; index < SCROLL_STORES.size(); ++index)
-            AddOption(player, SCROLL_STORES[index].Icon, LocalizedClassName(player, SCROLL_STORES[index].ClassId),
-                ACTION_MYSTIC_SCROLL_CLASS + index);
+        if (AscensionWarcraftReborn::IsRebornCharacter(player))
+            for (uint32 index = 0; index < REBORN_SCROLL_STORES.size(); ++index)
+                AddOption(player, REBORN_SCROLL_STORES[index].Icon, LocalizedClassName(player, REBORN_SCROLL_STORES[index].ClassId),
+                    ACTION_REBORN_SCROLL_CLASS + index);
+        else
+            for (uint32 index = 0; index < SCROLL_STORES.size(); ++index)
+                AddOption(player, SCROLL_STORES[index].Icon, LocalizedClassName(player, SCROLL_STORES[index].ClassId),
+                    ACTION_MYSTIC_SCROLL_CLASS + index);
         SendGossipMenuFor(player, Worldforged::GUARDIAN_ENTRY, creature->GetGUID());
     }
 }
@@ -180,7 +206,7 @@ public:
                 player->GetSession()->SendListInventory(creature->GetGUID(), ALTARS);
                 return true;
             case ACTION_MYSTIC_SCROLLS:
-                if (!AscensionFreepick::IsFreepickHero(player))
+                if (!SellsScrolls(player))
                     break;
                 SendScrollMenu(player, creature);
                 return true;
@@ -194,6 +220,14 @@ public:
         {
             CloseGossipMenuFor(player);
             player->GetSession()->SendListInventory(creature->GetGUID(), SCROLL_STORES[store].Vendor);
+            return true;
+        }
+        uint32 const rebornStore = action - ACTION_REBORN_SCROLL_CLASS;
+        if (action >= ACTION_REBORN_SCROLL_CLASS && rebornStore < REBORN_SCROLL_STORES.size() &&
+            AscensionWarcraftReborn::IsRebornCharacter(player))
+        {
+            CloseGossipMenuFor(player);
+            player->GetSession()->SendListInventory(creature->GetGUID(), REBORN_SCROLL_STORES[rebornStore].Vendor);
             return true;
         }
         CloseGossipMenuFor(player);

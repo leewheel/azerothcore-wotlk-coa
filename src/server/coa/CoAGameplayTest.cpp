@@ -12,6 +12,7 @@
 #include "AscensionNativeItemScaling.h"
 #include "AscensionQuestLog.h"
 #include "AscensionSpecialization.h"
+#include "AscensionVanityOwnership.h"
 #include "AscensionWisdomball.h"
 #include "AscensionWildcard.h"
 #include "AscensionWildcardStarterData.h"
@@ -694,7 +695,7 @@ void ObserveExtensionPacket(Actor& actor, WorldPacket const& packet)
         packet.GetOpcode() != SMSG_DUEL_REQUESTED && packet.GetOpcode() != SMSG_DUEL_COUNTDOWN &&
         packet.GetOpcode() != SMSG_DUEL_COMPLETE && packet.GetOpcode() != SMSG_FRIEND_STATUS &&
         packet.GetOpcode() != SMSG_SEND_MAIL_RESULT && packet.GetOpcode() != SMSG_GOSSIP_MESSAGE &&
-        packet.GetOpcode() != SMSG_BINDPOINTUPDATE)
+        packet.GetOpcode() != SMSG_BINDPOINTUPDATE && packet.GetOpcode() != SMSG_PET_SPELLS)
         return;
 
     ++actor.extensionPackets[packet.GetOpcode()];
@@ -1251,6 +1252,14 @@ public:
         Require(_timeout > 0 && _timeout <= 600000, "Invalid scenario timeout");
         if (_scenario.get<bool>("creature_scaling", false))
             _creatureScaling.emplace();
+        if (auto ownership = _scenario.get_child_optional("vanity_ownership"))
+        {
+            std::string starterItems;
+            if (auto items = ownership->get_child_optional("starter_items"))
+                for (auto const& item : *items)
+                    starterItems += (starterItems.empty() ? "" : " ") + item.second.get_value<std::string>();
+            _vanityOwnership.emplace(ownership->get<bool>("unlock_all"), starterItems);
+        }
         _report.put("schema", 1);
         _report.put("run_id", _runId);
         _report.put("scenario", _scenario.get<std::string>("name"));
@@ -2230,6 +2239,15 @@ private:
             Require(dungeon != nullptr, "LFG disable metric needs a known dungeon");
             return sLFGMgr->IsDungeonDisabled(dungeon->map, Difficulty(dungeon->difficulty)) ? 1 : 0;
         }
+        if (metric == "lfg_lock_status")
+        {
+            Require(unit->IsPlayer(), "LFG lock metric needs a player");
+            lfg::LFGDungeonData const* dungeon = sLFGMgr->GetLFGDungeon(step.get<uint32>("dungeon"));
+            Require(dungeon != nullptr, "LFG lock metric needs a known dungeon");
+            lfg::LfgLockMap const& locks = sLFGMgr->GetLockedDungeons(unit->GetGUID());
+            auto const found = locks.find(dungeon->Entry());
+            return found != locks.end() ? double(found->second) : 0;
+        }
         if (metric == "lfg_state")
         {
             Require(unit->IsPlayer(), "LFG state needs a player");
@@ -2475,6 +2493,17 @@ private:
                     info ? info->GetSchoolMask() : SPELL_SCHOOL_MASK_NORMAL);
             Require(info != nullptr, "Incoming spell damage needs a spell");
             return unit->SpellDamageBonusTaken(attacker, info, 1000, SPELL_DIRECT_DAMAGE);
+        }
+        if (metric == "carried_aura_count")
+        {
+            ObjectGuid caster;
+            if (auto id = step.get_optional<std::string>("caster"))
+                caster = GetUnit(*id)->GetGUID();
+            uint32 count = 0;
+            for (auto const& [unused, listed] : step.get_child("spells"))
+                if (unit->HasAura(listed.get_value<uint32>(), caster))
+                    ++count;
+            return count;
         }
         if (metric.rfind("aura", 0) == 0)
         {
@@ -2856,12 +2885,27 @@ private:
             Require(creature != nullptr, "Creature health metric needs a living nearby creature");
             return creature->GetMaxHealth();
         }
+        if (metric == "nearby_creature_sent_spellclick")
+        {
+            Creature* creature = player->FindNearestCreature(step.get<uint32>("entry"), 60.0f, true);
+            Require(creature != nullptr, "Sent spell click metric needs a living nearby creature");
+            Actor const& actor = _actors.at(step.get<std::string>("actor"));
+            auto itr = actor.unitValues.find(creature->GetGUID().GetRawValue());
+            if (itr == actor.unitValues.end() || !itr->second.count(UNIT_NPC_FLAGS))
+                return -1;
+            return (itr->second.at(UNIT_NPC_FLAGS) & UNIT_NPC_FLAG_SPELLCLICK) ? 1 : 0;
+        }
         if (metric == "nearby_creature_template")
         {
             std::list<Creature*> creatures;
             player->GetCreatureListWithEntryInGrid(creatures, step.get<uint32>("entry"), 60.0f);
             Require(creatures.size() == 1, "Creature template metric needs exactly one nearby creature");
             return creatures.front()->GetCreatureTemplate()->Entry;
+        }
+        if (metric == "spawn_respawn_remaining")
+        {
+            time_t const respawn = player->GetMap()->GetCreatureRespawnTime(step.get<uint32>("spawn"));
+            return std::max<time_t>(0, respawn - GameTime::GetGameTime().count());
         }
         if (metric == "nearby_creature_count")
         {
@@ -3260,6 +3304,8 @@ private:
         }
         if (metric == "talent_points")
             return player->GetFreeTalentPoints();
+        if (metric == "active_talent_spec")
+            return player->GetActiveSpec();
         if (metric == "bank_bag_slots")
             return player->GetBankBagSlotCount();
         if (metric == "taxi_node")
@@ -3631,12 +3677,14 @@ private:
             return item ? item->GetEntry() : 0;
         }
         if (metric == "item_random_property" || metric == "item_suffix_factor" || metric == "item_enchantment" ||
-            metric == "item_guid" || metric == "item_soulbound")
+            metric == "item_guid" || metric == "item_soulbound" || metric == "item_duration")
         {
             Item* item = player->GetItemByEntry(step.get<uint32>("item"));
             Require(item != nullptr, "Item observation requires a carried item");
             if (metric == "item_guid")
                 return double(item->GetGUID().GetCounter());
+            if (metric == "item_duration")
+                return item->GetUInt32Value(ITEM_FIELD_DURATION);
             if (metric == "item_soulbound")
                 return item->IsSoulBound();
             if (metric == "item_random_property")
@@ -4228,6 +4276,12 @@ private:
                             Require(item != nullptr, "Packet item GUID requires a carried item");
                             request << item->GetGUID().GetRawValue();
                         }
+                        else if (kind == "item_bag" || kind == "item_slot")
+                        {
+                            Item* item = player->GetItemByEntry(value.get_value<uint32>());
+                            Require(item != nullptr, "Packet item position requires a carried item");
+                            request << uint8(kind == "item_bag" ? item->GetBagSlot() : item->GetSlot());
+                        }
                         else if (kind == "gameobject_guid")
                         {
                             std::list<GameObject*> objects = OwnedGameObjects(player, value.get_value<uint32>());
@@ -4412,6 +4466,9 @@ private:
                     change->SetData(1, player->GetGUID().GetCounter());
                     transaction->Append(change);
                 }
+                if (auto offline = step.get_optional<uint32>("offline_seconds"))
+                    transaction->Append("UPDATE characters SET logout_time = logout_time - {} WHERE guid = {}",
+                        *offline, player->GetGUID().GetCounter());
                 _relogSave.emplace(CharacterDatabase.AsyncCommitTransaction(transaction));
                 _relogging = true;
                 return;
@@ -4795,6 +4852,15 @@ private:
             packet << objects.front()->GetGUID();
             if (sScriptMgr->CanPacketReceive(player->GetSession(), packet))
                 player->GetSession()->HandleGameObjectUseOpcode(packet);
+        }
+        else if (action == "spell_click_nearby")
+        {
+            Creature* creature = player->FindNearestCreature(step.get<uint32>("entry"), 20.0f, true);
+            Require(creature != nullptr, "Spell click needs a living creature of that entry within 20 yards");
+            WorldPacket packet(CMSG_SPELLCLICK, 8);
+            packet << creature->GetGUID();
+            if (sScriptMgr->CanPacketReceive(player->GetSession(), packet))
+                player->GetSession()->HandleSpellClick(packet);
         }
         else if (action == "attack_nearby" || action == "loot_nearby")
         {
@@ -5686,6 +5752,7 @@ private:
     std::map<std::string, double> _snapshots;
     QueryCallbackProcessor _queries;
     std::optional<CreatureScaling::TestOverride> _creatureScaling;
+    std::optional<AscensionVanityOwnership::TestOverride> _vanityOwnership;
     GameEventStates _gameEvents;
 };
 
