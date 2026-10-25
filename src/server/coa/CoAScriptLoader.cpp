@@ -41,6 +41,7 @@ void AddSC_AscensionQuestLog();
 void AddSC_AscensionRestingBuff();
 void AddSC_AscensionPvpTrinketHealth();
 void AddSC_AscensionClosestResurrection();
+void AddSC_AscensionAdventureModeRandomAggro();
 void AddSC_AscensionDungeonRelease();
 void AddSC_AscensionRaidRelease();
 void AddSC_AscensionThreatRedirect();
@@ -64,7 +65,6 @@ void AddSC_CoADungeonTuning();
 void AddSC_CoAGuardLevel();
 void AddSC_CoATestZoneBonus();
 void AddSC_CoADungeonBossSpells();
-void AddSC_AscensionKeepersScrollSteadfast();
 void AddSC_AscensionProfessionSpellAffect();
 void AddSC_AscensionPerforatingShots();
 void AddSC_AscensionSummonedEffects();
@@ -85,6 +85,15 @@ void AddSC_AscensionWildcardPhysical();
 void AddSC_AscensionWildcardBloodbath();
 void AddSC_AscensionWildcardSolarStrike();
 void AddSC_AscensionHeroDarkApotheosis();
+void AddSC_AscensionHeroWarrior();
+void AddSC_AscensionHeroHunter();
+void AddSC_AscensionHeroRogue();
+void AddSC_AscensionHeroMage();
+void AddSC_AscensionHeroPriest();
+void AddSC_AscensionHeroWarlock();
+void AddSC_AscensionHeroDruid();
+void AddSC_AscensionHeroShaman();
+void AddSC_AscensionHeroPaladin();
 void AddSC_AscensionHeroFireFireFireball();
 void AddSC_AscensionHeroMissileBarrage();
 void AddSC_AscensionWildcardCremation();
@@ -388,6 +397,7 @@ void AddSC_AscensionClassBundleStore();
 void AddSC_AscensionHeirloomWeaponStore();
 void AddSC_AscensionLfgObjective();
 void AddSC_AscensionBushcraft();
+void AddSC_AscensionVoidPortal();
 
 void AddSC_XPHotspots();
 
@@ -693,6 +703,15 @@ void AddCoAScripts()
     AddSC_AscensionWildcardBloodbath();
     AddSC_AscensionWildcardSolarStrike();
     AddSC_AscensionHeroDarkApotheosis();
+    AddSC_AscensionHeroWarrior();
+    AddSC_AscensionHeroHunter();
+    AddSC_AscensionHeroRogue();
+    AddSC_AscensionHeroMage();
+    AddSC_AscensionHeroPriest();
+    AddSC_AscensionHeroWarlock();
+    AddSC_AscensionHeroDruid();
+    AddSC_AscensionHeroShaman();
+    AddSC_AscensionHeroPaladin();
     AddSC_AscensionHeroFireFireFireball();
     AddSC_AscensionHeroMissileBarrage();
     AddSC_AscensionWildcardCremation();
@@ -743,6 +762,7 @@ void AddCoAScripts()
     AddSC_AscensionRestingBuff();
     AddSC_AscensionPvpTrinketHealth();
     AddSC_AscensionClosestResurrection();
+    AddSC_AscensionAdventureModeRandomAggro();
     AddSC_AscensionDungeonRelease();
     AddSC_AscensionRaidRelease();
     AddSC_AscensionThreatRedirect();
@@ -766,7 +786,6 @@ void AddCoAScripts()
     AddSC_CoAGuardLevel();
     AddSC_CoATestZoneBonus();
     AddSC_CoADungeonBossSpells();
-    AddSC_AscensionKeepersScrollSteadfast();
     AddSC_AscensionProfessionSpellAffect();
     AddSC_AscensionPerforatingShots();
     AddSC_AscensionSummonedEffects();
@@ -778,4 +797,5 @@ void AddCoAScripts()
     AddSC_AscensionHeirloomWeaponStore();
     AddSC_AscensionLfgObjective();
     AddSC_AscensionBushcraft();
+    AddSC_AscensionVoidPortal();
 }

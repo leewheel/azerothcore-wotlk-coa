@@ -1926,7 +1926,7 @@ void Unit::CalculateMeleeDamage(Unit* victim, CalcDamageInfo* damageInfo, Weapon
         uint32 damage = 0;
         uint8 itemDamagesMask = (IsPlayer()) ? (1 << i) : 0;
 
-        damage += CalculateDamage(damageInfo->attackType, false, addPctMods, itemDamagesMask);
+        damage += CalculateDamage(damageInfo->attackType, false, addPctMods, itemDamagesMask, damageInfo->target);
         // Add melee damage bonus
         damage = MeleeDamageBonusDone(damageInfo->target, damage, damageInfo->attackType, nullptr, schoolMask);
         damage = damageInfo->target->MeleeDamageBonusTaken(this, damage, damageInfo->attackType, nullptr, schoolMask);
@@ -3528,7 +3528,8 @@ MeleeHitOutcome Unit::RollMeleeOutcomeAgainst(Unit const* victim, WeaponAttackTy
     return MELEE_HIT_NORMAL;
 }
 
-uint32 Unit::CalculateDamage(WeaponAttackType attType, bool normalized, bool addTotalPct, uint8 itemDamagesMask /*= 0*/)
+uint32 Unit::CalculateDamage(WeaponAttackType attType, bool normalized, bool addTotalPct, uint8 itemDamagesMask /*= 0*/,
+    Unit* victim /*= nullptr*/)
 {
     float minDamage = 0.0f;
     float maxDamage = 0.0f;
@@ -3579,6 +3580,15 @@ uint32 Unit::CalculateDamage(WeaponAttackType attType, bool normalized, bool add
     if (minDamage > maxDamage)
     {
         std::swap(minDamage, maxDamage);
+    }
+
+    if (victim)
+    {
+        float const stockMin = minDamage;
+        float const stockMax = maxDamage;
+        sScriptMgr->ModifyMeleeDamageRange(victim, this, minDamage, maxDamage);
+        if (minDamage != stockMin || maxDamage != stockMax)
+            return uint32(std::max(0.0f, frand(std::min(minDamage, maxDamage), std::max(minDamage, maxDamage))) + 0.5f);
     }
 
     return urand(uint32(minDamage), uint32(maxDamage));
@@ -9406,7 +9416,7 @@ float Unit::SpellPctDamageModsDone(Unit* victim, SpellInfo const* spellProto, Da
                 if (victim->HasAuraState(AURA_STATE_FROZEN, spellProto, this))
                 {
                     // Glyph of Ice Lance
-                    if (owner->HasAura(56377) && victim->GetLevel() > owner->GetLevel())
+                    if (owner->HasAuraOrTwin(56377) && victim->GetLevel() > owner->GetLevel())
                         DoneTotalMod *= 4.0f;
                     else
                         DoneTotalMod *= 3.0f;
@@ -9424,7 +9434,7 @@ float Unit::SpellPctDamageModsDone(Unit* victim, SpellInfo const* spellProto, Da
             if (spellProto->SpellFamilyFlags[0] & 0x800000)
             {
                 // Glyph of Shadow Word: Pain
-                if (AuraEffect* aurEff = GetAuraEffect(55687, 0))
+                if (AuraEffect* aurEff = GetAuraEffectOfRankedSpellOrTwin(55687, 0))
                     // Increase Mind Flay damage if Shadow Word: Pain present on target
                     if (victim->GetAuraEffect(SPELL_AURA_PERIODIC_DAMAGE, SPELLFAMILY_PRIEST, 0x8000, 0, 0, GetGUID()))
                         AddPct(DoneTotalMod, aurEff->GetAmount());
@@ -9439,7 +9449,7 @@ float Unit::SpellPctDamageModsDone(Unit* victim, SpellInfo const* spellProto, Da
             else if (spellProto->SpellFamilyFlags[0] & 0x80)
             {
                 // Glyph of Smite
-                if (AuraEffect* aurEff = GetAuraEffect(55692, 0))
+                if (AuraEffect* aurEff = GetAuraEffectOfRankedSpellOrTwin(55692, 0))
                     if (victim->GetAuraEffect(SPELL_AURA_PERIODIC_DAMAGE, SPELLFAMILY_PRIEST, 0x100000, 0, 0, GetGUID()))
                         AddPct(DoneTotalMod, aurEff->GetAmount());
             }
@@ -9447,7 +9457,7 @@ float Unit::SpellPctDamageModsDone(Unit* victim, SpellInfo const* spellProto, Da
             else if (spellProto->SpellFamilyFlags[1] & 0x2)
             {
                 // Glyph of Shadow Word: Death
-                if (AuraEffect* aurEff = GetAuraEffect(55682, 1))
+                if (AuraEffect* aurEff = GetAuraEffectOfRankedSpellOrTwin(55682, 1))
                     if (victim->HasAuraState(AURA_STATE_HEALTHLESS_35_PERCENT))
                         AddPct(DoneTotalMod, aurEff->GetAmount());
             }
@@ -9505,7 +9515,7 @@ float Unit::SpellPctDamageModsDone(Unit* victim, SpellInfo const* spellProto, Da
         case SPELLFAMILY_HUNTER:
             // Steady Shot
             if (spellProto->SpellFamilyFlags[1] & 0x1)
-                if (AuraEffect* aurEff = GetAuraEffect(56826, 0))  // Glyph of Steady Shot
+                if (AuraEffect* aurEff = GetAuraEffectOfRankedSpellOrTwin(56826, 0))  // Glyph of Steady Shot
                     if (victim->GetAuraEffect(SPELL_AURA_PERIODIC_DAMAGE, SPELLFAMILY_HUNTER, 0x00004000, 0, 0, GetGUID()))
                         AddPct(DoneTotalMod, aurEff->GetAmount());
             break;
@@ -10221,7 +10231,7 @@ float Unit::SpellTakenCritChance(Unit const* caster, SpellInfo const* spellProto
                             // Glyph of Fire Blast
                             if (spellProto->SpellFamilyFlags[0] == 0x2 && spellProto->SpellIconID == 12)
                                 if (HasAuraWithMechanic((1ULL << MECHANIC_STUN) | (1ULL << MECHANIC_KNOCKOUT)))
-                                    if (AuraEffect const* aurEff = caster->GetAuraEffect(56369, EFFECT_0))
+                                    if (AuraEffect const* aurEff = caster->GetAuraEffectOfRankedSpellOrTwin(56369, EFFECT_0))
                                         crit_chance += aurEff->GetAmount();
                             break;
                         case SPELLFAMILY_DRUID:
@@ -10298,7 +10308,7 @@ float Unit::SpellTakenCritChance(Unit const* caster, SpellInfo const* spellProto
                     if (spellProto->SpellFamilyFlags[1] & 0x100)
                     {
                         // Glyph of Victory Rush
-                        if (AuraEffect const* aurEff = caster->GetAuraEffect(58382, 0))
+                        if (AuraEffect const* aurEff = caster->GetAuraEffectOfRankedSpellOrTwin(58382, 0))
                             crit_chance += aurEff->GetAmount();
                         break;
                     }
@@ -12565,7 +12575,10 @@ Unit* Creature::SelectVictim()
     Unit* target = nullptr;
 
     if (CanHaveThreatList())
+    {
+        EndCombatWithUnitsLeftBehind();
         target = m_threatManager.GetCurrentVictim();
+    }
     else if (!HasReactState(REACT_PASSIVE))
     {
         // we have player pet probably
@@ -12588,7 +12601,7 @@ Unit* Creature::SelectVictim()
     else
         return nullptr;
 
-    if (target && _IsTargetAcceptable(target) && CanCreatureAttack(target))
+    if (target && _IsTargetAcceptable(target) && CanCreatureAttack(target, IsNpcFightingMe(target)))
     {
         if (!HasSpellFocus())
             SetInFront(target);
@@ -12599,7 +12612,24 @@ Unit* Creature::SelectVictim()
     // end the bidirectional combat reference and remove us from their threat list,
     // causing them to lose their target (e.g. an NPC fighting a guardian whose
     // CanAIAttack rejects the NPC).
-    if (!m_threatManager.GetThreatenedByMeList().empty())
+    // A victim lost only to the leash must not keep us chasing it while an NPC is hitting us:
+    // turn on an NPC that is fighting us, or evade.
+    bool const lostVictimToLeash = target && _IsTargetAcceptable(target) && CanCreatureAttack(target, true);
+    if (lostVictimToLeash)
+    {
+        for (ThreatReference const* ref : m_threatManager.GetSortedThreatList())
+        {
+            Unit* attacker = ref->GetVictim();
+            if (attacker != target && IsNpcFightingMe(attacker) && _IsTargetAcceptable(attacker)
+                && CanCreatureAttack(attacker, true))
+            {
+                if (!HasSpellFocus())
+                    SetInFront(attacker);
+                return attacker;
+            }
+        }
+    }
+    else if (!m_threatManager.GetThreatenedByMeList().empty())
         return nullptr;
 
     if (GetVehicle())
@@ -15182,15 +15212,22 @@ namespace
         void Visit(std::unordered_map<ObjectGuid, T*>&) { }
     };
 
+    bool IsBossCreature(Creature const* creature)
+    {
+        return creature->IsDungeonBoss() || creature->isWorldBoss()
+            || creature->GetCreatureTemplate()->rank == CREATURE_ELITE_WORLDBOSS;
+    }
+
     // CoA: when a boss dies in an instance, the adds and totems it summoned (and
     // what those summoned in turn) despawn with it. Runs before the boss's
-    // JustDied, so anything its script summons on death stays.
+    // JustDied, so anything its script summons on death stays. A boss it summoned
+    // stays too: Majordomo Executus summons Ragnaros, who then kills him.
     void DespawnBossSummons(Creature* boss)
     {
         Map* map = boss->GetMap();
         if (!map || !map->Instanceable() || boss->IsCharmedOwnedByPlayerOrPlayer())
             return;
-        if (!boss->IsDungeonBoss() && !boss->isWorldBoss() && boss->GetCreatureTemplate()->rank != CREATURE_ELITE_WORLDBOSS)
+        if (!IsBossCreature(boss))
             return;
 
         BossSummonCollector collector;
@@ -15205,7 +15242,7 @@ namespace
             added = false;
             for (Creature* summon : collector.summons)
             {
-                if (summon->IsCharmedOwnedByPlayerOrPlayer() || summon->IsDungeonBoss() || !summon->IsHostileToPlayers())
+                if (summon->IsCharmedOwnedByPlayerOrPlayer() || IsBossCreature(summon) || !summon->IsHostileToPlayers())
                     continue;
                 if (parents.count(summon->ToTempSummon()->GetSummonerGUID()) && parents.insert(summon->GetGUID()).second)
                 {
