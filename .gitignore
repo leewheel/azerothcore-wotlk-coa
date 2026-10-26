@@ -9,6 +9,7 @@
 !/modules/mod-coa-change-potions/
 !/modules/mod-coa-mythic-plus/
 !/modules/mod-worldforged-upgrades/
+!/modules/mod-cfbg/
 !/modules/*.md
 !/modules/*.sh
 !/modules/CMakeLists.txt

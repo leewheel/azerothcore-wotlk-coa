@@ -15,6 +15,7 @@
 
 #include "WorldforgedUpgrades.h"
 
+#include "AscensionAccountProgress.h"
 #include "AscensionFreepick.h"
 #include "AscensionWarcraftReborn.h"
 #include "Chat.h"
@@ -189,7 +190,7 @@ public:
                 player->GetSession()->SendListInventory(creature->GetGUID(), GENERAL_GOODS);
                 return true;
             case ACTION_HEIRLOOMS:
-                if (player->GetLevel() < HEIRLOOM_LEVEL)
+                if (!AscensionAccountProgress::HasLevelOrPrestige(player, HEIRLOOM_LEVEL))
                 {
                     ChatHandler(player->GetSession()).PSendModuleSysMessage(
                         Worldforged::MODULE_NAME, Worldforged::LANG_WORLDFORGED_HEIRLOOM_LEVEL_REQUIRED);

@@ -2337,6 +2337,15 @@ Achievement.RealmFirstKillWindow = 60
 Achievement.RealmFirstRaceLimitOnePerCharacter = 1
 
 #
+#    Achievement.RealmFirstBlockBots
+#        Description: Companions (bots) cannot earn 'Realm First!' achievements, so they never take
+#                     a server first away from real players.
+#        Default:     1 - (Enabled)
+#                     0 - (Disabled, bots can earn them like any player)
+
+Achievement.RealmFirstBlockBots = 1
+
+#
 ###################################################################################################
 
 ###################################################################################################
@@ -4745,9 +4754,10 @@ RecruitAFriend.MaxLevel = 60
 #    RecruitAFriend.MaxDifference
 #        Description: Highest level difference between linked Recruiter and Friend benefit from
 #                     the Recruit-A-Friend experience multiplier.
-#        Default:     4
+#        Default:     30
 
-RecruitAFriend.MaxDifference = 4
+#    Legacy value 4 is automatically treated as 30 when loading or reloading the config.
+RecruitAFriend.MaxDifference = 30
 
 #
 #    MaxRecruitAFriendBonusDistance
