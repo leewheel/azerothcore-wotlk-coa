@@ -1002,7 +1002,8 @@ class spell_mage_fingers_of_frost : public AuraScript
     void Register() override
     {
         DoPrepareProc += AuraProcFn(spell_mage_fingers_of_frost::PrepareProc);
-        AfterEffectRemove += AuraEffectRemoveFn(spell_mage_fingers_of_frost::OnRemove, EFFECT_0, SPELL_AURA_DUMMY, AURA_EFFECT_HANDLE_REAL);
+            //By leewheel 2026年10月26日 失效 hook 绑定注销：COA 改过 Spell.dbc 后该绑定与 DBC 失配，核心本就跳过执行，注释保持一致
+        //原行已注销（By leewheel 2026年10月26日）: AfterEffectRemove += AuraEffectRemoveFn(spell_mage_fingers_of_frost::OnRemove, EFFECT_0, SPELL_AURA_DUMMY, AURA_EFFECT_HANDLE_REAL);
     }
 };
 
@@ -1654,9 +1655,11 @@ void AddSC_mage_spell_scripts()
     RegisterSpellScript(spell_mage_brain_freeze);
     RegisterSpellScript(spell_mage_combustion);
     RegisterSpellScript(spell_mage_glyph_of_eternal_water);
-    RegisterSpellScript(spell_mage_combustion_proc);
+        //By leewheel 2026年10月26日 经典脚本死注册注销：COA 改过 Spell.dbc 后 hook 绑定全失配且 DB 挂载已删，此注册无 DB 引用
+    //原行已注销（By leewheel 2026年10月26日）: RegisterSpellScript(spell_mage_combustion_proc);
     RegisterSpellScript(spell_mage_dragon_breath);
-    RegisterSpellScript(spell_mage_empowered_fire);
+    //By leewheel 2026年10月26日 经典脚本死注册注销：DB 已换用 *_coa/新版脚本，此注册无 DB 引用
+    //RegisterSpellScript(spell_mage_empowered_fire);
     RegisterSpellScript(spell_mage_gen_extra_effects);
     RegisterSpellScript(spell_mage_frostfire_bolt);
     RegisterSpellScript(spell_mage_glyph_of_ice_block);
@@ -1682,6 +1685,7 @@ void AddSC_mage_spell_scripts()
     RegisterSpellScript(spell_mage_polymorph_cast_visual);
     RegisterSpellScript(spell_mage_summon_water_elemental);
     RegisterSpellScript(spell_mage_fingers_of_frost);
-    RegisterSpellScript(spell_mage_magic_absorption);
+    //By leewheel 2026年10月26日 经典脚本死注册注销：DB 已换用 *_coa/新版脚本，此注册无 DB 引用
+    //RegisterSpellScript(spell_mage_magic_absorption);
     RegisterSpellScript(spell_mage_deep_freeze_immunity_state);
 }

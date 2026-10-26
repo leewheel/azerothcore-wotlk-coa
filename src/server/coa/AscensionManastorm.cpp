@@ -2085,5 +2085,6 @@ namespace
 
 void AddAscensionManastormItemScripts()
 {
-    new item_ascension_manastorm_cache();
+    //By leewheel 2026年10月26日 经典脚本死注册注销：DB 已换用 *_coa/新版脚本，此注册无 DB 引用
+    //new item_ascension_manastorm_cache();
 }

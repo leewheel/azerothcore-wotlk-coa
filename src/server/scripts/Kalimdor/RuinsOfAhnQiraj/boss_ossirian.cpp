@@ -492,7 +492,8 @@ class spell_aq_shadow_storm : public SpellScript
 
 void AddSC_boss_ossirian()
 {
-    RegisterRuinsOfAhnQirajCreatureAI(boss_ossirian);
+    //By leewheel 2026年10月26日 经典脚本死注册注销：DB 已换用 *_coa/新版脚本，此注册无 DB 引用
+    //RegisterRuinsOfAhnQirajCreatureAI(boss_ossirian);
     new go_ossirian_crystal();
     RegisterCreatureAI(npc_anubisath_guardian);
     RegisterSpellScript(spell_crystal_weakness);

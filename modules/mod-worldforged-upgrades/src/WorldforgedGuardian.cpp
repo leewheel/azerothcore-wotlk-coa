@@ -125,7 +125,7 @@ namespace
     {
         return AscensionFreepick::IsFreepickHero(player) || AscensionWarcraftReborn::IsRebornCharacter(player);
     }
-    }
+    //By leewheel 2026年10月26日 修复合并残留：删除此处多余的“}”，匿名命名空间统一在 SendScrollMenu 之后（162行）关闭
 
     bool SellsAltars()
     {

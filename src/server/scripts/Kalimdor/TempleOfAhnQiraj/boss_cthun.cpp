@@ -925,12 +925,18 @@ public:
 
 void AddSC_boss_cthun()
 {
-    RegisterTempleOfAhnQirajCreatureAI(boss_eye_of_cthun);
-    RegisterTempleOfAhnQirajCreatureAI(boss_cthun);
-    RegisterTempleOfAhnQirajCreatureAI(npc_eye_tentacle);
-    RegisterTempleOfAhnQirajCreatureAI(npc_claw_tentacle);
-    RegisterTempleOfAhnQirajCreatureAI(npc_giant_claw_tentacle);
-    RegisterTempleOfAhnQirajCreatureAI(npc_giant_eye_tentacle);
+    //By leewheel 2026年10月26日 经典脚本死注册注销：DB 已换用 *_coa/新版脚本，此注册无 DB 引用
+    //RegisterTempleOfAhnQirajCreatureAI(boss_eye_of_cthun);
+    //By leewheel 2026年10月26日 经典脚本死注册注销：DB 已换用 *_coa/新版脚本，此注册无 DB 引用
+    //RegisterTempleOfAhnQirajCreatureAI(boss_cthun);
+    //By leewheel 2026年10月26日 经典脚本死注册注销：DB 已换用 *_coa/新版脚本，此注册无 DB 引用
+    //RegisterTempleOfAhnQirajCreatureAI(npc_eye_tentacle);
+    //By leewheel 2026年10月26日 经典脚本死注册注销：DB 已换用 *_coa/新版脚本，此注册无 DB 引用
+    //RegisterTempleOfAhnQirajCreatureAI(npc_claw_tentacle);
+    //By leewheel 2026年10月26日 经典脚本死注册注销：DB 已换用 *_coa/新版脚本，此注册无 DB 引用
+    //RegisterTempleOfAhnQirajCreatureAI(npc_giant_claw_tentacle);
+    //By leewheel 2026年10月26日 经典脚本死注册注销：DB 已换用 *_coa/新版脚本，此注册无 DB 引用
+    //RegisterTempleOfAhnQirajCreatureAI(npc_giant_eye_tentacle);
     RegisterSpellScript(spell_cthun_dark_glare);
     RegisterSpellScript(spell_cthun_digestive_acid);
     new at_cthun_stomach_exit();

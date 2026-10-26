@@ -228,6 +228,7 @@ void AddSC_AscensionChronomancerMovement()
     RegisterCreatureAI(npc_ascension_infinite_clone);
     RegisterSpellScript(spell_ascension_rewind);
     RegisterSpellScript(aura_ascension_backtrack);
-    RegisterSpellScript(spell_ascension_displacement);
+    //By leewheel 2026年10月26日 经典脚本死注册注销：DB 已换用 *_coa/新版脚本，此注册无 DB 引用
+    //RegisterSpellScript(spell_ascension_displacement);
     RegisterSpellScript(spell_ascension_waves_of_time);
 }

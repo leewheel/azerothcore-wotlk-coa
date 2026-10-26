@@ -10639,7 +10639,8 @@ void AddAscensionCompatScripts() {
         ascensionCompatConfig.GetConfigValue<bool>(AscensionCompatConfig::ENABLED));
   });
   RegisterAscensionClientConfig(AppendConfiguredClientConfigs);
-  new npc_ascension_training_book();
+    //By leewheel 2026年10月26日 经典脚本死注册注销：DB 已换用 *_coa/新版脚本，此注册无 DB 引用
+  //new npc_ascension_training_book();
   RegisterSpellScript(spell_ascension_personal_bank);
   RegisterSpellScript(spell_ascension_experience_potion);
   RegisterSpellScript(spell_ascension_vanity_use_restriction);

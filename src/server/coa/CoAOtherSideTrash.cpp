@@ -261,7 +261,12 @@ class spell_coa_other_side_trash_damage_aura : public AuraScript
 
     void Register() override
     {
-        DoEffectCalcAmount += AuraEffectCalcAmountFn(spell_coa_other_side_trash_damage_aura::CalcTick, EFFECT_ALL, SPELL_AURA_PERIODIC_DAMAGE);
+        //By leewheel 2026年10月26日 COA 部分小怪技能（256906 等 7 个）已改为非周期伤害，其 dbc 无 PERIODIC_DAMAGE effect，
+        //仅在法术确实带该光环时注册计算绑定，消除启动失配报错（直伤部分仍由 spell_coa_other_side_trash_damage 的 OnHit 处理）
+        //By leewheel 2026年10月26日 启动校验期 m_aura 为空不能走 AuraScript::GetSpellInfo()，改用 m_scriptSpellId 查 SpellMgr（修复启动段错误）
+        if (SpellInfo const* scriptSpellInfo = sSpellMgr->GetSpellInfo(m_scriptSpellId))
+            if (scriptSpellInfo->HasAura(SPELL_AURA_PERIODIC_DAMAGE))
+                DoEffectCalcAmount += AuraEffectCalcAmountFn(spell_coa_other_side_trash_damage_aura::CalcTick, EFFECT_ALL, SPELL_AURA_PERIODIC_DAMAGE);
     }
 };
 

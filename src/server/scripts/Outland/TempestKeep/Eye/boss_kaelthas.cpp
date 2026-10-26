@@ -1195,7 +1195,8 @@ void AddSC_boss_kaelthas()
     RegisterSpellScript(spell_kaelthas_remote_toy);
     RegisterSpellScript(spell_kaelthas_summon_weapons);
     RegisterSpellScript(spell_kaelthas_mind_control);
-    RegisterSpellScript(spell_kaelthas_burn);
+    //By leewheel 2026年10月26日 经典脚本死注册注销：DB 已换用 *_coa/新版脚本，此注册无 DB 引用
+    //RegisterSpellScript(spell_kaelthas_burn);
     RegisterSpellScript(spell_kaelthas_flame_strike);
     RegisterSpellScript(spell_kaelthas_gravity_lapse);
     RegisterSpellScript(spell_kaelthas_nether_beam);

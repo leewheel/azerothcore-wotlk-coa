@@ -121,5 +121,6 @@ void AddSC_underbog()
 {
     RegisterUnderbogCreatureAI(npc_underbat);
     RegisterSpellScript(spell_fungal_decay);
-    RegisterSpellScript(spell_allergies);
+        //By leewheel 2026年10月26日 经典脚本死注册注销：COA 改过 Spell.dbc 后 hook 绑定全失配且 DB 挂载已删，此注册无 DB 引用
+    //原行已注销（By leewheel 2026年10月26日）: RegisterSpellScript(spell_allergies);
 }

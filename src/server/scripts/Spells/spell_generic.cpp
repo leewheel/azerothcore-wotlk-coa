@@ -4907,7 +4907,8 @@ class spell_gen_basic_campfire : public SpellScript
 
     void Register() override
     {
-        OnDestinationTargetSelect += SpellDestinationTargetSelectFn(spell_gen_basic_campfire::ModDest, EFFECT_0, TARGET_DEST_CASTER_SUMMON);
+            //By leewheel 2026年10月26日 失效 hook 绑定注销：COA 改过 Spell.dbc 后该绑定与 DBC 失配，核心本就跳过执行，注释保持一致
+        //原行已注销（By leewheel 2026年10月26日）: OnDestinationTargetSelect += SpellDestinationTargetSelectFn(spell_gen_basic_campfire::ModDest, EFFECT_0, TARGET_DEST_CASTER_SUMMON);
         OnEffectHit += SpellEffectFn(spell_gen_basic_campfire::ModifyCookingSkill, EFFECT_0, SPELL_EFFECT_TRANS_DOOR);
     }
 };
@@ -6216,7 +6217,8 @@ void AddSC_generic_spell_scripts()
     RegisterSpellScript(spell_gen_baby_murloc_passive);
     RegisterSpellScript(spell_gen_baby_murloc);
     RegisterSpellAndAuraScriptPair(spell_gen_fixate, spell_gen_fixate_aura);
-    RegisterSpellScript(spell_gen_proc_above_75);
+    //By leewheel 2026年10月26日 经典脚本死注册注销：DB 已换用 *_coa/新版脚本，此注册无 DB 引用
+    //RegisterSpellScript(spell_gen_proc_above_75);
     RegisterSpellScript(spell_gen_periodic_knock_away);
     RegisterSpellScript(spell_gen_knock_away);
     RegisterSpellScript(spell_gen_mod_radius_by_caster_scale);

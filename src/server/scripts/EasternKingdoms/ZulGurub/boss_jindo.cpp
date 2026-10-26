@@ -297,7 +297,8 @@ struct npc_brain_wash_totem : public ScriptedAI
 
 void AddSC_boss_jindo()
 {
-    RegisterZulGurubCreatureAI(boss_jindo);
+    //By leewheel 2026年10月26日 经典脚本死注册注销：DB 已换用 *_coa/新版脚本，此注册无 DB 引用
+    //RegisterZulGurubCreatureAI(boss_jindo);
     RegisterZulGurubCreatureAI(npc_healing_ward);
     RegisterZulGurubCreatureAI(npc_shade_of_jindo);
     RegisterZulGurubCreatureAI(npc_brain_wash_totem);

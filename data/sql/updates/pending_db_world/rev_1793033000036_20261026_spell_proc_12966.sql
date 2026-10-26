@@ -1,0 +1,11 @@
+-- By leewheel 2026年10月26日
+-- Errors.log 治理第三轮补修：spell_proc -12966（Shredding Blows 全等级链 12966-12970）
+-- 根因：SpellId 为负数按链展开，ProcFlags=0 时各 rank 取 DBC 默认——
+--   ranks 1-3（12966/12967/12968）DBC ProcTypeMask=0x14（DONE_MELEE_AUTO|DONE_SPELL_MELEE_DMG_CLASS，含 REQ_SPELL_PHASE 位）
+--   ranks 4-5（12969/12970）DBC ProcTypeMask=0x4（仅 DONE_MELEE_AUTO，不含 REQ_SPELL_PHASE 位）
+-- 此前 rev_034 置 SpellPhaseMask=0 只消掉 ranks 4-5 的"won't be used"，却触发 ranks 1-3 的"required but not defined"（反向 3 条），
+-- 两个方向无法同时满足。本迁移显式固定 ProcFlags=0x14 + SpellPhaseMask=2(HIT)：
+-- 0x14 含 REQ_SPELL_PHASE 位 → 需要且已有 SpellPhaseMask；5 个 rank 行为统一为"近战自动攻击 + 近战法术命中触发"
+-- （与 ranks 1-3 的 DBC 原意一致，ranks 4-5 补齐，原作者 SpellPhaseMask=2 也表明要 spell-hit 触发）。
+-- By leewheel 2026年10月26日
+UPDATE `spell_proc` SET `ProcFlags` = 20, `SpellPhaseMask` = 2 WHERE `SpellId` = -12966;

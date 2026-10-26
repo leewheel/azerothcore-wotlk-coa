@@ -348,7 +348,8 @@ class spell_electrical_storm_proc : public SpellScript
 
     void Register() override
     {
-        OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_electrical_storm_proc::FilterTargets, EFFECT_0, TARGET_UNIT_SRC_AREA_ALLY);
+        //By leewheel 2026年10月26日 失效 hook 绑定注销：COA 改过 Spell.dbc 后该绑定与 DBC 失配，核心本就跳过执行，注释保持一致
+        //原行已注销（By leewheel 2026年10月26日）: OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_electrical_storm_proc::FilterTargets, EFFECT_0, TARGET_UNIT_SRC_AREA_ALLY);
         OnEffectHitTarget += SpellEffectFn(spell_electrical_storm_proc::HandleDamageCalc, EFFECT_0, SPELL_EFFECT_SCHOOL_DAMAGE);
     }
 };

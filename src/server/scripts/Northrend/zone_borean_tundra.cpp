@@ -1497,7 +1497,8 @@ void AddSC_borean_tundra()
     RegisterCreatureAI(npc_nerubar_victim);
     RegisterSpellScript(spell_dispel_freed_soldier_debuff);
     new npc_lurgglbr();
-    RegisterSpellScript(spell_arcane_chains_character_force_cast);
+        //By leewheel 2026年10月26日 经典脚本死注册注销：COA 改过 Spell.dbc 后 hook 绑定全失配且 DB 挂载已删，此注册无 DB 引用
+    //原行已注销（By leewheel 2026年10月26日）: RegisterSpellScript(spell_arcane_chains_character_force_cast);
     new npc_imprisoned_beryl_sorcerer();
     new npc_mootoo_the_younger();
     new npc_valiance_keep_cannoneer();
@@ -1508,7 +1509,8 @@ void AddSC_borean_tundra()
     RegisterCreatureAI(npc_jenny);
     RegisterCreatureAI(npc_dusk);
     RegisterSpellScript(spell_necropolis_beam);
-    RegisterSpellScript(spell_soul_deflection);
+        //By leewheel 2026年10月26日 经典脚本死注册注销：COA 改过 Spell.dbc 后 hook 绑定全失配且 DB 挂载已删，此注册无 DB 引用
+    //原行已注销（By leewheel 2026年10月26日）: RegisterSpellScript(spell_soul_deflection);
     RegisterSpellScript(spell_bloodspore_haze);
     RegisterSpellScript(spell_q11652_rescue_injured_soldier);
     RegisterSpellScript(spell_q11652_soldier_rescued);

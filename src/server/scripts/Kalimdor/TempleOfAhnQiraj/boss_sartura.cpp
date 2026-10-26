@@ -235,6 +235,8 @@ struct npc_sartura_royal_guard : public ScriptedAI
 
 void AddSC_boss_sartura()
 {
-    RegisterTempleOfAhnQirajCreatureAI(boss_sartura);
-    RegisterTempleOfAhnQirajCreatureAI(npc_sartura_royal_guard);
+    //By leewheel 2026年10月26日 经典脚本死注册注销：DB 已换用 *_coa/新版脚本，此注册无 DB 引用
+    //RegisterTempleOfAhnQirajCreatureAI(boss_sartura);
+    //By leewheel 2026年10月26日 经典脚本死注册注销：DB 已换用 *_coa/新版脚本，此注册无 DB 引用
+    //RegisterTempleOfAhnQirajCreatureAI(npc_sartura_royal_guard);
 }

@@ -2607,6 +2607,7 @@ void AddSC_quest_spell_scripts()
     RegisterSpellScript(spell_q5056_summon_shy_rotam);
     RegisterSpellScript(spell_q4735_collect_rookery_egg);
     RegisterSpellScript(spell_q10651_q10692_book_of_fel_names);
-    RegisterSpellScript(spell_q9847_a_spirit_ally);
+        //By leewheel 2026年10月26日 经典脚本死注册注销：COA 改过 Spell.dbc 后 hook 绑定全失配且 DB 挂载已删，此注册无 DB 引用
+    //原行已注销（By leewheel 2026年10月26日）: RegisterSpellScript(spell_q9847_a_spirit_ally);
     RegisterSpellScript(spell_q13413_wyrmrest_skytalon_ride_periodic);
 }

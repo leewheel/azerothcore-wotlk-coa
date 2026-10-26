@@ -1193,16 +1193,20 @@ void AddSC_rogue_spell_scripts()
     RegisterSpellScript(spell_rog_vanish);
     // Proc system scripts
     RegisterSpellScript(spell_rog_glyph_of_backstab);
-    RegisterSpellScriptWithArgs(spell_rog_stealth_buff_tracker<SPELL_ROGUE_MASTER_OF_SUBTLETY_DAMAGE>, "spell_rog_master_of_subtlety");
+        //By leewheel 2026年10月26日 经典脚本死注册注销：COA 改过 Spell.dbc 后 hook 绑定全失配且 DB 挂载已删，此注册无 DB 引用
+    //原行已注销（By leewheel 2026年10月26日）: RegisterSpellScriptWithArgs(spell_rog_stealth_buff_tracker<SPELL_ROGUE_MASTER_OF_SUBTLETY_DAMAGE>, "spell_rog_master_of_subtlety");
     RegisterSpellScriptWithArgs(spell_rog_stealth_buff_tracker<SPELL_ROGUE_OVERKILL_TRIGGERED>, "spell_rog_overkill");
-    RegisterSpellScript(spell_rog_cut_to_the_chase);
+    //By leewheel 2026年10月26日 经典脚本死注册注销：DB 已换用 *_coa/新版脚本，此注册无 DB 引用
+    //RegisterSpellScript(spell_rog_cut_to_the_chase);
     RegisterSpellScript(spell_rog_deadly_brew);
-    RegisterSpellScript(spell_rog_quick_recovery);
+    //By leewheel 2026年10月26日 经典脚本死注册注销：DB 已换用 *_coa/新版脚本，此注册无 DB 引用
+    //RegisterSpellScript(spell_rog_quick_recovery);
     RegisterSpellScript(spell_rog_setup);
     RegisterSpellScript(spell_rog_honor_among_thieves);
     RegisterSpellAndAuraScriptPair(spell_rog_honor_among_thieves_proc, spell_rog_honor_among_thieves_proc_aura);
     RegisterSpellScript(spell_rog_turn_the_tables);
-    RegisterSpellScript(spell_rog_turn_the_tables_proc);
+        //By leewheel 2026年10月26日 经典脚本死注册注销：COA 改过 Spell.dbc 后 hook 绑定全失配且 DB 挂载已删，此注册无 DB 引用
+    //原行已注销（By leewheel 2026年10月26日）: RegisterSpellScript(spell_rog_turn_the_tables_proc);
     RegisterSpellScript(spell_rog_focused_attacks);
     RegisterSpellScript(spell_rog_mutilate);
     RegisterSpellScript(spell_rog_cold_blood);

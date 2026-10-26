@@ -2142,15 +2142,18 @@ void AddSC_druid_spell_scripts()
     RegisterSpellScript(spell_dru_glyph_of_rake);
     RegisterSpellScript(spell_dru_leader_of_the_pack);
     RegisterSpellScript(spell_dru_glyph_of_rejuvenation);
-    RegisterSpellScript(spell_dru_eclipse);
+    //By leewheel 2026年10月26日 经典脚本死注册注销：DB 已换用 *_coa/新版脚本，此注册无 DB 引用
+    //RegisterSpellScript(spell_dru_eclipse);
     RegisterSpellScript(spell_dru_revitalize);
     RegisterSpellScript(spell_dru_t3_2p_bonus);
     RegisterSpellScript(spell_dru_t3_6p_bonus);
     RegisterSpellScript(spell_dru_t3_8p_bonus);
-    RegisterSpellScript(spell_dru_t4_2p_bonus);
+        //By leewheel 2026年10月26日 经典脚本死注册注销：COA 改过 Spell.dbc 后 hook 绑定全失配且 DB 挂载已删，此注册无 DB 引用
+    //原行已注销（By leewheel 2026年10月26日）: RegisterSpellScript(spell_dru_t4_2p_bonus);
     RegisterSpellScript(spell_dru_item_t6_trinket);
     RegisterSpellScript(spell_dru_glyph_of_shred);
-    RegisterSpellScript(spell_dru_glyph_of_starfire_dummy);
+        //By leewheel 2026年10月26日 经典脚本死注册注销：COA 改过 Spell.dbc 后 hook 绑定全失配且 DB 挂载已删，此注册无 DB 引用
+    //原行已注销（By leewheel 2026年10月26日）: RegisterSpellScript(spell_dru_glyph_of_starfire_dummy);
     RegisterSpellScript(spell_dru_t10_restoration_4p_bonus_dummy);
     RegisterSpellScript(spell_dru_maim_interrupt);
     RegisterSpellScript(spell_dru_t9_feral_relic);

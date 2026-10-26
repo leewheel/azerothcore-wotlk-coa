@@ -1114,7 +1114,8 @@ class spell_pal_lay_on_hands : public SpellScript
     {
         OnCheckCast += SpellCheckCastFn(spell_pal_lay_on_hands::CheckCast);
         AfterHit += SpellHitFn(spell_pal_lay_on_hands::HandleScript);
-        OnEffectHitTarget += SpellEffectFn(spell_pal_lay_on_hands::HandleMaxHealthHeal, EFFECT_0, SPELL_EFFECT_HEAL_MAX_HEALTH);
+            //By leewheel 2026年10月26日 失效 hook 绑定注销：COA 改过 Spell.dbc 后该绑定与 DBC 失配，核心本就跳过执行，注释保持一致
+        //原行已注销（By leewheel 2026年10月26日）: OnEffectHitTarget += SpellEffectFn(spell_pal_lay_on_hands::HandleMaxHealthHeal, EFFECT_0, SPELL_EFFECT_HEAL_MAX_HEALTH);
     }
 
     int32 _manaAmount;
@@ -1166,8 +1167,10 @@ class spell_pal_righteous_defense : public SpellScript
         //! target select will be executed in hitphase of effect 0
         //! so we must handle trigger spell also in hit phase (default execution in launch phase)
         //! see issue #3718
-        OnEffectLaunchTarget += SpellEffectFn(spell_pal_righteous_defense::HandleTriggerSpellLaunch, EFFECT_1, SPELL_EFFECT_TRIGGER_SPELL);
-        OnEffectHitTarget += SpellEffectFn(spell_pal_righteous_defense::HandleTriggerSpellHit, EFFECT_1, SPELL_EFFECT_TRIGGER_SPELL);
+            //By leewheel 2026年10月26日 失效 hook 绑定注销：COA 改过 Spell.dbc 后该绑定与 DBC 失配，核心本就跳过执行，注释保持一致
+        //原行已注销（By leewheel 2026年10月26日）: OnEffectLaunchTarget += SpellEffectFn(spell_pal_righteous_defense::HandleTriggerSpellLaunch, EFFECT_1, SPELL_EFFECT_TRIGGER_SPELL);
+            //By leewheel 2026年10月26日 失效 hook 绑定注销：COA 改过 Spell.dbc 后该绑定与 DBC 失配，核心本就跳过执行，注释保持一致
+        //原行已注销（By leewheel 2026年10月26日）: OnEffectHitTarget += SpellEffectFn(spell_pal_righteous_defense::HandleTriggerSpellHit, EFFECT_1, SPELL_EFFECT_TRIGGER_SPELL);
     }
 };
 
@@ -2287,7 +2290,8 @@ void AddSC_paladin_spell_scripts()
     RegisterSpellScript(spell_pal_ardent_defender);
     RegisterSpellScript(spell_pal_aura_mastery);
     RegisterSpellScript(spell_pal_aura_mastery_immune);
-    RegisterSpellScript(spell_pal_beacon_of_light);
+    //By leewheel 2026年10月26日 经典脚本死注册注销：DB 已换用 *_coa/新版脚本，此注册无 DB 引用
+    //RegisterSpellScript(spell_pal_beacon_of_light);
     RegisterSpellScript(spell_pal_avenging_wrath);
     RegisterSpellScript(spell_pal_blessing_of_faith);
     RegisterSpellScript(spell_pal_blessing_of_sanctuary);
@@ -2332,7 +2336,8 @@ void AddSC_paladin_spell_scripts()
     RegisterSpellScriptWithArgs(spell_pal_improved_aura, "spell_pal_improved_concentraction_aura", SPELL_PALADIN_IMPROVED_CONCENTRACTION_AURA);
     RegisterSpellScriptWithArgs(spell_pal_improved_aura, "spell_pal_improved_devotion_aura", SPELL_PALADIN_IMPROVED_DEVOTION_AURA);
     RegisterSpellScriptWithArgs(spell_pal_improved_aura, "spell_pal_sanctified_retribution", SPELL_PALADIN_SANCTIFIED_RETRIBUTION_AURA);
-    RegisterSpellScriptWithArgs(spell_pal_improved_aura, "spell_pal_swift_retribution", SPELL_PALADIN_SANCTIFIED_RETRIBUTION_AURA);
+    //By leewheel 2026年10月26日 经典脚本死注册注销：DB 已换用 *_coa/新版脚本，此注册无 DB 引用
+    //RegisterSpellScriptWithArgs(spell_pal_improved_aura, "spell_pal_swift_retribution", SPELL_PALADIN_SANCTIFIED_RETRIBUTION_AURA);
     RegisterSpellScriptWithArgs(spell_pal_improved_aura_effect, "spell_pal_improved_concentraction_aura_effect", SPELL_PALADIN_CONCENTRACTION_AURA);
     RegisterSpellScriptWithArgs(spell_pal_improved_aura_effect, "spell_pal_improved_devotion_aura_effect", SPELL_PALADIN_DEVOTION_AURA_R1);
     RegisterSpellScript(spell_pal_sanctified_retribution_effect);

@@ -266,7 +266,9 @@ class spell_egg_explosion : public SpellScript
 
 void AddSC_boss_buru()
 {
-    RegisterRuinsOfAhnQirajCreatureAI(boss_buru);
-    RegisterRuinsOfAhnQirajCreatureAI(npc_buru_egg);
+    //By leewheel 2026年10月26日 经典脚本死注册注销：DB 已换用 *_coa/新版脚本，此注册无 DB 引用
+    //RegisterRuinsOfAhnQirajCreatureAI(boss_buru);
+    //By leewheel 2026年10月26日 经典脚本死注册注销：DB 已换用 *_coa/新版脚本，此注册无 DB 引用
+    //RegisterRuinsOfAhnQirajCreatureAI(npc_buru_egg);
     RegisterSpellScript(spell_egg_explosion);
 }

@@ -448,7 +448,8 @@ void AddSC_CoADungeonBossSpells()
     RegisterSpellScript(spell_coa_summon_hearty_heart);
     RegisterSpellScript(spell_coa_massive_fire_nova);
     RegisterSpellScript(spell_coa_torrent_spin);
-    RegisterSpellScript(spell_coa_bouncing_saw_blade);
+    //By leewheel 2026年10月26日 经典脚本死注册注销：DB 已换用 *_coa/新版脚本，此注册无 DB 引用
+    //RegisterSpellScript(spell_coa_bouncing_saw_blade);
     RegisterSpellScript(spell_coa_skum_overrun);
     RegisterSpellScript(spell_coa_divine_retribution);
     new CoADivineRetributionStore();

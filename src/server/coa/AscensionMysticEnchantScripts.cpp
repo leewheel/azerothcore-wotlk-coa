@@ -458,10 +458,14 @@ class spell_ascension_mystic_atonement_heal : public SpellScript
 
     void Register() override
     {
-        OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_ascension_mystic_atonement_heal::SelectLowest,
-            EFFECT_ALL, TARGET_UNIT_DEST_AREA_ALLY);
-        OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_ascension_mystic_atonement_heal::SelectLowest,
-            EFFECT_ALL, TARGET_UNIT_DEST_AREA_ENTRY);
+        //By leewheel 2026年10月26日 COA 调整过两法术的目标类型：1567779 为 DEST_AREA_ALLY、1567780 为 DEST_AREA_ENTRY，
+        //按法术各自注册对应目标绑定，避免对另一目标的绑定与 DBC 失配产生启动报错
+        if (m_scriptSpellId == 1567779)
+            OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_ascension_mystic_atonement_heal::SelectLowest,
+                EFFECT_ALL, TARGET_UNIT_DEST_AREA_ALLY);
+        else if (m_scriptSpellId == 1567780)
+            OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_ascension_mystic_atonement_heal::SelectLowest,
+                EFFECT_ALL, TARGET_UNIT_DEST_AREA_ENTRY);
     }
 };
 

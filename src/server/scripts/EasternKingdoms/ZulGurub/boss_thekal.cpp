@@ -514,7 +514,8 @@ struct npc_zealot_zath : public ScriptedAI
 
 void AddSC_boss_thekal()
 {
-    RegisterCreatureAI(boss_thekal);
+    //By leewheel 2026年10月26日 经典脚本死注册注销：DB 已换用 *_coa/新版脚本，此注册无 DB 引用
+    //RegisterCreatureAI(boss_thekal);
     RegisterCreatureAI(npc_zealot_lorkhan);
     RegisterCreatureAI(npc_zealot_zath);
 }

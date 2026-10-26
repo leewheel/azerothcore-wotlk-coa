@@ -848,10 +848,14 @@ void AddSC_emerald_dragons()
     new npc_spirit_shade();
 
     // dragons
-    new boss_ysondre();
-    new boss_taerar();
-    new boss_emeriss();
-    new boss_lethon();
+    //By leewheel 2026年10月26日 经典脚本死注册注销：DB 已换用 *_coa/新版脚本，此注册无 DB 引用
+    //new boss_ysondre();
+    //By leewheel 2026年10月26日 经典脚本死注册注销：DB 已换用 *_coa/新版脚本，此注册无 DB 引用
+    //new boss_taerar();
+    //By leewheel 2026年10月26日 经典脚本死注册注销：DB 已换用 *_coa/新版脚本，此注册无 DB 引用
+    //new boss_emeriss();
+    //By leewheel 2026年10月26日 经典脚本死注册注销：DB 已换用 *_coa/新版脚本，此注册无 DB 引用
+    //new boss_lethon();
 
     // dragon spellscripts
     RegisterSpellScript(spell_dream_fog_sleep);

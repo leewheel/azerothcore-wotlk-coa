@@ -429,7 +429,8 @@ public:
 
 void AddSC_boss_arlokk()
 {
-    new boss_arlokk();
+    //By leewheel 2026年10月26日 经典脚本死注册注销：DB 已换用 *_coa/新版脚本，此注册无 DB 引用
+    //new boss_arlokk();
     new npc_zulian_prowler();
     new go_gong_of_bethekk();
 }

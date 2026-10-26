@@ -635,6 +635,7 @@ public:
 
 void AddSC_boss_onyxia()
 {
-    RegisterOnyxiasLairCreatureAI(boss_onyxia);
+    //By leewheel 2026年10月26日 经典脚本死注册注销：DB 已换用 *_coa/新版脚本，此注册无 DB 引用
+    //RegisterOnyxiasLairCreatureAI(boss_onyxia);
     RegisterOnyxiasLairCreatureAI(npc_onyxian_lair_guard);
 }

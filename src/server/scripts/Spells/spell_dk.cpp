@@ -924,7 +924,11 @@ class spell_dk_pet_scaling : public AuraScript
         if (m_scriptSpellId == SPELL_DK_PET_SCALING_01)
         {
             DoEffectCalcAmount += AuraEffectCalcAmountFn(spell_dk_pet_scaling::CalculateStatAmount, EFFECT_ALL, SPELL_AURA_MOD_STAT);
-            DoEffectCalcAmount += AuraEffectCalcAmountFn(spell_dk_pet_scaling::CalculateSPAmount, EFFECT_ALL, SPELL_AURA_MOD_DAMAGE_DONE);
+            //By leewheel 2026年10月26日 COA 改过 54566 的 dbc（已无 MOD_DAMAGE_DONE effect），仅在法术确实带该光环时注册，消除启动失配报错
+            //By leewheel 2026年10月26日 启动校验期 m_aura 为空不能走 AuraScript::GetSpellInfo()，改用 m_scriptSpellId 查 SpellMgr（修复启动段错误）
+            if (SpellInfo const* scriptSpellInfo = sSpellMgr->GetSpellInfo(m_scriptSpellId))
+                if (scriptSpellInfo->HasAura(SPELL_AURA_MOD_DAMAGE_DONE))
+                    DoEffectCalcAmount += AuraEffectCalcAmountFn(spell_dk_pet_scaling::CalculateSPAmount, EFFECT_ALL, SPELL_AURA_MOD_DAMAGE_DONE);
         }
 
         if (m_scriptSpellId == SPELL_DK_PET_SCALING_02)
@@ -2485,9 +2489,11 @@ class spell_dk_army_of_the_dead_passive : public AuraScript
 
     void Register() override
     {
-        DoEffectCalcAmount += AuraEffectCalcAmountFn(spell_dk_army_of_the_dead_passive::CalculateAPAmount, EFFECT_0, SPELL_AURA_MOD_ATTACK_POWER);
+            //By leewheel 2026年10月26日 失效 hook 绑定注销：COA 改过 Spell.dbc 后该绑定与 DBC 失配，核心本就跳过执行，注释保持一致
+        //原行已注销（By leewheel 2026年10月26日）: DoEffectCalcAmount += AuraEffectCalcAmountFn(spell_dk_army_of_the_dead_passive::CalculateAPAmount, EFFECT_0, SPELL_AURA_MOD_ATTACK_POWER);
         DoEffectCalcAmount += AuraEffectCalcAmountFn(spell_dk_army_of_the_dead_passive::CalculateHealthAmount, EFFECT_1, SPELL_AURA_MOD_INCREASE_HEALTH);
-        DoEffectCalcAmount += AuraEffectCalcAmountFn(spell_dk_army_of_the_dead_passive::CalculateSPAmount, EFFECT_2, SPELL_AURA_MOD_DAMAGE_DONE);
+            //By leewheel 2026年10月26日 失效 hook 绑定注销：COA 改过 Spell.dbc 后该绑定与 DBC 失配，核心本就跳过执行，注释保持一致
+        //原行已注销（By leewheel 2026年10月26日）: DoEffectCalcAmount += AuraEffectCalcAmountFn(spell_dk_army_of_the_dead_passive::CalculateSPAmount, EFFECT_2, SPELL_AURA_MOD_DAMAGE_DONE);
         OnEffectApply += AuraEffectApplyFn(spell_dk_army_of_the_dead_passive::HandleEffectApply, EFFECT_ALL, SPELL_AURA_ANY, AURA_EFFECT_HANDLE_REAL);
         DoEffectCalcPeriodic += AuraEffectCalcPeriodicFn(spell_dk_army_of_the_dead_passive::CalcPeriodic, EFFECT_ALL, SPELL_AURA_ANY);
         OnEffectPeriodic += AuraEffectPeriodicFn(spell_dk_army_of_the_dead_passive::HandlePeriodic, EFFECT_ALL, SPELL_AURA_ANY);
@@ -3073,7 +3079,8 @@ void AddSC_deathknight_spell_scripts()
     RegisterSpellScript(spell_dk_blade_barrier);
     RegisterSpellScript(spell_dk_death_rune);
     RegisterSpellScript(spell_dk_rime);
-    RegisterSpellScript(spell_dk_killing_machine);
+        //By leewheel 2026年10月26日 经典脚本死注册注销：COA 改过 Spell.dbc 后 hook 绑定全失配且 DB 挂载已删，此注册无 DB 引用
+    //原行已注销（By leewheel 2026年10月26日）: RegisterSpellScript(spell_dk_killing_machine);
     RegisterSpellScript(spell_dk_sudden_doom);
     RegisterSpellScript(spell_dk_threat_of_thassarian);
     RegisterSpellScript(spell_dk_glyph_of_death_grip);

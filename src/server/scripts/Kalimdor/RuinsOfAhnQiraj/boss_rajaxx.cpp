@@ -379,7 +379,8 @@ private:
 
 void AddSC_boss_rajaxx()
 {
-    RegisterRuinsOfAhnQirajCreatureAI(boss_rajaxx);
+    //By leewheel 2026年10月26日 经典脚本死注册注销：DB 已换用 *_coa/新版脚本，此注册无 DB 引用
+    //RegisterRuinsOfAhnQirajCreatureAI(boss_rajaxx);
     RegisterSpellScript(spell_rajaxx_thundercrash);
     RegisterRuinsOfAhnQirajCreatureAI(npc_general_andorov);
 }

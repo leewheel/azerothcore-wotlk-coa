@@ -181,7 +181,8 @@ class spell_huhuran_poison_bolt : public SpellScript
 
 void AddSC_boss_huhuran()
 {
-    RegisterTempleOfAhnQirajCreatureAI(boss_huhuran);
+    //By leewheel 2026年10月26日 经典脚本死注册注销：DB 已换用 *_coa/新版脚本，此注册无 DB 引用
+    //RegisterTempleOfAhnQirajCreatureAI(boss_huhuran);
     RegisterSpellScript(spell_huhuran_wyvern_sting);
     RegisterSpellScript(spell_huhuran_poison_bolt);
 }

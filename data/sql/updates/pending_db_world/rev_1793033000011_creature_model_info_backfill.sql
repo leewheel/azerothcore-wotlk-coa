@@ -1,0 +1,55 @@
+-- 补齐 creature_model_info 缺失的 52 个 DisplayID 行（消除 ObjectMgr 'No model data exist' 错误）
+-- 取值：同 ModelId 兄弟 display 行 / 无参照时默认 1,1,2,0
+-- By leewheel 2026年10月26日
+INSERT IGNORE INTO creature_model_info (DisplayID,BoundingRadius,CombatReach,Gender,DisplayID_Other_Gender) VALUES (105404,0.366667,1.21877,2,0); -- entry 11000162 model 13209 sib:945540
+INSERT IGNORE INTO creature_model_info (DisplayID,BoundingRadius,CombatReach,Gender,DisplayID_Other_Gender) VALUES (49150,1,1,2,0); -- entry 114365 model 5836 default
+INSERT IGNORE INTO creature_model_info (DisplayID,BoundingRadius,CombatReach,Gender,DisplayID_Other_Gender) VALUES (50903,1,1,2,0); -- entry 136532 model 57712 default
+INSERT IGNORE INTO creature_model_info (DisplayID,BoundingRadius,CombatReach,Gender,DisplayID_Other_Gender) VALUES (101201,1,1,2,0); -- entry 161579 model 12849 default
+INSERT IGNORE INTO creature_model_info (DisplayID,BoundingRadius,CombatReach,Gender,DisplayID_Other_Gender) VALUES (254046,0.208,1.5,1,0); -- entry 254488 model 50 sib:50
+INSERT IGNORE INTO creature_model_info (DisplayID,BoundingRadius,CombatReach,Gender,DisplayID_Other_Gender) VALUES (250739,1,1,2,0); -- entry 254489 model 250002 default
+INSERT IGNORE INTO creature_model_info (DisplayID,BoundingRadius,CombatReach,Gender,DisplayID_Other_Gender) VALUES (101216,1,1,2,0); -- entry 254491 model 12845 default
+INSERT IGNORE INTO creature_model_info (DisplayID,BoundingRadius,CombatReach,Gender,DisplayID_Other_Gender) VALUES (30213,0.61111,2.03128,2,0); -- entry 256249 model 3190 sib:35355
+INSERT IGNORE INTO creature_model_info (DisplayID,BoundingRadius,CombatReach,Gender,DisplayID_Other_Gender) VALUES (73768,1,1,2,0); -- entry 313037 model 9712 default
+INSERT IGNORE INTO creature_model_info (DisplayID,BoundingRadius,CombatReach,Gender,DisplayID_Other_Gender) VALUES (73769,1,1,2,0); -- entry 313038 model 9713 default
+INSERT IGNORE INTO creature_model_info (DisplayID,BoundingRadius,CombatReach,Gender,DisplayID_Other_Gender) VALUES (111213,1,1,2,0); -- entry 346852 model 187112 default
+INSERT IGNORE INTO creature_model_info (DisplayID,BoundingRadius,CombatReach,Gender,DisplayID_Other_Gender) VALUES (111212,1,1,2,0); -- entry 346922 model 187113 default
+INSERT IGNORE INTO creature_model_info (DisplayID,BoundingRadius,CombatReach,Gender,DisplayID_Other_Gender) VALUES (126253,1,1,2,0); -- entry 357276 model 100368 default
+INSERT IGNORE INTO creature_model_info (DisplayID,BoundingRadius,CombatReach,Gender,DisplayID_Other_Gender) VALUES (126050,1,1,2,0); -- entry 357325 model 100260 default
+INSERT IGNORE INTO creature_model_info (DisplayID,BoundingRadius,CombatReach,Gender,DisplayID_Other_Gender) VALUES (126051,1,1,2,0); -- entry 357326 model 100261 default
+INSERT IGNORE INTO creature_model_info (DisplayID,BoundingRadius,CombatReach,Gender,DisplayID_Other_Gender) VALUES (126492,1,1,2,0); -- entry 357818 model 100449 default
+INSERT IGNORE INTO creature_model_info (DisplayID,BoundingRadius,CombatReach,Gender,DisplayID_Other_Gender) VALUES (126603,0.6111,2.031,2,0); -- entry 357897 model 100513 sib:126608
+INSERT IGNORE INTO creature_model_info (DisplayID,BoundingRadius,CombatReach,Gender,DisplayID_Other_Gender) VALUES (126604,0.6111,2.031,2,0); -- entry 357898 model 100513 sib:126608
+INSERT IGNORE INTO creature_model_info (DisplayID,BoundingRadius,CombatReach,Gender,DisplayID_Other_Gender) VALUES (126605,0.6111,2.031,2,0); -- entry 357899 model 100513 sib:126608
+INSERT IGNORE INTO creature_model_info (DisplayID,BoundingRadius,CombatReach,Gender,DisplayID_Other_Gender) VALUES (126606,0.6111,2.031,2,0); -- entry 357900 model 100513 sib:126608
+INSERT IGNORE INTO creature_model_info (DisplayID,BoundingRadius,CombatReach,Gender,DisplayID_Other_Gender) VALUES (126607,0.6111,2.031,2,0); -- entry 357901 model 100513 sib:126608
+INSERT IGNORE INTO creature_model_info (DisplayID,BoundingRadius,CombatReach,Gender,DisplayID_Other_Gender) VALUES (426414,1,1,2,0); -- entry 403950 model 419492 default
+INSERT IGNORE INTO creature_model_info (DisplayID,BoundingRadius,CombatReach,Gender,DisplayID_Other_Gender) VALUES (53805,1,1,2,0); -- entry 410673 model 7231 default
+INSERT IGNORE INTO creature_model_info (DisplayID,BoundingRadius,CombatReach,Gender,DisplayID_Other_Gender) VALUES (49175,1,1,2,0); -- entry 42008 model 5855 default
+INSERT IGNORE INTO creature_model_info (DisplayID,BoundingRadius,CombatReach,Gender,DisplayID_Other_Gender) VALUES (51874,1,1,2,0); -- entry 430306 model 3186 default
+INSERT IGNORE INTO creature_model_info (DisplayID,BoundingRadius,CombatReach,Gender,DisplayID_Other_Gender) VALUES (50936,1,1,2,0); -- entry 430308 model 12140 default
+INSERT IGNORE INTO creature_model_info (DisplayID,BoundingRadius,CombatReach,Gender,DisplayID_Other_Gender) VALUES (19146,0,0,2,0); -- entry 43805 model 69 sib:69
+INSERT IGNORE INTO creature_model_info (DisplayID,BoundingRadius,CombatReach,Gender,DisplayID_Other_Gender) VALUES (49175,1,1,2,0); -- entry 44095 model 5855 default
+INSERT IGNORE INTO creature_model_info (DisplayID,BoundingRadius,CombatReach,Gender,DisplayID_Other_Gender) VALUES (23601,1,1,2,0); -- entry 44114 model 2606 default
+INSERT IGNORE INTO creature_model_info (DisplayID,BoundingRadius,CombatReach,Gender,DisplayID_Other_Gender) VALUES (23603,1,1,2,0); -- entry 44115 model 2607 default
+INSERT IGNORE INTO creature_model_info (DisplayID,BoundingRadius,CombatReach,Gender,DisplayID_Other_Gender) VALUES (21790,1,1,2,0); -- entry 44265 model 2571 default
+INSERT IGNORE INTO creature_model_info (DisplayID,BoundingRadius,CombatReach,Gender,DisplayID_Other_Gender) VALUES (23604,1,1,2,0); -- entry 44284 model 2608 default
+INSERT IGNORE INTO creature_model_info (DisplayID,BoundingRadius,CombatReach,Gender,DisplayID_Other_Gender) VALUES (20246,1,1,2,0); -- entry 44324 model 254 default
+INSERT IGNORE INTO creature_model_info (DisplayID,BoundingRadius,CombatReach,Gender,DisplayID_Other_Gender) VALUES (236849,1,1,2,0); -- entry 44358 model 110736 default
+INSERT IGNORE INTO creature_model_info (DisplayID,BoundingRadius,CombatReach,Gender,DisplayID_Other_Gender) VALUES (109998,1,1,2,0); -- entry 44589 model 5862 default
+INSERT IGNORE INTO creature_model_info (DisplayID,BoundingRadius,CombatReach,Gender,DisplayID_Other_Gender) VALUES (47171,0.208,1.5,1,0); -- entry 45573 model 50 sib:50
+INSERT IGNORE INTO creature_model_info (DisplayID,BoundingRadius,CombatReach,Gender,DisplayID_Other_Gender) VALUES (39548,1,1,2,0); -- entry 45931 model 3557 default
+INSERT IGNORE INTO creature_model_info (DisplayID,BoundingRadius,CombatReach,Gender,DisplayID_Other_Gender) VALUES (48613,1,1,2,0); -- entry 45970 model 5615 default
+INSERT IGNORE INTO creature_model_info (DisplayID,BoundingRadius,CombatReach,Gender,DisplayID_Other_Gender) VALUES (48732,1,1,2,0); -- entry 45974 model 5659 default
+INSERT IGNORE INTO creature_model_info (DisplayID,BoundingRadius,CombatReach,Gender,DisplayID_Other_Gender) VALUES (48740,1,1,2,0); -- entry 499893 model 5666 default
+INSERT IGNORE INTO creature_model_info (DisplayID,BoundingRadius,CombatReach,Gender,DisplayID_Other_Gender) VALUES (137630,1,1,2,0); -- entry 52808 model 111010 default
+INSERT IGNORE INTO creature_model_info (DisplayID,BoundingRadius,CombatReach,Gender,DisplayID_Other_Gender) VALUES (48807,0.6111,2.031,2,0); -- entry 79037 model 5698 sib:48811
+INSERT IGNORE INTO creature_model_info (DisplayID,BoundingRadius,CombatReach,Gender,DisplayID_Other_Gender) VALUES (56253,1,1,2,0); -- entry 80215 model 7161 default
+INSERT IGNORE INTO creature_model_info (DisplayID,BoundingRadius,CombatReach,Gender,DisplayID_Other_Gender) VALUES (74900,1,1,2,0); -- entry 80389 model 9914 default
+INSERT IGNORE INTO creature_model_info (DisplayID,BoundingRadius,CombatReach,Gender,DisplayID_Other_Gender) VALUES (79484,1,1,2,0); -- entry 80390 model 9914 default
+INSERT IGNORE INTO creature_model_info (DisplayID,BoundingRadius,CombatReach,Gender,DisplayID_Other_Gender) VALUES (95205,1.52775,5.0782,2,0); -- entry 80396 model 12136 sib:95206
+INSERT IGNORE INTO creature_model_info (DisplayID,BoundingRadius,CombatReach,Gender,DisplayID_Other_Gender) VALUES (62354,1,1,2,0); -- entry 80887 model 8133 default
+INSERT IGNORE INTO creature_model_info (DisplayID,BoundingRadius,CombatReach,Gender,DisplayID_Other_Gender) VALUES (23583,1,1,2,0); -- entry 81027 model 238 default
+INSERT IGNORE INTO creature_model_info (DisplayID,BoundingRadius,CombatReach,Gender,DisplayID_Other_Gender) VALUES (77626,1,1,2,0); -- entry 94056 model 10240 default
+INSERT IGNORE INTO creature_model_info (DisplayID,BoundingRadius,CombatReach,Gender,DisplayID_Other_Gender) VALUES (54346,1,1,2,0); -- entry 94057 model 7825 default
+INSERT IGNORE INTO creature_model_info (DisplayID,BoundingRadius,CombatReach,Gender,DisplayID_Other_Gender) VALUES (233793,1,1,2,0); -- entry 94059 model 207643 default
+INSERT IGNORE INTO creature_model_info (DisplayID,BoundingRadius,CombatReach,Gender,DisplayID_Other_Gender) VALUES (254531,1,1,2,0); -- entry 254575 not_in_dbc default

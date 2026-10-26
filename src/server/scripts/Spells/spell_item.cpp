@@ -6225,7 +6225,8 @@ void AddSC_item_spell_scripts()
     RegisterSpellScript(spell_item_mark_of_conquest);
     RegisterSpellScript(spell_item_pendant_of_the_violet_eye);
     RegisterSpellScript(spell_item_persistent_shield);
-    RegisterSpellScript(spell_item_pet_healing);
+        //By leewheel 2026年10月26日 经典脚本死注册注销：COA 改过 Spell.dbc 后 hook 绑定全失配且 DB 挂载已删，此注册无 DB 引用
+    //原行已注销（By leewheel 2026年10月26日）: RegisterSpellScript(spell_item_pet_healing);
     RegisterSpellScript(spell_item_restless_strength);
     RegisterSpellScript(spell_item_unstable_power);
     RegisterSpellScript(spell_item_proc_below_pct_damaged);
@@ -6233,7 +6234,8 @@ void AddSC_item_spell_scripts()
     RegisterSpellScript(spell_item_sunwell_exalted_caster_neck);
     RegisterSpellScript(spell_item_sunwell_exalted_healer_neck);
     RegisterSpellScript(spell_item_sunwell_exalted_melee_neck);
-    RegisterSpellScript(spell_item_sunwell_exalted_tank_neck);
+        //By leewheel 2026年10月26日 经典脚本死注册注销：COA 改过 Spell.dbc 后 hook 绑定全失配且 DB 挂载已删，此注册无 DB 引用
+    //原行已注销（By leewheel 2026年10月26日）: RegisterSpellScript(spell_item_sunwell_exalted_tank_neck);
     RegisterSpellScript(spell_item_swift_hand_justice_dummy);
     RegisterSpellScript(spell_item_tiny_abomination_in_a_jar);
     RegisterSpellScript(spell_item_tiny_abomination_in_a_jar_hero);

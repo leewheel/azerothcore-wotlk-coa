@@ -232,7 +232,8 @@ class spell_suppression_aura : public SpellScript
 
 void AddSC_boss_broodlord()
 {
-    RegisterBlackwingLairCreatureAI(boss_broodlord);
+    //By leewheel 2026年10月26日 经典脚本死注册注销：DB 已换用 *_coa/新版脚本，此注册无 DB 引用
+    //RegisterBlackwingLairCreatureAI(boss_broodlord);
     RegisterBlackwingLairGameObjectAI(go_suppression_device);
     RegisterSpellScript(spell_suppression_aura);
 }

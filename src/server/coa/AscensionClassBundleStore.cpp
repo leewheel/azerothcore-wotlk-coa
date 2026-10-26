@@ -202,5 +202,6 @@ void AddSC_AscensionClassBundleStore()
 
     new ascension_class_bundle_store_world();
     new item_coa_class_bundle_token();
-    new item_coa_class_bundle();
+    //By leewheel 2026年10月26日 经典脚本死注册注销：DB 已换用 *_coa/新版脚本，此注册无 DB 引用
+    //new item_coa_class_bundle();
 }

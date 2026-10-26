@@ -258,7 +258,8 @@ class spell_garr_frenzy : public SpellScript
 
 void AddSC_boss_garr()
 {
-    RegisterMoltenCoreCreatureAI(boss_garr);
+    //By leewheel 2026年10月26日 经典脚本死注册注销：DB 已换用 *_coa/新版脚本，此注册无 DB 引用
+    //RegisterMoltenCoreCreatureAI(boss_garr);
     RegisterMoltenCoreCreatureAI(npc_garr_firesworn);
 
     // Spells

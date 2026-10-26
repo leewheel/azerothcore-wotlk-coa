@@ -220,7 +220,8 @@ class spell_mark_of_frost_freeze : public SpellScript
 
 void AddSC_boss_azuregos()
 {
-    new boss_azuregos();
+    //By leewheel 2026年10月26日 经典脚本死注册注销：DB 已换用 *_coa/新版脚本，此注册无 DB 引用
+    //new boss_azuregos();
     RegisterSpellScript(spell_arcane_vacuum);
     RegisterSpellScript(spell_mark_of_frost_freeze);
 }

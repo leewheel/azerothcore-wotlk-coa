@@ -973,7 +973,20 @@ class spell_class_call_handler : public SpellScript
 
     void Register() override
     {
-        OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_class_call_handler::FilterTargets, EFFECT_ALL, TARGET_UNIT_SRC_AREA_ENEMY);
+        //By leewheel 2026年10月26日 COA 已改过 23410/23414/23418/23425/23436 的 dbc 目标类型（不再是 SRC_AREA_ENEMY），
+        //对这些法术跳过 FilterTargets 绑定（核心本就跳过执行），其余法术照常注册，消除启动失配报错
+        switch (m_scriptSpellId)
+        {
+            case 23410:
+            case 23414:
+            case 23418:
+            case 23425:
+            case 23436:
+                break;
+            default:
+                OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_class_call_handler::FilterTargets, EFFECT_ALL, TARGET_UNIT_SRC_AREA_ENEMY);
+                break;
+        }
 
         if (m_scriptSpellId == SPELL_ROGUE)
         {
@@ -1186,13 +1199,17 @@ class spell_spawn_drakonid : public SpellScript
 
 void AddSC_boss_nefarian()
 {
-    RegisterBlackwingLairCreatureAI(boss_victor_nefarius);
-    RegisterCreatureAI(boss_nefarian);
+    //By leewheel 2026年10月26日 经典脚本死注册注销：DB 已换用 *_coa/新版脚本，此注册无 DB 引用
+    //RegisterBlackwingLairCreatureAI(boss_victor_nefarius);
+    //By leewheel 2026年10月26日 经典脚本死注册注销：DB 已换用 *_coa/新版脚本，此注册无 DB 引用
+    //RegisterCreatureAI(boss_nefarian);
     RegisterCreatureAI(npc_corrupted_totem);
     RegisterCreatureAI(npc_drakonid_spawner);
     RegisterSpellScript(spell_class_call_handler);
-    RegisterSpellScript(aura_class_call_wild_magic);
-    RegisterSpellScript(aura_class_call_siphon_blessing);
+        //By leewheel 2026年10月26日 经典脚本死注册注销：COA 改过 Spell.dbc 后 hook 绑定全失配且 DB 挂载已删，此注册无 DB 引用
+    //原行已注销（By leewheel 2026年10月26日）: RegisterSpellScript(aura_class_call_wild_magic);
+        //By leewheel 2026年10月26日 经典脚本死注册注销：COA 改过 Spell.dbc 后 hook 绑定全失配且 DB 挂载已删，此注册无 DB 引用
+    //原行已注销（By leewheel 2026年10月26日）: RegisterSpellScript(aura_class_call_siphon_blessing);
     RegisterSpellScript(spell_class_call_polymorph);
     RegisterSpellScript(spell_corrupted_totems);
     RegisterSpellScript(spell_shadowblink);

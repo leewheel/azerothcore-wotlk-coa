@@ -341,7 +341,8 @@ class spell_marli_transform : public AuraScript
 
 void AddSC_boss_marli()
 {
-    RegisterCreatureAI(boss_marli);
+    //By leewheel 2026年10月26日 经典脚本死注册注销：DB 已换用 *_coa/新版脚本，此注册无 DB 引用
+    //RegisterCreatureAI(boss_marli);
     RegisterCreatureAI(npc_spawn_of_marli);
     RegisterSpellScript(spell_hatch_eggs);
     RegisterSpellScript(spell_enveloping_webs);

@@ -261,6 +261,7 @@ class spell_skeram_arcane_explosion : public SpellScript
 
 void AddSC_boss_skeram()
 {
-    RegisterTempleOfAhnQirajCreatureAI(boss_skeram);
+    //By leewheel 2026年10月26日 经典脚本死注册注销：DB 已换用 *_coa/新版脚本，此注册无 DB 引用
+    //RegisterTempleOfAhnQirajCreatureAI(boss_skeram);
     RegisterSpellScript(spell_skeram_arcane_explosion);
 }
