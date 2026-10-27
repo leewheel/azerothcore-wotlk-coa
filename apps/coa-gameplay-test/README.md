@@ -448,10 +448,10 @@ Creatures require `id`, player `owner` and template `entry`. Optional `distance`
 (default 3 yards); `faction`, `level`, `health` default to 14, 80, 100000. They retain template data and AI,
 with health regeneration disabled and `reaction` defaulting to passive (0); defensive (1) and aggressive (2)
 fixtures exercise native target selection and movement. `victim` with a `target` measures whether that unit is
-the actor's current attack victim. `can_attack` with a `target` returns one when the native `IsValidAttackTarget`
-check lets the actor attack that unit, including faction reaction, PvP flags and sanctuaries. The native
-player-damage share a kill needs for loot and reward is taken from the declared health, so a player's kill leaves
-a lootable or skinnable corpse. Pick a
+the actor's current attack victim. `can_attack` with a `target` (and an optional `spell`, checked as that spell's
+target) returns one when the native `IsValidAttackTarget` check lets the actor attack that unit, including faction
+reaction, PvP flags and sanctuaries. The native player-damage share a kill needs for loot and reward is taken from
+the declared health, so a player's kill leaves a lootable or skinnable corpse. Pick a
 template whose scripts suit the experiment.
 Setup clears combat initiated by spawn-time AI before starting the scenario: a fixture whose AI engaged a player
 while spawning evades at once. No step runs while any fixture is evading, so a spell or attack is never aimed at
@@ -626,6 +626,9 @@ unit; `target` identifies the attacker, and `melee_damage_taken` optionally acce
 These queries do not execute attacks or include hit rolls, critical hits, armor/resistance mitigation, or proc
 effects.
 `spell_power_cost` requires `spell` and queries its current native resource cost; it does not submit a cast.
+`skill_line_for_spell` requires `spell` and returns the server's loaded `SkillLineAbility` entry's `SkillLine`
+for it (the client spellbook tab the spell's own row places it under), or `-1` when no row carries a nonzero
+skill line for that spell.
 `spell_crit_chance` optionally accepts `school` (0..6, default Shadow). `melee_crit_chance`, `dodge_chance` and
 `parry_chance` read the player's percentage fields; `expertise` reads main-hand expertise; `combat_rating` requires
 `rating` (0..24, native `CombatRating`) and reads the rating value. `stat` requires `stat` (0..4), `resistance`

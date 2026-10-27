@@ -2912,7 +2912,11 @@ private:
         if (metric == "combat")
             return unit->IsInCombat();
         if (metric == "can_attack")
-            return unit->IsValidAttackTarget(GetUnit(step.get<std::string>("target")));
+        {
+            auto spell = step.get_optional<uint32>("spell");
+            return unit->IsValidAttackTarget(GetUnit(step.get<std::string>("target")),
+                spell ? sSpellMgr->GetSpellInfo(*spell) : nullptr);
+        }
         if (metric == "channel_object_entry")
         {
             ObjectGuid const channelObject = unit->GetGuidValue(UNIT_FIELD_CHANNEL_OBJECT);
@@ -4166,6 +4170,14 @@ private:
             SpellInfo const* info = sSpellMgr->GetSpellInfo(spell);
             Require(info != nullptr, "Unknown spell for power cost");
             return info->CalcPowerCost(player, info->GetSchoolMask());
+        }
+        if (metric == "skill_line_for_spell")
+        {
+            auto const bounds = sSpellMgr->GetSkillLineAbilityMapBounds(spell);
+            for (auto itr = bounds.first; itr != bounds.second; ++itr)
+                if (itr->second->SkillLine)
+                    return itr->second->SkillLine;
+            return -1;
         }
         if (metric == "has_talent")
         {

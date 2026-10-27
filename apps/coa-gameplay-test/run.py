@@ -111,7 +111,7 @@ METRICS = TIMELINE_METRICS | {
     'spellbook_client_notable', 'spellbook_notify_id_mismatches',
     'spellbook_cues_in_last_buy', 'spellbook_last_buy_cued',
     'spellbook_silent_buys', 'spellbook_multi_announced_buys',
-    'cast_speed_multiplier', 'spell_crit_chance', 'spell_power_cost', 'spell_damage_done', 'melee_damage_done',
+    'cast_speed_multiplier', 'spell_crit_chance', 'spell_power_cost', 'skill_line_for_spell', 'spell_damage_done', 'melee_damage_done',
     'who_count', 'who_class', 'player_name', 'name_lookup', 'loot_count', 'loot_entry', 'loot_received',
     'loot_offered_item_count', 'loot_gold', 'loot_bloodforged', 'loot_required_level', 'loot_item_level', 'loot_base_entry', 'loot_item_armor',
     'carried_item_level', 'carried_item_required_level', 'carried_item_armor', 'carried_item_scaling_level',
@@ -804,6 +804,8 @@ def validate(scenario):
                 require('target' in step, f'{where}: victim metric requires a target')
             if metric == 'can_attack':
                 require(step.get('target') in actor_ids, f'{where}: can_attack metric needs the attacked unit')
+                if 'spell' in step:
+                    number(step['spell'], f'{where}.spell', 1, 2**32 - 1, True)
             if metric == 'carried_aura_count':
                 require(type(step.get('spells')) is list and 0 < len(step['spells']) <= 50,
                         f'{where}: carried_aura_count must list 1-50 spells')
@@ -898,6 +900,7 @@ def validate(scenario):
                     'pet_knows_spell', 'client_knows_spell', 'client_spellbook_copies',
                     'pet_aura_stacks', 'pet_aura_duration_ms', 'charm_aura_stacks', 'spell_active',
                     'dynamic_object', 'dynamic_object_duration_ms', 'dynamic_object_height', 'spell_power_cost',
+                    'skill_line_for_spell',
                     'spell_damage_done', 'spell_damage_taken', 'spell_healing_taken', 'spell_hit_bonus_taken',
                     'spell_cast_count', 'spell_go_count', 'spell_modifier', 'spell_cast_time_ms',
                     'client_cast_time_ms', 'client_attributes', 'client_spell_targets',
@@ -1150,7 +1153,7 @@ def validate(scenario):
                           'client_spell_row_restored',
                           'spellbook_client_notable',
                           'spellbook_cues_in_last_buy', 'spellbook_last_buy_cued',
-                          'cast_speed_multiplier', 'spell_crit_chance', 'spell_power_cost',
+                          'cast_speed_multiplier', 'spell_crit_chance', 'spell_power_cost', 'skill_line_for_spell',
                           'spell_damage_done', 'melee_damage_done',
                           'who_count', 'who_class',
                           'loot_count', 'loot_entry', 'loot_required_level', 'loot_item_level', 'loot_received',
