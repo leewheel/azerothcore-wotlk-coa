@@ -111,9 +111,12 @@ int kb_hit_return()
 void CliThread()
 {
 #if AC_PLATFORM == AC_PLATFORM_WINDOWS
-    // Set console code pages to UTF-8
-    SetConsoleCP(CP_UTF8);
-    SetConsoleOutputCP(CP_UTF8);
+    // 控制台代码页保持系统 ANSI（中文 Windows = 936/GBK），与日志写出编码保持一致。
+    // 原先强制 SetConsoleOutputCP(CP_UTF8) 会让 AppenderConsole 经 CharToOemBuffW
+    // 转出的 GBK 字节在控制台里被按 UTF-8 解读，中文全部显示为乱码。
+    // By leewheel 2026年10月28日
+    SetConsoleCP(GetACP());
+    SetConsoleOutputCP(GetACP());
 
     // print this here the first time
     // later it will be printed after command queue updates

@@ -22,6 +22,35 @@
 #include "Timer.h"
 #include <algorithm>
 
+#if AC_PLATFORM == AC_PLATFORM_WINDOWS
+#include <Windows.h>
+
+/// 把 UTF-8 文本转换为系统 ANSI 代码页（中文 Windows = 936/GBK），
+/// 让 Logs/Server.log 等日志文件在记事本等默认 ANSI 查看器里直接显示中文而非乱码。
+/// 转换失败时原样返回 UTF-8，保证日志永不丢内容。
+/// By leewheel 2026年10月28日
+static std::string Utf8ToSystemAnsi(std::string const& utf8)
+{
+    if (utf8.empty())
+        return utf8;
+
+    int wlen = MultiByteToWideChar(CP_UTF8, 0, utf8.c_str(), int(utf8.size()), nullptr, 0);
+    if (wlen <= 0)
+        return utf8;
+
+    std::wstring wide(wlen, 0);
+    MultiByteToWideChar(CP_UTF8, 0, utf8.c_str(), int(utf8.size()), &wide[0], wlen);
+
+    int alen = WideCharToMultiByte(CP_ACP, 0, wide.c_str(), wlen, nullptr, 0, nullptr, nullptr);
+    if (alen <= 0)
+        return utf8;
+
+    std::string ansi(alen, 0);
+    WideCharToMultiByte(CP_ACP, 0, wide.c_str(), wlen, &ansi[0], alen, nullptr, nullptr);
+    return ansi;
+}
+#endif
+
 AppenderFile::AppenderFile(uint8 id, std::string const& name, LogLevel level, AppenderFlags flags, std::vector<std::string_view> const& args) :
     Appender(id, name, level, flags),
     logfile(nullptr),
@@ -97,7 +126,13 @@ void AppenderFile::_write(LogMessage const* message)
             return;
         }
 
+#if AC_PLATFORM == AC_PLATFORM_WINDOWS
+        // 日志按系统 ANSI（GBK）写出，Windows 记事本默认编码即可直接读中文。By leewheel 2026年10月28日
+        std::string ansiLine = Utf8ToSystemAnsi(message->prefix) + Utf8ToSystemAnsi(message->text);
+        fprintf(file, "%s\n", ansiLine.c_str());
+#else
         fprintf(file, "%s%s\n", message->prefix.c_str(), message->text.c_str());
+#endif
         fflush(file);
         _fileSize += uint64(message->Size());
         fclose(file);
@@ -114,7 +149,13 @@ void AppenderFile::_write(LogMessage const* message)
         return;
     }
 
+#if AC_PLATFORM == AC_PLATFORM_WINDOWS
+    // 日志按系统 ANSI（GBK）写出，Windows 记事本默认编码即可直接读中文。By leewheel 2026年10月28日
+    std::string ansiLine = Utf8ToSystemAnsi(message->prefix) + Utf8ToSystemAnsi(message->text);
+    fprintf(logfile, "%s\n", ansiLine.c_str());
+#else
     fprintf(logfile, "%s%s\n", message->prefix.c_str(), message->text.c_str());
+#endif
 
     auto const now = std::chrono::steady_clock::now();
     if (message->level <= LOG_LEVEL_WARN || now - _lastFlush >= std::chrono::milliseconds(250))
