@@ -27,6 +27,7 @@
 #include "AscensionClassMechanics19To25.h"
 #include "AscensionClassMechanics26To32.h"
 #include "AscensionCoATalentData.h"
+#include "AscensionClassServiceBridge.h" // core patch for mod-coa-playerbots //By leewheel 2026年10月27日
 #include "AscensionCoAConfig.h"
 #include "WorldSessionMgr.h"
 #include "AscensionCoATalentState.h"
@@ -10708,6 +10709,19 @@ void AppendConfiguredClientConfigs(AscensionClientConfig& config) {
   AppendAscensionClientConfigList(ascensionCompatConfig.GetConfigValue<std::string>(
                                       AscensionCompatConfig::CLIENT_INTEGER_CONFIGS),
                                   config.Integers);
+}
+
+// Bridge forwarders for mod-coa-playerbots (core-patches.md Patch 3): expose the
+// budget-checked spec/talent path with external linkage. Textually after the
+// anonymous namespace holding AscensionClassService. //By leewheel 2026年10月27日
+bool AscensionClassServiceBridge::SwitchSpecialization(Player* player, uint32 specializationId)
+{
+  return AscensionClassService::Instance().SwitchSpecialization(player, specializationId);
+}
+
+bool AscensionClassServiceBridge::SetTalentRank(Player* player, AscensionCompatData::CoATalentEntry const& entry, uint32 rank, std::string& error)
+{
+  return AscensionClassService::Instance().SetTalentRank(player, entry, rank, error);
 }
 
 void AddAscensionCompatScripts() {

@@ -1,6 +1,9 @@
 #ifndef COA_LOTTERY_ADVERTISING_H
 #define COA_LOTTERY_ADVERTISING_H
 
+#include "ObjectMgr.h"
+#include "StringFormat.h"
+
 #include <algorithm>
 #include <array>
 #include <cstdint>
@@ -9,6 +12,17 @@
 
 namespace CoALottery
 {
+    // 广告文案已迁入 module_string 表（module = "mod-coa-lottery"），//By leewheel 2026年10月27日
+    // id 29-47 十九条固定喊话、48 金币、49-54 时间单位、55 兜底称呼、56/57 城市名。
+    constexpr char const* AdModule = "mod-coa-lottery";
+
+    /// 按语言取一条 module_string；缺行时核心记日志并返回 "error"。
+    inline std::string AdStr(uint32_t id, LocaleConstant locale)
+    {
+        std::string const* str = sObjectMgr->GetModuleString(AdModule, id, locale);
+        return str ? *str : "error";
+    }
+
     constexpr uint32_t GallywixMap = 0;
     constexpr float GallywixX = -8787.7705f;
     constexpr float GallywixY = 640.43396f;
@@ -57,36 +71,37 @@ namespace CoALottery
         "You're all lazy! Get back to work. Especially you, {player}!",
         "What's this I hear about a party? I wasn't invited!",
         "All hail the greatest trade prince on Azeroth... me!"
-    });
+    }); // 英文原文仅作 token 结构参考；实际文案按 locale 从 module_string(id 29-47) 取 //By leewheel 2026年10月27日
 
-    inline std::string AdvertisementTime(uint64_t remaining)
+    inline std::string AdvertisementTime(uint64_t remaining, LocaleConstant locale)
     {
         uint64_t amount;
-        std::string unit;
+        uint32_t unitId;
         if (remaining > 86400)
         {
             amount = remaining / 86400;
-            unit = "day";
+            unitId = amount == 1 ? 49 : 50; // day / days
         }
         else if (remaining > 3600)
         {
             amount = remaining / 3600;
-            unit = "hour";
+            unitId = amount == 1 ? 51 : 52; // hour / hours
         }
         else
         {
             amount = remaining ? std::max<uint64_t>(1, remaining / 60) : 0;
-            unit = "minute";
+            unitId = amount == 1 ? 53 : 54; // minute / minutes
         }
-        return std::to_string(amount) + " " + unit + (amount == 1 ? "" : "s");
+        return std::to_string(amount) + " " + AdStr(unitId, locale);
     }
 
+    /// cityId: 56 = Stormwind, 57 = Orgrimmar（module_string 城市名）。
     inline std::string BuildAdvertisement(uint32_t index, uint32_t copper, uint64_t remaining,
-        std::string_view playerName, std::string_view cityName = "Stormwind")
+        std::string_view playerName, uint32_t cityId = 56, LocaleConstant locale = LOCALE_enUS)
     {
-        std::string message(AdvertisementLines[index % AdvertisementLines.size()]);
-        std::string pot = std::to_string(copper / 10000) + " gold";
-        std::string time = AdvertisementTime(remaining);
+        std::string message = AdStr(29 + index % 19, locale);
+        std::string pot = Acore::StringFormat(AdStr(48, locale), copper / 10000);
+        std::string time = AdvertisementTime(remaining, locale);
         auto replace = [&message](std::string_view token, std::string_view value)
         {
             size_t position = 0;
@@ -96,10 +111,10 @@ namespace CoALottery
                 position += value.size();
             }
         };
-        replace("{city}", cityName);
+        replace("{city}", AdStr(cityId, locale));
         replace("{pot}", pot);
         replace("{time}", time);
-        replace("{player}", playerName.empty() ? std::string_view("You there") : playerName);
+        replace("{player}", playerName.empty() ? AdStr(55, locale) : playerName);
         return message;
     }
 }

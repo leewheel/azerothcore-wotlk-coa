@@ -465,6 +465,7 @@ public: /* PlayerScript */
     void OnPlayerGetAmmoDisplay(Player* player, SpellInfo const* spellInfo, uint32& displayId, uint32& inventoryType);
     void OnPlayerGetShapeshiftModel(Player* player, uint8 form, uint32 spellId, uint32& modelId);
     void OnPlayerGetNameQueryRace(Player* player, uint8& race);
+    void OnPetitionOffered(Player* player, ObjectGuid petitionGuid); //By leewheel 2026年10月27日
     bool OnPlayerCanEquipItem(Player* player, uint8 slot, uint16& dest, Item* pItem, bool swap, bool not_loading);
     bool OnPlayerCanUnequipItem(Player* player, uint16 pos, bool swap);
     bool OnPlayerCanUseItem(Player* player, ItemTemplate const* proto, InventoryResult& result);
@@ -602,6 +603,12 @@ public: /* GlobalScript */
     void OnInstanceIdRemoved(uint32 instanceId);
     void OnBeforeSetBossState(uint32 id, EncounterState newState, EncounterState oldState, Map* instance);
     void AfterInstanceGameObjectCreate(Map* instance, GameObject* go);
+    // Resolve the Dungeon Finder queue policy for a player's join (mod-coa-playerbots).
+    // By leewheel 2026年10月27日
+    void OnResolveLfgQueuePolicy(ObjectGuid const& guid, lfg::LfgQueuePolicy& policy);
+    // Whether any script currently provides Dungeon Finder auto-fill (mod-coa-playerbots).
+    // By leewheel 2026年10月27日
+    bool HasLfgAutoFillProvider() const;
 
 public: /* Scheduled scripts */
     uint32 IncreaseScheduledScriptsCount() { return ++_scheduledScripts; }

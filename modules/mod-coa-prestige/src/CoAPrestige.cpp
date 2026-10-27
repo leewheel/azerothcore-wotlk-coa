@@ -517,7 +517,7 @@ namespace
         {
             LOG_ERROR("module.coa_prestige", "No starting location for race {} class {}: {} cannot prestige.",
                 uint32(player->getRace(true)), uint32(player->getClass()), player->GetName());
-            chat.SendSysMessage("Chromie cannot find where your journey began.");
+            chat.PSendModuleSysMessage("mod-coa-prestige", 1);
             return false;
         }
 
@@ -581,17 +581,15 @@ namespace
         {
             LOG_ERROR("module.coa_prestige", "The prestige save of {} ({}) was rolled back by the character database.",
                 player->GetName(), player->GetGUID().ToString());
-            chat.SendSysMessage("Chromie's magic faltered and your prestige could not be saved. "
-                "Contact a game master.");
+            chat.PSendModuleSysMessage("mod-coa-prestige", 2);
             return false;
         }
         sScriptMgr->OnPlayerCoAPrestigeSaved(player);
 
         SendPrestigeLevels(player);
-        chat.PSendSysMessage("Chromie winds back time. Prestige {}: reach level {} again to unlock your "
-            "specialization.", state.level, requiredLevel);
+        chat.PSendModuleSysMessage("mod-coa-prestige", 3, state.level, requiredLevel);
         if (!mailed.empty())
-            chat.SendSysMessage("Your equipped gear and any overflow Prestige rewards were sent to your mailbox.");
+            chat.PSendModuleSysMessage("mod-coa-prestige", 4);
 
         LOG_INFO("module.coa_prestige", "{} ({}) activated Prestige {} in specialization {}: {} talent spell(s), "
             "{} ability chain(s) and {} mystic enchant(s) removed.", player->GetName(), player->GetGUID().ToString(),
@@ -654,8 +652,7 @@ namespace
         player->RemoveAurasDueToSpell(PrestigedAura);
         SyncDailyAuras(player);
         SendPrestigeLevels(player);
-        ChatHandler(player->GetSession()).PSendSysMessage(
-            "Prestige {} complete: your specialization is unlocked.", state.level);
+        ChatHandler(player->GetSession()).PSendModuleSysMessage("mod-coa-prestige", 5, state.level);
     }
 
     void RestoreSpecializationSignature(Player* player)

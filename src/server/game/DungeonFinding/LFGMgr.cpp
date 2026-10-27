@@ -2549,6 +2549,16 @@ namespace lfg
         return dungeon;
     }
 
+    // mod-coa-playerbots: find the pending proposal a player belongs to so a bot can
+    // call UpdateProposal() without having seen its own SMSG_LFG_PROPOSAL_UPDATE. //By leewheel 2026年10月27日
+    uint32 LFGMgr::GetProposalIdForPlayer(ObjectGuid guid) const
+    {
+        for (LfgProposalContainer::const_iterator it = ProposalsStore.begin(); it != ProposalsStore.end(); ++it)
+            if (it->second.players.find(guid) != it->second.players.end())
+                return it->first;
+        return 0;
+    }
+
     uint32 LFGMgr::GetDungeonMapId(ObjectGuid guid)
     {
         uint32 dungeonId = GroupsStore[guid].GetDungeon(true);

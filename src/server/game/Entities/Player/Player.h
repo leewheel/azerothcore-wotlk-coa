@@ -2084,6 +2084,11 @@ public:
     [[nodiscard]] WorldSession* GetSession() const { return m_session; }
     void SetSession(WorldSession* sess) { m_session = sess; }
 
+    /// Session-level bot flag (WorldSession::_isBot, set by MarkSessionsAsBots).
+    /// Forwarded here so scripts/modules can test a Player without reaching for its session.
+    /// By leewheel 2026年10月27日
+    [[nodiscard]] bool IsBot() const { return m_session && m_session->IsBot(); }
+
     void BuildCreateUpdateBlockForPlayer(UpdateData* data, Player* target) override;
     void DestroyForPlayer(Player* target, bool onDeath = false) const override;
     void SendLogXPGain(uint32 GivenXP, Unit* victim, uint32 BonusXP, bool recruitAFriend = false, float group_rate = 1.0f);

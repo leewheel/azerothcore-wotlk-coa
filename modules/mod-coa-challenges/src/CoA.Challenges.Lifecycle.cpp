@@ -400,9 +400,7 @@ namespace CoAChallenges
                 if (Player* participant = member->GetSource())
                     blocked = blocked || fighting(participant);
         if (blocked)
-            ChatHandler(player->GetSession()).SendSysMessage(
-                "Adventure Mode cannot change during combat, an encounter, death, flight, control or teleportation. "
-                "Your party and pets must also be out of combat.");
+            ChatHandler(player->GetSession()).PSendModuleSysMessage(MODULE_NAME, STR_ACT_MODE_BLOCKED);
         return blocked;
     }
 
@@ -607,15 +605,14 @@ namespace CoAChallenges
         if ((challengeID != 211 && challengeID != 425) || !ActiveChallenges(guid).contains(challengeID)
             || !level || level >= current || level > ChallengeLevelCount(challengeID))
         {
-            ChatHandler(player->GetSession()).SendSysMessage("Choose a lower Adventure Mode level, at least 1.");
+            ChatHandler(player->GetSession()).PSendModuleSysMessage(MODULE_NAME, STR_ACT_LEVEL_LOWER);
             return 4;
         }
         if (AdventureModeChangeBlocked(player))
             return 8;
         if (!GetActiveCustomTrial(guid).empty() || HasCompletionLevel(guid, challengeID, level))
         {
-            ChatHandler(player->GetSession()).SendSysMessage(
-                "Cannot lower a custom trial or select an Adventure Mode level already completed.");
+            ChatHandler(player->GetSession()).PSendModuleSysMessage(MODULE_NAME, STR_ACT_TRIAL_LOCK);
             return 12;
         }
 
@@ -632,8 +629,7 @@ namespace CoAChallenges
         SendActiveList(player);
         SendCriteriaState(player);
         BroadcastChallengeSync(player, challengeID, level, false);
-        ChatHandler(player->GetSession()).PSendSysMessage(
-            "Adventure Mode reduced to level {}. Difficulty and rewards now use this level.", level);
+        ChatHandler(player->GetSession()).PSendModuleSysMessage(MODULE_NAME, STR_ACT_MODE_REDUCED, level);
         return 0;
     }
 

@@ -680,10 +680,14 @@ namespace
                 _nextLine = 0;
             }
             _lastLine = _order[_nextLine++];
-            std::string message = BuildAdvertisement(_lastLine, round.pot, round.ends - Now(), name,
-                _location.map == 1 ? "Orgrimmar" : "Stormwind");
-            auto builder = [creature, &message](WorldPacket* packet, LocaleConstant locale)
+            // 广告按每个收听者的语言逐包构建（module_string id 29-47）//By leewheel 2026年10月27日
+            uint32 const lineIndex = _lastLine;
+            uint32 const potCopper = round.pot;
+            uint64 const remainTime = round.ends - Now();
+            uint32 const cityId = _location.map == 1 ? 57 : 56; // Orgrimmar : Stormwind
+            auto builder = [creature, lineIndex, potCopper, remainTime, name, cityId](WorldPacket* packet, LocaleConstant locale)
             {
+                std::string message = BuildAdvertisement(lineIndex, potCopper, remainTime, name, cityId, locale);
                 return ChatHandler::BuildChatPacket(*packet, CHAT_MSG_MONSTER_YELL, LANG_UNIVERSAL,
                     creature, nullptr, message, 0, "", locale);
             };
@@ -981,7 +985,7 @@ namespace
         round.totalTickets = 0;
         for (auto const& [guid, tickets] : round.entries)
             round.totalTickets += tickets;
-        handler->PSendSysMessage("Refunded {}g{}s{}c by mail to {} character(s); skipped {} deleted recipient(s).",
+        handler->PSendModuleSysMessage("mod-coa-lottery", 1,
             copper / 10000, copper / 100 % 100, copper % 100, recipients, skipped);
     }
 
@@ -1041,23 +1045,13 @@ namespace
 
         static bool HandleHelp(ChatHandler* handler)
         {
-            handler->SendSysMessage(".lottery advertise: make Gallywix yell a random lottery advertisement now, "
-                "even if automatic advertisements are disabled. The round must be running.");
-            handler->SendSysMessage(".lottery refund *|<name>: refund current paid tickets by mail and remove them; "
-                "house tickets remain, and the round continues.");
-            handler->SendSysMessage(".lottery info [name]: current duration/remaining time, house tickets, pot and "
-                "top 10 ticket holders; with a name, show that character's tickets.");
-            handler->SendSysMessage(".lottery enable: resume a paused round or start a configured round. "
-                ".lottery disable: pause the countdown and hide the lottery NPCs.");
-            handler->SendSysMessage(".lottery start [duration] [fakeTickets] [bonusItemId]: "
-                "start only if no round exists. "
-                "Duration is seconds or Ns/Nm/Nh/Nd/Nw (60 seconds to 365 days); "
-                "omitted values use config; item 0 = none.");
-            handler->SendSysMessage(".lottery stop: refund all current paid tickets, cancel the round and disable. "
-                ".lottery restart: refund/cancel, then start a fresh enabled round with configured terms.");
-            handler->SendSysMessage(".lottery draw [name]: draw immediately, optionally choosing the winner. "
-                "A named non-entrant gets one complimentary ticket adding 10g to the pot; "
-                "a fresh configured round starts.");
+            handler->PSendModuleSysMessage("mod-coa-lottery", 2);
+            handler->PSendModuleSysMessage("mod-coa-lottery", 3);
+            handler->PSendModuleSysMessage("mod-coa-lottery", 4);
+            handler->PSendModuleSysMessage("mod-coa-lottery", 5);
+            handler->PSendModuleSysMessage("mod-coa-lottery", 6);
+            handler->PSendModuleSysMessage("mod-coa-lottery", 7);
+            handler->PSendModuleSysMessage("mod-coa-lottery", 8);
             return true;
         }
 
@@ -1092,9 +1086,9 @@ namespace
             if (!ready)
             {
                 if (name)
-                    handler->PSendSysMessage("{} has 0 tickets; there is no current round.", *name);
+                    handler->PSendModuleSysMessage("mod-coa-lottery", 9, *name);
                 else
-                    handler->SendSysMessage("Lottery stopped; no current round.");
+                    handler->PSendModuleSysMessage("mod-coa-lottery", 10);
                 return true;
             }
             std::vector<LotteryAdminEntry> entries;
@@ -1104,25 +1098,24 @@ namespace
             {
                 auto found = std::find_if(entries.begin(), entries.end(),
                     [guid](auto const& entry) { return entry.guid == guid; });
-                handler->PSendSysMessage("{} has {} tickets in round {}.", *name,
+                handler->PSendModuleSysMessage("mod-coa-lottery", 11, *name,
                     found == entries.end() ? 0 : found->tickets, round.id);
                 return true;
             }
             uint64 remaining = Remaining();
-            handler->PSendSysMessage("Lottery round {}: {}. Duration {}s ({}d {}h {}m); "
-                "remaining {}s ({}d {}h {}m {}s).",
-                round.id, round.paused ? "paused" : "running", round.duration,
+            handler->PSendModuleSysMessage("mod-coa-lottery", 12,
+                round.id, round.paused ? *handler->GetModuleString("mod-coa-lottery", 27) : *handler->GetModuleString("mod-coa-lottery", 28), round.duration,
                 round.duration / DAY, round.duration / HOUR % 24, round.duration / MINUTE % 60,
                 remaining, remaining / DAY, remaining / HOUR % 24, remaining / MINUTE % 60, remaining % MINUTE);
-            handler->PSendSysMessage("House tickets: {}. Pot: {}g{}s{}c. Bonus item: {}.", round.fakeTickets,
+            handler->PSendModuleSysMessage("mod-coa-lottery", 13, round.fakeTickets,
                 round.pot / 10000, round.pot / 100 % 100, round.pot % 100, round.bonusItem);
             uint32 rank = 0;
             for (auto const& entry : entries)
                 if (entry.recipient && rank < 10)
-                    handler->PSendSysMessage("{}. {}: {} tickets, {}g{}s{}c paid.", ++rank,
+                    handler->PSendModuleSysMessage("mod-coa-lottery", 14, ++rank,
                         entry.name, entry.tickets, entry.spent / 10000, entry.spent / 100 % 100, entry.spent % 100);
             if (!rank)
-                handler->SendSysMessage("No character tickets purchased.");
+                handler->PSendModuleSysMessage("mod-coa-lottery", 15);
             return true;
         }
 
@@ -1151,8 +1144,7 @@ namespace
             settings.enabled = enabled;
             nextDrawAttempt = 0;
             advertiser.Configure();
-            handler->SendSysMessage(enabled ? "Lottery enabled; countdown resumed."
-                : "Lottery disabled; countdown paused.");
+            handler->PSendModuleSysMessage("mod-coa-lottery", enabled ? 16 : 17);
             return true;
         }
 
@@ -1198,7 +1190,7 @@ namespace
             ready = settings.enabled = automaticStart = true;
             nextDrawAttempt = 0;
             advertiser.Configure();
-            handler->PSendSysMessage("Started lottery round {}: {}s, {} house tickets, bonus item {}.",
+            handler->PSendModuleSysMessage("mod-coa-lottery", 18,
                 round.id, round.duration, round.fakeTickets, round.bonusItem);
             return true;
         }
@@ -1246,8 +1238,7 @@ namespace
             ready = settings.enabled = automaticStart = restart;
             nextDrawAttempt = 0;
             advertiser.Configure();
-            handler->SendSysMessage(restart ? "Lottery restarted with configured terms."
-                : "Lottery stopped and disabled.");
+            handler->PSendModuleSysMessage("mod-coa-lottery", restart ? 19 : 20);
             return true;
         }
 
@@ -1271,7 +1262,7 @@ namespace
             if (!advertiser.Advertise(true))
                 return Error(handler, "Lottery advertising is unavailable: the round must be running "
                     "and Gallywix spawning must be enabled.");
-            handler->SendSysMessage("Gallywix advertised the lottery across the zone.");
+            handler->PSendModuleSysMessage("mod-coa-lottery", 21);
             return true;
         }
 
@@ -1289,7 +1280,7 @@ namespace
                 return Error(handler, "Draw failed: check for no entries, pot/ticket caps, "
                     "deleted recipients or database errors.");
             advertiser.Configure();
-            handler->PSendSysMessage("Lottery drawn; configured round {} is now running.", round.id);
+            handler->PSendModuleSysMessage("mod-coa-lottery", 22, round.id);
             return true;
         }
     };
@@ -1309,7 +1300,7 @@ namespace
             }
             if (!settings.enabled || !ready || round.paused || Now() >= round.ends)
             {
-                ChatHandler(player->GetSession()).SendSysMessage("The lottery is currently unavailable.");
+                ChatHandler(player->GetSession()).PSendModuleSysMessage("mod-coa-lottery", 23);
                 CloseGossipMenuFor(player);
                 return true;
             }
@@ -1336,8 +1327,7 @@ namespace
             {
                 if (Now() < round.ends)
                 {
-                    ChatHandler(player->GetSession()).SendSysMessage(
-                        "The round changed. Please select your tickets again.");
+                    ChatHandler(player->GetSession()).PSendModuleSysMessage("mod-coa-lottery", 24);
                     Show(player, creature);
                 }
                 else
@@ -1348,8 +1338,7 @@ namespace
             if (!CanPurchase(player->GetMoney(), round.pot, round.totalTickets + round.fakeTickets,
                 tickets, round.contribution))
             {
-                ChatHandler(player->GetSession()).SendSysMessage(
-                    "You need more gold, or this purchase exceeds the lottery cap.");
+                ChatHandler(player->GetSession()).PSendModuleSysMessage("mod-coa-lottery", 25);
                 Show(player, creature);
                 return true;
             }
@@ -1373,7 +1362,7 @@ namespace
             if (!Commit(transaction))
             {
                 player->SetMoney(money);
-                ChatHandler(player->GetSession()).SendSysMessage("The purchase failed. Your gold has been restored.");
+                ChatHandler(player->GetSession()).PSendModuleSysMessage("mod-coa-lottery", 26);
                 LOG_ERROR("module.coa_lottery", "Lottery purchase failed for character {}", guid);
             }
             else

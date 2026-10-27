@@ -108,6 +108,29 @@ namespace lfg
         RANDOM_DUNGEON_HEROIC_WOTLK                  = 262
     };
 
+    /// Who this queue is being assembled for: normal matchmaking, a bot-fill operation
+    /// (mod-coa-playerbots' Dungeon Finder auto-fill), or the player's current party.
+    /// By leewheel 2026年10月27日 (needed by mod-coa-playerbots)
+    enum class LfgCompositionMode : uint8
+    {
+        MATCHMAKING   = 0,
+        BOT_FILL      = 1,
+        CURRENT_PARTY = 2
+    };
+
+    /// Queue intent resolved through ScriptMgr::OnResolveLfgQueuePolicy: which composition
+    /// mode applies to this player's join, plus the role/size rules that mode implies.
+    /// By leewheel 2026年10月27日 (needed by mod-coa-playerbots)
+    struct LfgQueuePolicy
+    {
+        LfgCompositionMode compositionMode{LfgCompositionMode::MATCHMAKING};
+        uint8 challengeSize{0}; // 0 = Adaptive
+        bool bypassMatchmaking{false};
+        bool requireStandardRoles{true};
+        uint8 minPlayers{5};
+        uint8 targetPlayers{5};
+    };
+
     class Lfg5Guids;
 
     typedef std::list<Lfg5Guids> Lfg5GuidsList;

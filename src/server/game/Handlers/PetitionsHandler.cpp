@@ -654,6 +654,10 @@ void WorldSession::HandleOfferPetitionOpcode(WorldPacket& recvData)
         }
 
     player->SendDirectMessage(&data);
+
+    // mod-coa-playerbots: notify scripts that a petition was offered to `player`
+    // (the bot's PlayerScript auto-accepts guild invites). //By leewheel 2026年10月27日
+    sScriptMgr->OnPetitionOffered(player, petitionguid);
 }
 
 void WorldSession::HandleTurnInPetitionOpcode(WorldPacket& recvData)

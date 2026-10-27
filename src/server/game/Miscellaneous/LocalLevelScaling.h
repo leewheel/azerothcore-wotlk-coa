@@ -27,6 +27,12 @@ namespace LocalLevelScaling
 inline std::atomic<bool> QuestEnabled{false};
 inline std::atomic<std::uint8_t> CreatureOffset{4};
 
+/// Level at which a character may fly on the Outland (530) and Northrend (571) continents with
+/// expert riding (225). Read by mod-coa-playerbots' mount policy (BotMovementPrimitives.h
+/// CanUseFlyingMount); default 70 matches the stock WotLK Outland flight requirement.
+/// By leewheel 2026年10月27日
+inline std::atomic<std::uint8_t> FlightUnlockLevel{70};
+
 /// Whether a query response marks a quest on its curve with the client's scaling flag, which colours
 /// it "standard" instead of by level. Off by default: live quest caches never carried the flag.
 inline std::atomic<bool> QuestClientScalingFlag{false};

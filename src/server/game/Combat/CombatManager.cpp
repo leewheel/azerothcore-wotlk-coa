@@ -390,17 +390,27 @@ void CombatManager::EndAllPvPCombat()
 
 void CombatManager::PutReference(ObjectGuid const& guid, CombatReference* ref)
 {
+    // Duplicate slots were observed under heavy concurrent-bot load; instead of
+    // ASSERT-crashing the whole process, force-end the stale reference and continue. //By leewheel 2026年10月27日
     if (ref->_isPvP)
     {
-        auto& inMap = _pvpRefs[guid];
-        ASSERT(!inMap, "Duplicate combat state at %p being inserted for %s vs %s - memory leak!", (void*)ref, _owner->GetGUID().ToString().c_str(), guid.ToString().c_str());
-        inMap = static_cast<PvPCombatReference*>(ref);
+        auto it = _pvpRefs.find(guid);
+        if (it != _pvpRefs.end() && it->second)
+        {
+            LOG_ERROR("entities.unit.combat", "CombatManager::PutReference: duplicate PvP combat state for {} vs {} - force-ending stale reference", _owner->GetGUID().ToString(), guid.ToString());
+            it->second->EndCombat(); // removes itself from both sides
+        }
+        _pvpRefs[guid] = static_cast<PvPCombatReference*>(ref);
     }
     else
     {
-        auto& inMap = _pveRefs[guid];
-        ASSERT(!inMap, "Duplicate combat state at %p being inserted for %s vs %s - memory leak!", (void*)ref, _owner->GetGUID().ToString().c_str(), guid.ToString().c_str());
-        inMap = ref;
+        auto it = _pveRefs.find(guid);
+        if (it != _pveRefs.end() && it->second)
+        {
+            LOG_ERROR("entities.unit.combat", "CombatManager::PutReference: duplicate PvE combat state for {} vs {} - force-ending stale reference", _owner->GetGUID().ToString(), guid.ToString());
+            it->second->EndCombat();
+        }
+        _pveRefs[guid] = ref;
     }
 }
 

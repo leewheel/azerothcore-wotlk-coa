@@ -261,6 +261,7 @@ enum PlayerHook
     PLAYERHOOK_ON_MASTER_LOOT_ITEM,
     PLAYERHOOK_ON_GET_SHAPESHIFT_MODEL,
     PLAYERHOOK_ON_GET_NAME_QUERY_RACE,
+    PLAYERHOOK_ON_PETITION_OFFERED, // mod-coa-playerbots: bot guild-invite auto-accept //By leewheel 2026年10月27日
     PLAYERHOOK_END
 };
 
@@ -722,6 +723,10 @@ public:
 
     // Race sent in name query responses; the client places a battleground scoreboard row by its faction.
     virtual void OnPlayerGetNameQueryRace(Player* /*player*/, uint8& /*race*/) { }
+
+    // Called when a petition (guild/arena charter) is offered to this player; lets scripts
+    // like mod-coa-playerbots react (bot auto-accept). //By leewheel 2026年10月27日
+    virtual void OnPetitionOffered(Player* /*player*/, ObjectGuid /*petitionGuid*/) { }
 
     [[nodiscard]] virtual bool OnPlayerCanEquipItem(Player* /*player*/, uint8 /*slot*/, uint16& /*dest*/, Item* /*pItem*/, bool /*swap*/, bool /*not_loading*/) { return true; }
 

@@ -171,14 +171,12 @@ void ApplyAllowance(Player* player, uint32 unlockedSlots)
 // `.codex status` is for.
 static void AnnounceUnlock(Player* player)
 {
-    ChatHandler(player->GetSession()).PSendSysMessage(
-        "|cffffd100Craftsman's Codex|r: a new |cff40ff40primary profession slot|r is unlocked.");
+    ChatHandler(player->GetSession()).PSendModuleSysMessage("mod-craftsmans-codex", 1);
 
     // Short on purpose: this one is drawn large, over whatever the player was doing, and it is
     // gone again in a few seconds. Same palette as the chat line rather than one flat colour, so
     // it reads as an announcement and not as an error.
-    player->GetSession()->SendAreaTriggerMessage(
-        "|cffffd100New profession slot|r |cff40ff40unlocked|r");
+    player->GetSession()->SendAreaTriggerMessage(*sObjectMgr->GetModuleString("mod-craftsmans-codex", 2, LocaleConstant(player->GetSession()->GetSessionDbLocaleIndex())));
 }
 
 // The codexes each character has spent, backed by the characters database and remembered for
@@ -509,7 +507,7 @@ public:
             characterGuid = online ? online->GetGUID().GetCounter() : CharacterGuidByName(*name);
             if (!characterGuid)
             {
-                handler->SendSysMessage("No character by that name.");
+                handler->PSendModuleSysMessage("mod-craftsmans-codex", 3);
                 return true;
             }
         }
@@ -518,7 +516,7 @@ public:
             online = handler->GetPlayer();
             if (!online)
             {
-                handler->SendSysMessage("Name a character: .codex status <name>");
+                handler->PSendModuleSysMessage("mod-craftsmans-codex", 4);
                 return true;
             }
 
@@ -530,15 +528,15 @@ public:
         uint32 const known = online ? KnownPrimaryProfessions(online) : 0;
         uint32 const free = online ? online->GetFreePrimaryProfessionPoints() : (allowance > known ? allowance - known : 0);
 
-        handler->PSendSysMessage("Craftsman's Codex - {} (guid {}):", name ? *name : online->GetName(), characterGuid);
-        handler->PSendSysMessage("  codex slots unlocked: {}", unlocked);
-        handler->PSendSysMessage("  allowance: {} primary professions ({} base + {} unlocked)",
+        handler->PSendModuleSysMessage("mod-craftsmans-codex", 5, name ? *name : online->GetName(), characterGuid);
+        handler->PSendModuleSysMessage("mod-craftsmans-codex", 6, unlocked);
+        handler->PSendModuleSysMessage("mod-craftsmans-codex", 7,
                                  allowance, BaseSlots(), unlocked);
-        handler->PSendSysMessage("  professions held: {}, still free: {}, ceiling: {}",
+        handler->PSendModuleSysMessage("mod-craftsmans-codex", 8,
                                  known, free, SlotCeiling());
 
         if (!online)
-            handler->SendSysMessage("  (offline; the held/free counts are what they will be on their next login)");
+            handler->PSendModuleSysMessage("mod-craftsmans-codex", 9);
 
         return true;
     }
@@ -550,7 +548,7 @@ public:
         uint32 const characterGuid = online ? online->GetGUID().GetCounter() : CharacterGuidByName(name);
         if (!characterGuid)
         {
-            handler->SendSysMessage("No character by that name.");
+            handler->PSendModuleSysMessage("mod-craftsmans-codex", 3);
             return true;
         }
 
@@ -569,7 +567,7 @@ public:
             AnnounceUnlock(online);
         }
 
-        handler->PSendSysMessage("{} now has {} unlocked slot(s): {} primary professions in total.",
+        handler->PSendModuleSysMessage("mod-craftsmans-codex", 10,
                                  name, slots, BaseSlots() + slots);
         LOG_INFO("module", "mod-craftsmans-codex: .codex grant gave {} slot(s) to {} (guid {}), now {}.",
                  wanted, name, characterGuid, slots);
@@ -584,7 +582,7 @@ public:
         uint32 const characterGuid = online ? online->GetGUID().GetCounter() : CharacterGuidByName(name);
         if (!characterGuid)
         {
-            handler->SendSysMessage("No character by that name.");
+            handler->PSendModuleSysMessage("mod-craftsmans-codex", 3);
             return true;
         }
 
@@ -593,7 +591,7 @@ public:
         if (online)
             ApplyAllowance(online, 0);
 
-        handler->PSendSysMessage("{} is back to {} primary profession(s).", name, BaseSlots());
+        handler->PSendModuleSysMessage("mod-craftsmans-codex", 11, name, BaseSlots());
         LOG_INFO("module", "mod-craftsmans-codex: .codex reset cleared the unlocked slots of {} (guid {}).",
                  name, characterGuid);
 

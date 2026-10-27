@@ -258,6 +258,10 @@ namespace CoAChallenges
         STR_DET_LEVEL1               = 187, // requires level 1, current {}
         STR_DET_INTERACTED           = 188, // INTERACTED
         STR_DET_UNHANDLED            = 189, // unhandled condition type
+        STR_ACT_MODE_BLOCKED         = 190, // Adventure Mode cannot change during combat, an encounter, death, flight, control or teleportation. Your party and pets must also be out of combat.
+        STR_ACT_LEVEL_LOWER          = 191, // Choose a lower Adventure Mode level, at least 1.
+        STR_ACT_TRIAL_LOCK           = 192, // Cannot lower a custom trial or select an Adventure Mode level already completed.
+        STR_ACT_MODE_REDUCED         = 193, // Adventure Mode reduced to level {}. Difficulty and rewards now use this level.
     };
 
     /// One row of `module_string`, in the given session locale. A missing row

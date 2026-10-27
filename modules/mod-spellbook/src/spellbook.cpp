@@ -811,13 +811,13 @@ namespace
             if (learned)
             {
                 ChatHandler(player->GetSession())
-                    .PSendSysMessage("The book taught you {} ability or rank(s).", learned);
+                    .PSendModuleSysMessage("mod-spellbook", 1, learned);
                 LOG_INFO("module.spellbook", "{} learned {} ability or rank(s) from book {}",
                          player->GetName(), learned, book->GetEntry());
             }
             else
                 ChatHandler(player->GetSession())
-                    .SendSysMessage("You already know everything this book can teach you.");
+                    .PSendModuleSysMessage("mod-spellbook", 2);
 
             return true;
         }

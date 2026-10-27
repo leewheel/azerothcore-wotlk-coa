@@ -17,6 +17,7 @@
 
 #include "GlobalScript.h"
 #include "InstanceScript.h"
+#include "LFG.h"
 #include "Player.h"
 #include "ScriptMgr.h"
 #include "ScriptMgrMacros.h"
@@ -149,6 +150,20 @@ void ScriptMgr::OnBeforeSetBossState(uint32 id, EncounterState newState, Encount
 void ScriptMgr::AfterInstanceGameObjectCreate(Map* instance, GameObject* go)
 {
     CALL_ENABLED_HOOKS(GlobalScript, GLOBALHOOK_AFTER_INSTANCE_GAME_OBJECT_CREATE, script->AfterInstanceGameObjectCreate(instance, go));
+}
+
+// Resolve the Dungeon Finder queue policy a player's join is judged under.
+// By leewheel 2026年10月27日 (needed by mod-coa-playerbots)
+void ScriptMgr::OnResolveLfgQueuePolicy(ObjectGuid const& guid, lfg::LfgQueuePolicy& policy)
+{
+    CALL_ENABLED_HOOKS(GlobalScript, GLOBALHOOK_ON_RESOLVE_LFG_QUEUE_POLICY, script->OnResolveLfgQueuePolicy(guid, policy));
+}
+
+// Whether any registered script currently provides Dungeon Finder auto-fill.
+// By leewheel 2026年10月27日 (needed by mod-coa-playerbots)
+bool ScriptMgr::HasLfgAutoFillProvider() const
+{
+    CALL_ENABLED_BOOLEAN_HOOKS_WITH_DEFAULT_FALSE(GlobalScript, GLOBALHOOK_HAS_LFG_AUTO_FILL_PROVIDER, script->HasLfgAutoFillProvider());
 }
 
 GlobalScript::GlobalScript(char const* name, std::vector<uint16> enabledHooks)

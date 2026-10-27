@@ -292,6 +292,7 @@ using SlotIds = std::set<uint8>;
 
 class Guild
 {
+    friend class BotMgr; // mod-coa-playerbots: guild deposit/withdraw/gather need private access //By leewheel 2026年10月27日
 public: // pussywizard: public class Member
     // Class representing guild member
     class Member

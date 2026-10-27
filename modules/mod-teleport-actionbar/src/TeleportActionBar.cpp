@@ -273,7 +273,7 @@ void NotifyForeignToken(Player* player, uint32 spellId)
     last = now;
 
     ChatHandler handler(player->GetSession());
-    handler.PSendSysMessage("Stone of Retreat: {} is a {} stone - your {} character cannot use it.",
+    handler.PSendModuleSysMessage("mod-teleport-actionbar", 1,
         TokenHub(spellId), SideName(it->second), SideName(PlayerSide(player)));
 }
 
@@ -591,7 +591,7 @@ public:
             return false;
 
         uint32 const placed = AssignTokenButtons(player, "command");
-        handler->PSendSysMessage("Teleport tokens: placed {} button(s).", placed);
+        handler->PSendModuleSysMessage("mod-teleport-actionbar", 2, placed);
         return true;
     }
 
@@ -603,7 +603,7 @@ public:
 
         if (!tokenTeleportsLoaded)
         {
-            handler->SendSysMessage("Teleport token data is not loaded.");
+            handler->PSendModuleSysMessage("mod-teleport-actionbar", 3);
             return true;
         }
 
@@ -612,7 +612,7 @@ public:
         std::vector<uint32> const spells = CollectCarriedTokenSpells(player);
         LearnTokenSpellsNow(player, spells);
         uint32 const placed = AssignTokenButtons(player, "command learn");
-        handler->PSendSysMessage("Teleport tokens: learned {} spell(s), placed {} button(s).",
+        handler->PSendModuleSysMessage("mod-teleport-actionbar", 4,
             uint32(spells.size()), placed);
         return true;
     }
@@ -627,7 +627,7 @@ public:
 
         if (!tokenTeleportsLoaded)
         {
-            handler->SendSysMessage("Teleport token data is not loaded.");
+            handler->PSendModuleSysMessage("mod-teleport-actionbar", 3);
             return true;
         }
 
@@ -665,7 +665,7 @@ public:
         if (!foreignHubs.empty())
             foreignHubs = " (" + foreignHubs + (foreign > 5 ? ", ..." : "") + ")";
 
-        handler->PSendSysMessage("Stones you know: {} for your faction, {} shared, {} of the other faction{}.",
+        handler->PSendModuleSysMessage("mod-teleport-actionbar", 5,
             mine, shared, foreign, foreignHubs);
         return true;
     }

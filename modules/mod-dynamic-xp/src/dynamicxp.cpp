@@ -308,9 +308,7 @@ public:
         if (!sConfigMgr->GetOption<bool>("Dynamic.XP.Rate.Announce", false))
             return;
 
-        ChatHandler(player->GetSession()).PSendSysMessage(
-            "This server is running a |cff4CFF00{}|r XP rate. Type |cff4CFF00.xp|r to "
-            "change your own.", DescribePreset(EffectivePreset(player)));
+        ChatHandler(player->GetSession()).PSendModuleSysMessage("mod-dynamic-xp", 1, DescribePreset(EffectivePreset(player)));
     }
 
     void OnPlayerGiveXP(Player* player, uint32& amount, Unit* /*victim*/, uint8 /*xpSource*/) override
@@ -378,8 +376,7 @@ private:
 
         if (!PlayersMayChoose())
         {
-            handler->SendSysMessage(
-                "Choosing your own XP rate is turned off on this realm; ask a game master.");
+            handler->PSendModuleSysMessage("mod-dynamic-xp", 2);
             return true;
         }
 
@@ -391,7 +388,7 @@ private:
         }
 
         StorePersonalPreset(player, preset);
-        handler->PSendSysMessage("Your XP rate is now |cff4CFF00{}|r, saved for this character.",
+        handler->PSendModuleSysMessage("mod-dynamic-xp", 3,
                                  DescribePreset(preset));
         return true;
     }
@@ -408,7 +405,7 @@ private:
             return false;
 
         ClearPersonalPreset(player);
-        handler->PSendSysMessage("Your XP rate now follows the realm: |cff4CFF00{}|r.",
+        handler->PSendModuleSysMessage("mod-dynamic-xp", 4,
                                  DescribePreset(RealmPreset()));
         return true;
     }
@@ -422,14 +419,13 @@ private:
         uint32 personal = 0;
         bool const owns = PlayersMayChoose() && PersonalPreset(player, personal);
 
-        handler->PSendSysMessage("Your XP rate: |cff4CFF00{}|r ({}).",
+        handler->PSendModuleSysMessage("mod-dynamic-xp", 5,
                                  DescribePreset(EffectivePreset(player)),
-                                 owns ? "your own choice" : "the realm rate");
+                                 owns ? *handler->GetModuleString("mod-dynamic-xp", 14) : *handler->GetModuleString("mod-dynamic-xp", 15));
         if (owns)
-            handler->PSendSysMessage("The realm rate is {}. |cff4CFF00.xp default|r "
-                                     "follows it again.", DescribePreset(RealmPreset()));
+            handler->PSendModuleSysMessage("mod-dynamic-xp", 6, DescribePreset(RealmPreset()));
         if (PlayersMayChoose())
-            handler->PSendSysMessage("Pick yours with {}.", DescribeAllowed(".xp"));
+            handler->PSendModuleSysMessage("mod-dynamic-xp", 7, DescribeAllowed(".xp"));
         return true;
     }
 
@@ -454,18 +450,16 @@ private:
         g_realmPresetCache.store(int32(preset), std::memory_order_relaxed);
 
         if (preset == 1)
-            handler->PSendSysMessage(
-                "The realm rate is back to |cff4CFF00x1|r: no bonus is applied.");
+            handler->PSendModuleSysMessage("mod-dynamic-xp", 8);
         else
-            handler->PSendSysMessage("The realm rate is now |cff4CFF00{}|r.",
+            handler->PSendModuleSysMessage("mod-dynamic-xp", 9,
                                      DescribePreset(preset));
 
         if (persisted)
-            handler->PSendSysMessage("Saved to {}. Characters with their own choice keep it.",
+            handler->PSendModuleSysMessage("mod-dynamic-xp", 10,
                                      path);
         else
-            handler->PSendSysMessage("Could not write {}; the change lasts until the next "
-                                     "restart.", path);
+            handler->PSendModuleSysMessage("mod-dynamic-xp", 11, path);
         return true;
     }
 
@@ -479,10 +473,9 @@ private:
         if (!handler)
             return false;
 
-        handler->PSendSysMessage("Realm XP rate: |cff4CFF00{}|r (the default for every "
-                                 "character without its own choice).",
+        handler->PSendModuleSysMessage("mod-dynamic-xp", 12,
                                  DescribePreset(RealmPreset()));
-        handler->PSendSysMessage("Change it with {}.", DescribeAllowed(".xp realm"));
+        handler->PSendModuleSysMessage("mod-dynamic-xp", 13, DescribeAllowed(".xp realm"));
         return true;
     }
 };

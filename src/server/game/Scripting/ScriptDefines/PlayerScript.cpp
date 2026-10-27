@@ -1060,6 +1060,11 @@ void ScriptMgr::OnPlayerGetNameQueryRace(Player* player, uint8& race)
     CALL_ENABLED_HOOKS(PlayerScript, PLAYERHOOK_ON_GET_NAME_QUERY_RACE, script->OnPlayerGetNameQueryRace(player, race));
 }
 
+void ScriptMgr::OnPetitionOffered(Player* player, ObjectGuid petitionGuid) //By leewheel 2026年10月27日
+{
+    CALL_ENABLED_HOOKS(PlayerScript, PLAYERHOOK_ON_PETITION_OFFERED, script->OnPetitionOffered(player, petitionGuid));
+}
+
 void ScriptMgr::OnPlayerNormalizeActionButtonSpell(Player* player, uint32& action, bool loading)
 {
     CALL_ENABLED_HOOKS(PlayerScript, PLAYERHOOK_ON_NORMALIZE_ACTION_BUTTON_SPELL, script->OnPlayerNormalizeActionButtonSpell(player, action, loading));

@@ -25,6 +25,9 @@
 #include <map>
 #include <vector>
 
+// By leewheel 2026年10月27日 — LFG queue policy (mod-coa-playerbots)
+namespace lfg { struct LfgQueuePolicy; }
+
 enum GlobalHook
 {
     GLOBALHOOK_ON_ITEM_DEL_FROM_DB,
@@ -48,6 +51,8 @@ enum GlobalHook
     GLOBALHOOK_ON_BEFORE_SET_BOSS_STATE,
     GLOBALHOOK_AFTER_INSTANCE_GAME_OBJECT_CREATE,
     GLOBALHOOK_ON_SPELL_MOD_FAMILY_MASK,
+    GLOBALHOOK_ON_RESOLVE_LFG_QUEUE_POLICY,
+    GLOBALHOOK_HAS_LFG_AUTO_FILL_PROVIDER,
     GLOBALHOOK_END
 };
 
@@ -106,6 +111,16 @@ public:
 
     // Called when a gameobject is created by an instance
     virtual void AfterInstanceGameObjectCreate(Map* /*instance*/, GameObject* /*go*/) { }
+
+    // Resolve the queue policy (composition mode & role rules) a player's Dungeon Finder join
+    // is judged under; scripts may rewrite `policy` for their own intent (mod-coa-playerbots'
+    // fill marks BOT_FILL). By leewheel 2026年10月27日 (needed by mod-coa-playerbots)
+    virtual void OnResolveLfgQueuePolicy(ObjectGuid const& /*guid*/, lfg::LfgQueuePolicy& /*policy*/) { }
+
+    // Whether some script currently provides Dungeon Finder auto-fill (mod-coa-playerbots
+    // answers true while CoaBots.LfgFill.Enable is on). By leewheel 2026年10月27日
+    // (needed by mod-coa-playerbots)
+    virtual bool HasLfgAutoFillProvider() const { return false; }
 };
 
 #endif

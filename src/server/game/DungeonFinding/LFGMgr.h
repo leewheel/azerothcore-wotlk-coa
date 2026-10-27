@@ -468,6 +468,8 @@ namespace lfg
         LfgState GetState(ObjectGuid guid);
         /// Get current dungeon
         uint32 GetDungeon(ObjectGuid guid, bool asId = true);
+        /// Get the pending proposal id a player is part of, 0 if none (mod-coa-playerbots LFG fill) //By leewheel 2026年10月27日
+        uint32 GetProposalIdForPlayer(ObjectGuid guid) const;
         /// Get the map id of the current dungeon
         uint32 GetDungeonMapId(ObjectGuid guid);
         /// Get kicks left in current group
