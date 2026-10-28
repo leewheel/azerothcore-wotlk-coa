@@ -2338,8 +2338,11 @@ private:
     {
         uint32 const expansion = actor.definition.get<uint32>("expansion", EXPANSION_WRATH_OF_THE_LICH_KING);
         Require(expansion <= EXPANSION_WRATH_OF_THE_LICH_KING, "Player expansion must be 0..2");
+        uint32 const security = actor.definition.get<uint32>("security", uint32(SEC_PLAYER));
+        Require(security <= uint32(SEC_ADMINISTRATOR),
+            "Player security must be 0..3 (SEC_PLAYER..SEC_ADMINISTRATOR)");
         actor.session = std::make_unique<WorldSession>(actor.accountId, std::string(actor.account), 0, nullptr,
-            SEC_PLAYER, uint8(expansion), 0, LOCALE_enUS, 0, false, false, 0,
+            AccountTypes(security), uint8(expansion), 0, LOCALE_enUS, 0, false, false, 0,
             actor.definition.get<bool>("bot", false));
         actor.session->SetAscensionCompatEnabled(actor.definition.get<bool>("ascension_client", false));
         actor.session->SetSocketlessPacketObserver([&actor](WorldPacket const& packet)
@@ -3572,6 +3575,14 @@ private:
             return _actors.at(step.get<std::string>("actor")).lootReceived;
         if (metric == "voidportal_group")
             return double(Ascension::VoidPortal::ActiveGroupForTest());
+        if (metric == "spawn_active")
+        {
+            auto range = player->GetMap()->GetGameObjectBySpawnIdStore().equal_range(step.get<uint32>("spawn"));
+            for (auto itr = range.first; itr != range.second; ++itr)
+                if (itr->second->IsInWorld() && itr->second->isSpawned())
+                    return 1.0;
+            return 0.0;
+        }
         if (metric == "nearby_gameobject_count" || metric == "nearby_gameobject_quest_active")
         {
             bool const questActiveOnly = metric == "nearby_gameobject_quest_active";
@@ -4857,6 +4868,7 @@ private:
             uint32 const maxRequiredLevel = step.get<uint32>("max_required_level", STRONG_MAX_LEVEL);
             auto dominantStat = step.get_optional<uint32>("dominant_stat");
             auto offStat = step.get_optional<uint32>("off_stat");
+            auto quality = step.get_optional<uint32>("quality");
             auto strongestAttributes = [](ItemTemplate const* proto)
             {
                 std::array<int32, ITEM_MOD_SPIRIT + 1> attributes{};
@@ -4875,7 +4887,7 @@ private:
             };
             uint32 count = 0;
             auto countItem = [pool, &count, &excluded, minRequiredLevel, maxRequiredLevel, &dominantStat, &offStat,
-                &strongestAttributes](Item* item)
+                &quality, &strongestAttributes](Item* item)
             {
                 if (excluded && item->GetEntry() == *excluded)
                     return;
@@ -4883,6 +4895,8 @@ private:
                 if (requiredLevel < minRequiredLevel || requiredLevel > maxRequiredLevel)
                     return;
                 ItemTemplate const* base = sObjectMgr->GetItemTemplate(ItemScaling::BaseEntry(item->GetEntry()));
+                if (quality && (base ? base : item->GetTemplate())->Quality != *quality)
+                    return;
                 std::unordered_set<uint32> const strongest = strongestAttributes(base ? base : item->GetTemplate());
                 if (dominantStat && !strongest.count(*dominantStat))
                     return;
@@ -6061,6 +6075,17 @@ private:
                 if (sScriptMgr->CanPacketReceive(player->GetSession(), packet))
                     player->GetSession()->HandleLootOpcode(packet);
             }
+        }
+        else if (action == "select_nearby")
+        {
+            float const radius = step.get<float>("radius", 40.0f);
+            Creature* creature = player->FindNearestCreature(step.get<uint32>("entry"), radius, true);
+            Require(creature != nullptr, "Select needs a living creature of that entry within " +
+                std::to_string(radius) + " yards");
+            WorldPacket packet(CMSG_SET_SELECTION, 8);
+            packet << creature->GetGUID();
+            player->GetSession()->HandleSetSelectionOpcode(packet);
+            Require(player->GetTarget() == creature->GetGUID(), "Selection did not take effect");
         }
         else if (action == "loot_creature")
         {
