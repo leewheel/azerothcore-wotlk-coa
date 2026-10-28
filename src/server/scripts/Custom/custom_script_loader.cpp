@@ -20,6 +20,9 @@
 void AddSC_spell_basalthane();
 void AddSC_spell_infernos_items();
 void AddSC_spell_coa_stormwind_quests();
+// By leewheel 2026年10月28日 - 移植自动钓鱼（源自 LWCorePlayerbotsBlizzardLike2026Revision，简化为命令直达）
+void AddSC_AutoFish();
+// End By leewheel
 
 // The name of this function should match:
 // void Add${NameOfDirectory}Scripts()
@@ -29,4 +32,7 @@ void AddCustomScripts()
     AddSC_spell_basalthane();
     AddSC_spell_infernos_items();
     AddSC_spell_coa_stormwind_quests();
+    // By leewheel 2026年10月28日
+    AddSC_AutoFish();
+    // End By leewheel
 }

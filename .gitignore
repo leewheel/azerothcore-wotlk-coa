@@ -10,6 +10,7 @@
 !/modules/mod-coa-mythic-plus/
 !/modules/mod-worldforged-upgrades/
 !/modules/mod-cfbg/
+!/modules/mod-junk-to-gold/
 !/modules/*.md
 !/modules/*.sh
 !/modules/CMakeLists.txt
@@ -28,6 +29,7 @@
 /data/sql/custom/*
 /src/server/scripts/Custom/*
 !/src/server/scripts/Custom/README.md
+!/src/server/scripts/Custom/AutoFish/
 
 /*.override.yml
 /*.override.yaml

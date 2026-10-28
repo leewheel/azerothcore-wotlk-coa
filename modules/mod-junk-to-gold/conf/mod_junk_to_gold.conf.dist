@@ -1,0 +1,12 @@
+####################################################################
+# JunkToGold Configuration
+#
+# JunkToGold.Enable
+#     Description: Enable or disable the JunkToGold module.
+#                  When enabled, gray quality items will be automatically sold.
+#     Default:     1 - (Enabled)
+#                  0 - (Disabled)
+#
+####################################################################
+
+JunkToGold.Enable = 1
