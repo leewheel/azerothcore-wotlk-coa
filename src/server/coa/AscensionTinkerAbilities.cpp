@@ -357,7 +357,8 @@ class spell_ascension_tinker_ability : public SpellScript
         if (Any(GetSpellInfo(),{805372}) && type == SPELL_EFFECT_SCRIPT_EFFECT)
         {
             PreventHitDefaultEffect(index);
-            if (GetHitUnit())
+            //By leewheel 2026年10月28日 GetHitUnit 仅在目标 hook 有效，OnEffectHit 阶段调用会刷 "has no effect in current hook" 错误
+            if (IsInTargetHook() && GetHitUnit())
                 PetCast(player,GetHitUnit(),805459);
         }
         if (id == 524835 || id == 800349 || id == 801798)

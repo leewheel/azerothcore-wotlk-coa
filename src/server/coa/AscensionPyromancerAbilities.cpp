@@ -418,7 +418,8 @@ class spell_ascension_pyromancer_ability : public SpellScript
                        position, std::max(0, GetSpellInfo()->GetDuration()));
             }
         }
-        if (id == 520019 && GetHitUnit())
+        //By leewheel 2026年10月28日 GetHitUnit 仅在目标 hook 有效，OnEffectHit 阶段调用会刷 "has no effect in current hook" 错误
+        if (id == 520019 && IsInTargetHook() && GetHitUnit())
         {
             PreventHitDefaultEffect(index);
             Unit* target = GetHitUnit();
