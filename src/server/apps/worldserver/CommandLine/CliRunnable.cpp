@@ -74,10 +74,40 @@ namespace Acore::Impl::Readline
 }
 #endif
 
+#if AC_PLATFORM == AC_PLATFORM_WINDOWS
+/// 把 UTF-8 文本转换为系统 ANSI 代码页（中文 Windows = 936/GBK）。
+/// 控制台代码页已在 CliThread 中设为 GetACP()，CLI 命令回显若直出 UTF-8 字节，
+/// 会在 GBK 控制台里显示为乱码；统一转成 GBK 写出后中文即可正常显示。
+/// 转换失败时原样返回 UTF-8，保证输出永不丢内容。实现与 AppenderFile.cpp 保持一致。
+/// By leewheel 2026年10月28日
+static std::string Utf8ToSystemAnsi(std::string const& utf8)
+{
+    if (utf8.empty())
+        return utf8;
+
+    int wlen = MultiByteToWideChar(CP_UTF8, 0, utf8.c_str(), int(utf8.size()), nullptr, 0);
+    if (wlen <= 0)
+        return utf8;
+
+    std::wstring wide(wlen, 0);
+    MultiByteToWideChar(CP_UTF8, 0, utf8.c_str(), int(utf8.size()), &wide[0], wlen);
+
+    int alen = WideCharToMultiByte(CP_ACP, 0, wide.c_str(), wlen, nullptr, 0, nullptr, nullptr);
+    if (alen <= 0)
+        return utf8;
+
+    std::string ansi(alen, 0);
+    WideCharToMultiByte(CP_ACP, 0, wide.c_str(), wlen, &ansi[0], alen, nullptr, nullptr);
+    return ansi;
+}
+#endif
+
 void utf8print(void* /*arg*/, std::string_view str)
 {
 #if AC_PLATFORM == AC_PLATFORM_WINDOWS
-    fmt::print("{}", str);
+    // CLI 回显按系统 ANSI（GBK）写出，与控制台代码页一致，中文正常显示。By leewheel 2026年10月28日
+    std::string ansiLine = Utf8ToSystemAnsi(std::string(str));
+    fmt::print("{}", ansiLine);
 #else
 {
     fmt::print("{}", str);
