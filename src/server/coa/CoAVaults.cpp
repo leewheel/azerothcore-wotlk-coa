@@ -2007,7 +2007,12 @@ class spell_coa_vaults_damage_aura : public AuraScript
 
     void Register() override
     {
-        DoEffectCalcAmount += AuraEffectCalcAmountFn(spell_coa_vaults_damage_aura::CalcTick, EFFECT_ALL, SPELL_AURA_PERIODIC_DAMAGE);
+        // 绑定该脚本的既有直伤法术也有 DoT 法术；直伤法术没有 periodic damage 光环，
+        // 无条件注册会在启动校验期报 "did not match dbc effect data"，按光环存在性条件注册。
+        // 注意：Register 期 AuraScript::GetSpellInfo() 走 m_aura 为空会崩，须用 m_scriptSpellId 查 sSpellMgr //By leewheel 2026年10月29日
+        if (SpellInfo const* info = sSpellMgr->GetSpellInfo(m_scriptSpellId))
+            if (info->HasAura(SPELL_AURA_PERIODIC_DAMAGE))
+                DoEffectCalcAmount += AuraEffectCalcAmountFn(spell_coa_vaults_damage_aura::CalcTick, EFFECT_ALL, SPELL_AURA_PERIODIC_DAMAGE);
     }
 };
 class spell_coa_vaults_void_wrath : public AuraScript

@@ -265,9 +265,13 @@ class aura_ascension_necromancer_lifecycle : public AuraScript
     }
     void Dispel(DispelInfo*)
     {
+        // AURA_SCRIPT_HOOK_DISPEL 不在 AuraScript::GetTarget() 允许清单内，直接调会报
+        // "GetTarget called in a hook in which the call won't have effect" 并返回空，
+        // 驱散疾病时 680928 施放会丢目标；改走 GetTargetApplication //By leewheel 2026年10月29日
         if (Player* player = Owner(GetCaster()))
             if (Named(GetSpellInfo(), 801945))
-                Cast(player, GetTarget(), 680928);
+                if (AuraApplication const* app = GetTargetApplication())
+                    Cast(player, app->GetTarget(), 680928);
     }
     void Register() override
     {

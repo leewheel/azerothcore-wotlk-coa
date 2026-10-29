@@ -70,6 +70,11 @@ void WaypointMovementGenerator<Creature>::DoInitialize(Creature* creature)
 
     if (!i_path)
     {
+        // 有主人的召唤宠物（如萨满土元素）不会用 waypoint 巡走；它被塞进 waypoint 生成器属误报，
+        // 直接静默返回（生成器 no-op，宠物跟随/战斗走 CONTROLLED 槽不受影响），避免污染错误日志。//By leewheel 2026年10月29日
+        if (creature->IsPet() && creature->GetCharmerOrOwnerPlayerOrPlayerItself())
+            return;
+
         LOG_ERROR("sql.sql", "WaypointMovementGenerator::DoInitialize: creature {} ({}) doesn't have waypoint path id: {}",
             creature->GetName(), creature->GetGUID().ToString(), _pathId);
         return;

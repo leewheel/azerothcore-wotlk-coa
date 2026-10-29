@@ -83,7 +83,8 @@ class spell_ascension_wildcard_cremation : public SpellScript
         uint32 const level = GetCaster()->GetLevel();
         int32 amount = int32(std::min(remainingDamage * 7 + urand(level * 35, level * 37),
             uint64(std::numeric_limits<int32>::max())) / ticks);
-        GetCaster()->CastCustomSpell(target, CremationBurn, &amount, nullptr, nullptr, TRIGGERED_FULL_MASK);
+        // 末参是 bool triggered，原传 TRIGGERED_FULL_MASK 触发 C4305 截断警告，改为 true //By leewheel 2026年10月29日
+        GetCaster()->CastCustomSpell(target, CremationBurn, &amount, nullptr, nullptr, true);
     }
 
     void Register() override

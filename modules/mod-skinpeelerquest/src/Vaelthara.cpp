@@ -72,8 +72,9 @@ namespace
 
     // Yells, one per transition. Written as narration rather than dialogue, so
     // the line describes her state instead of her speaking.
-    constexpr char const* VAELTHARA_YELL_P2 = "Vaelthara's scars flare as she digs her claws in.";
-    constexpr char const* VAELTHARA_YELL_P3 = "Vaelthara is cornered, and every instinct turns to the kill.";
+    // 玩家可见呐喊汉化（旁白式） //By leewheel 2026年10月29日
+    constexpr char const* VAELTHARA_YELL_P2 = "薇尔萨拉深深扣入地面，伤疤随之迸出血光。";
+    constexpr char const* VAELTHARA_YELL_P3 = "薇尔萨拉被逼入绝境，每一种本能都指向猎杀。";
 
     // Two kits are played together: 81 is Enrage's SpellVisual 870 cast kit and
     // is the one that actually renders the aura; 392 is the cast kit of

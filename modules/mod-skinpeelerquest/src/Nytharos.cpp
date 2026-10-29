@@ -71,13 +71,14 @@ namespace
     constexpr std::array<float, 3> NY_PHASE_BULWARK_PCT = {0.12f, 0.138f, 0.15f};
     constexpr std::array<uint32, 3> NY_PHASE_PULSE_MS = {3000, 3000, 2000};
 
-    constexpr char const* NY_YELL_PULL_1 = "The bay around Nytharos falls silent.";
-    constexpr char const* NY_YELL_PULL_2 = "Nytharos turns, and the shallows turn with him.";
-    constexpr char const* NY_YELL_P2_1 = "The bay begins to churn in earnest.";
-    constexpr char const* NY_YELL_P2_2 = "Nytharos calls deeper, and the water answers faster.";
+    // 玩家可见呐喊汉化（旁白式） //By leewheel 2026年10月29日
+    constexpr char const* NY_YELL_PULL_1 = "尼萨罗斯周围的海湾陷入了沉寂。";
+    constexpr char const* NY_YELL_PULL_2 = "尼萨罗斯转过身，浅滩也随之翻涌。";
+    constexpr char const* NY_YELL_P2_1 = "海湾开始真正地沸腾起来。";
+    constexpr char const* NY_YELL_P2_2 = "尼萨罗斯向更深处呼唤，海水以更快的速度回应。";
     constexpr char const* NY_YELL_P3_1 =
-        "The drowned oracle's voice carries through the water, and the whole bay answers.";
-    constexpr char const* NY_YELL_P3_2 = "The tide stops retreating. It only advances now.";
+        "溺亡先知的声音穿透海水，整个海湾都在回应。";
+    constexpr char const* NY_YELL_P3_2 = "潮水不再退去。它只进不退。";
 
     constexpr float NY_SPOUT_CONTACT = 4.0f;
     constexpr uint32 NY_SPOUT_DAMAGE = 250;

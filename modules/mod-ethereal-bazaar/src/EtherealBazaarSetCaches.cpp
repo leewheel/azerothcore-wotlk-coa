@@ -28,6 +28,12 @@
 
 namespace
 {
+    // 玩家可见文本走 module_string（mod-ethereal-bazaar）：1 空缓存提示 / 2 邮件主题 / 3 邮件正文 //By leewheel 2026年10月29日
+    constexpr uint32 STR_CACHE_EMPTY = 1;
+    constexpr uint32 STR_MAIL_SUBJECT = 2;
+    constexpr uint32 STR_MAIL_BODY = 3;
+    constexpr char const* MODULE_NAME = "mod-ethereal-bazaar";
+
     std::unordered_map<uint32, std::vector<std::pair<uint32, uint32>>> g_setCaches;
 
     void LoadSetCaches()
@@ -77,7 +83,7 @@ public:
         auto const it = g_setCaches.find(item->GetEntry());
         if (it == g_setCaches.end() || it->second.empty())
         {
-            ChatHandler(player->GetSession()).PSendSysMessage("This cache is empty. Tell an administrator.");
+            ChatHandler(player->GetSession()).PSendModuleSysMessage(MODULE_NAME, STR_CACHE_EMPTY);
             return true;
         }
 
@@ -106,10 +112,15 @@ public:
 
         if (!mail.empty())
         {
+            // 邮件主题/正文按玩家会话 locale 取 module_string //By leewheel 2026年10月29日
+            LocaleConstant const locale = player->GetSession()->GetSessionDbLocaleIndex();
+            std::string const subject = *sObjectMgr->GetModuleString(MODULE_NAME, STR_MAIL_SUBJECT, locale);
+            std::string const body = *sObjectMgr->GetModuleString(MODULE_NAME, STR_MAIL_BODY, locale);
+
             CharacterDatabaseTransaction trans = CharacterDatabase.BeginTransaction();
             for (std::size_t index = 0; index < mail.size(); index += MAX_MAIL_ITEMS)
             {
-                MailDraft draft("Set cache", "Your bags were full, so the rest of your set was sent by mail.");
+                MailDraft draft(subject, body);
                 for (std::size_t i = index; i < std::min(index + std::size_t(MAX_MAIL_ITEMS), mail.size()); ++i)
                 {
                     mail[i]->SaveToDB(trans);
