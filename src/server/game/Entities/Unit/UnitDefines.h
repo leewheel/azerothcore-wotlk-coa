@@ -100,9 +100,16 @@ enum ShapeshiftForm
     FORM_STEALTH                        = 0x1E,
     FORM_MOONKIN                        = 0x1F,
     FORM_SPIRITOFREDEMPTION             = 0x20,
+    // COA 自定义形态（SpellShapeshiftForm.dbc 名称：36 Tower Formation / 37 Assault Formation）//By leewheel 2026年10月29日
+    FORM_TOWER_FORMATION                = 0x24,
+    FORM_ASSAULT_FORMATION              = 0x25,
     FORM_TINKER_MECHSUIT                = 0x31,
+    FORM_NECROMANCER_LICH               = 0x32, // COA 死灵法师巫妖形态（SpellShapeshiftForm.dbc: "Lich Form CoA"）//By leewheel 2026年10月29日
     FORM_VENOMANCER_SPIDER              = 0x34,
-    FORM_VENOMANCER_BEETLE              = 0x35
+    FORM_VENOMANCER_BEETLE              = 0x35,
+    // COA 自定义形态（SpellShapeshiftForm.dbc 名称：56 Demon / 57 Cursed Form）//By leewheel 2026年10月29日
+    FORM_DEMON                          = 0x38,
+    FORM_CURSED                         = 0x39
 };
 
 enum ShapeshiftFlags

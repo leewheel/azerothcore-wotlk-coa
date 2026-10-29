@@ -341,7 +341,8 @@ namespace lfg
                 AreaTriggerTeleport const* at = sObjectMgr->GetMapEntranceTrigger(dungeon.map);
                 if (!at)
                 {
-                    LOG_ERROR("lfg", "LFGMgr::LoadLFGDungeons: Failed to load dungeon {}, cant find areatrigger for map {}", dungeon.name, dungeon.map);
+                    // 未配置 LFG 入口的副本（世界 Boss 图/无 areatrigger 数据）按上游设计锁定为不可排队，属预期加载信息 //By leewheel 2026年10月29日
+                    LOG_INFO("lfg", "副本 {} 未配置 LFG 入口（地图 {} 无 areatrigger），已按设计锁定，不可排入", dungeon.name, dungeon.map);
                     DungeonsWithoutEntrance.insert(dungeon.id);
                     continue;
                 }

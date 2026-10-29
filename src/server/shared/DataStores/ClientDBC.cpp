@@ -45,7 +45,7 @@ std::string_view ClientDBC::Record::GetStringAt(uint32 byteOffset) const
     return strings.substr(offset, end == std::string_view::npos ? std::string_view::npos : end - offset);
 }
 
-bool ClientDBC::Load(std::string const& path, uint32 minimumDWords)
+bool ClientDBC::Load(std::string const& path, uint32 minimumDWords, bool reportMissingAsError) //By leewheel 2026年10月29日（加 reportMissingAsError）
 {
     _data.clear();
     _recordCount = _recordSize = _stringSize = 0;
@@ -53,7 +53,9 @@ bool ClientDBC::Load(std::string const& path, uint32 minimumDWords)
     std::ifstream file(path, std::ios::binary);
     if (!file)
     {
-        LOG_ERROR("dbc", "Unable to open client DBC {}", path);
+        // 可选输入（如 dbc_clientset 客户端副本）缺失时按预期静默，由调用方播报降级路径 //By leewheel 2026年10月29日
+        if (reportMissingAsError)
+            LOG_ERROR("dbc", "Unable to open client DBC {}", path);
         return false;
     }
 

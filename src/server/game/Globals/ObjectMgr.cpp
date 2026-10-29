@@ -763,8 +763,10 @@ void ObjectMgr::LoadCreatureTemplate(Field* fields, bool triggerHook)
         LOG_WARN("server.loading", "Creature (Entry: {}) has deprecated flags_extra bit NO_TAUNT (0x100) set. This will be migrated to the `creature_immunities` table in a future update.", entry);
     if (creatureTemplate.flags_extra & CREATURE_FLAG_EXTRA_AVOID_AOE)
         LOG_WARN("server.loading", "Creature (Entry: {}) has deprecated flags_extra bit AVOID_AOE (0x400000) set. This will be migrated to the `creature_immunities` table in a future update.", entry);
+    // COA fork：creature_immunities 表尚无击退列，IsImmuneToKnockback() 仍只读本 flag（上游 future update 未落地），
+    // flag 数据保持不动以免丢失击退免疫行为；此提示降为 debug 级避免每次启动刷 139 行警告（生产库实测）//By leewheel 2026年10月29日
     if (creatureTemplate.flags_extra & CREATURE_FLAG_EXTRA_IMMUNITY_KNOCKBACK)
-        LOG_WARN("server.loading", "Creature (Entry: {}) has deprecated flags_extra bit IMMUNITY_KNOCKBACK (0x40000000) set. This will be migrated to the `creature_immunities` table in a future update.", entry);
+        LOG_DEBUG("server.loading", "Creature (Entry: {}) has deprecated flags_extra bit IMMUNITY_KNOCKBACK (0x40000000) set. This will be migrated to the `creature_immunities` table in a future update.", entry);
 
     // useful if the creature template load is being triggered from outside this class
     if (triggerHook)

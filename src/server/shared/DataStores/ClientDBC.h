@@ -65,7 +65,9 @@ public:
     };
 
     /// Reads a WDBC file whose records hold at least `minimumDWords` DWORDs. Logs and returns false otherwise.
-    bool Load(std::string const& path, uint32 minimumDWords);
+    /// reportMissingAsError=false：文件不存在属调用方的预期态（如可选客户端副本缺失后的降级路径），
+    /// 不打 ERROR；文件损坏类错误（非 WDBC / 头与大小不符）仍照常报错。//By leewheel 2026年10月29日
+    bool Load(std::string const& path, uint32 minimumDWords, bool reportMissingAsError = true);
 
     [[nodiscard]] uint32 GetRecordCount() const { return _recordCount; }
     [[nodiscard]] uint32 GetRecordSize() const { return _recordSize; }

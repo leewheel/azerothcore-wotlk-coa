@@ -595,7 +595,7 @@ struct AppearanceInfo {
 constexpr uint32 INCARNATION_KIND_FORM = 1;
 constexpr uint32 INCARNATION_KIND_CREATURE = 2;
 constexpr uint32 INCARNATION_KIND_HIDDEN_FORM = 4;
-constexpr ShapeshiftForm FORM_NECROMANCER_LICH = ShapeshiftForm(50);
+// FORM_NECROMANCER_LICH(50) 已并入 UnitDefines.h 的 ShapeshiftForm 枚举（同名同值），此处不再重复定义 //By leewheel 2026年10月29日
 
 struct IncarnationCategory {
   uint32 Kind = 0;
@@ -5056,9 +5056,10 @@ private:
   }
 
   static std::optional<std::unordered_set<uint32>>
-  LoadDbcIds(std::filesystem::path const &path, uint32 minimumDWords) {
+  LoadDbcIds(std::filesystem::path const &path, uint32 minimumDWords,
+             bool reportMissingAsError = true) { // reportMissingAsError=false：可选客户端副本缺失属预期态 //By leewheel 2026年10月29日
     ClientDBC file;
-    if (!file.Load(path.string(), minimumDWords))
+    if (!file.Load(path.string(), minimumDWords, reportMissingAsError))
       return std::nullopt;
 
     std::unordered_set<uint32> ids;
@@ -5080,7 +5081,7 @@ private:
     std::filesystem::path const clientDbc =
         clientDbcDirectory / "ItemDisplayInfo.dbc";
     std::optional<std::unordered_set<uint32>> const clientIds =
-        LoadDbcIds(clientDbc, ITEM_DISPLAY_INFO_FIELD_COUNT);
+        LoadDbcIds(clientDbc, ITEM_DISPLAY_INFO_FIELD_COUNT, false); // dbc_clientset 缺失为默认设计态，静默走下方降级 //By leewheel 2026年10月29日
     if (!clientIds)
     {
       LOG_WARN("coa",
@@ -5170,7 +5171,7 @@ private:
 
     std::filesystem::path const clientDbc = clientDbcDirectory / "Item.dbc";
     std::optional<std::unordered_set<uint32>> const clientIds =
-        LoadDbcIds(clientDbc, std::tuple_size_v<ItemPatchRow>);
+        LoadDbcIds(clientDbc, std::tuple_size_v<ItemPatchRow>, false); // dbc_clientset 缺失为默认设计态，静默走下方降级 //By leewheel 2026年10月29日
     if (!clientIds)
     {
       LOG_WARN("coa",
@@ -5525,7 +5526,7 @@ private:
     std::filesystem::path const clientDbc =
         clientDbcDirectory / "CreatureDisplayInfo.dbc";
     std::optional<std::unordered_set<uint32>> clientDisplayIds =
-        LoadDbcIds(clientDbc, 16);
+        LoadDbcIds(clientDbc, 16, false); // dbc_clientset 缺失为默认设计态，静默走下方 server dbc 兜底 //By leewheel 2026年10月29日
     if (!clientDisplayIds)
     {
       std::filesystem::path const serverDbc =

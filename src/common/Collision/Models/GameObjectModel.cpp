@@ -88,8 +88,9 @@ void LoadGameObjectModelList(std::string const& dataPath)
 
         if (v1.isNaN() || v2.isNaN())
         {
-            LOG_ERROR("maps", "File '{}' Model '{}' has invalid v1{} v2{} values!",
-                      VMAP::GAMEOBJECT_MODELS, std::string(buff, name_length), v1.toString(), v2.toString());
+            // 资产内边界值为 NaN 的模型（如 Battleship_*_Nocollision.wmo 无碰撞船模型）无法建立包围盒，
+            // 加载阶段跳过该条目后 GameObject 查不到模型即视为无碰撞——与 Nocollision 设计一致，属预期态 //By leewheel 2026年10月29日
+            LOG_INFO("maps", "GameObjectModels.dtree 模型 '{}' 边界值无效（NaN），已按无碰撞模型跳过", std::string(buff, name_length));
             continue;
         }
 

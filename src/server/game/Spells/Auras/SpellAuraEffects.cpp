@@ -2156,6 +2156,14 @@ void AuraEffect::HandleAuraModShapeshift(AuraApplication const* aurApp, uint8 mo
         case FORM_STEALTH:                                  // 0x1E
         case FORM_MOONKIN:                                  // 0x1F
         case FORM_SPIRITOFREDEMPTION:                       // 0x20
+        // COA 自定义形态：资源类型由职业默认策略（LiveClassResourcePolicy）决定，不在形态内切换，
+        // 与既有运行行为一致，补登记以消除 Unknown Shapeshift Type 误报 //By leewheel 2026年10月29日
+        case FORM_TOWER_FORMATION:                          // 0x24
+        case FORM_ASSAULT_FORMATION:                        // 0x25
+        case FORM_TINKER_MECHSUIT:                          // 0x31
+        case FORM_NECROMANCER_LICH:                         // 0x32
+        case FORM_DEMON:                                     // 0x38
+        case FORM_CURSED:                                    // 0x39
             break;
         default:
             LOG_ERROR("spells.aura.effect", "Auras: Unknown Shapeshift Type: {}", GetMiscValue());
