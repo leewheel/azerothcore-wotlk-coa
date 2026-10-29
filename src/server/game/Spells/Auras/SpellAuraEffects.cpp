@@ -2224,6 +2224,16 @@ void AuraEffect::HandleAuraModShapeshift(AuraApplication const* aurApp, uint8 mo
         case FORM_NECROMANCER_LICH:                         // 0x32
         case FORM_DEMON:                                     // 0x38
         case FORM_CURSED:                                    // 0x39
+        // 0x36-0x3F 为 COA 自定义形态段（0x34/0x35 venomancer 与 0x38 demon 前后延伸，DBC 名暂未逐一解析），
+        // bot aura 实测反复触发（0x36/0x3B 等）；与相邻自定义形态一致走职业默认资源策略，整段登记消除运行期误报 //By leewheel 2026年10月30日
+        case 0x36:
+        case 0x37:
+        case 0x3A:
+        case 0x3B:
+        case 0x3C:
+        case 0x3D:
+        case 0x3E:
+        case 0x3F:
             break;
         default:
             LOG_ERROR("spells.aura.effect", "Auras: Unknown Shapeshift Type: {}", GetMiscValue());
