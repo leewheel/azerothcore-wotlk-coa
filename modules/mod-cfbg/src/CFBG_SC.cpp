@@ -210,7 +210,7 @@ public:
             {
                 // The client shows only a generic "Join as a group failed.";
                 // name the actual limit so the leader knows what to change.
-                ChatHandler(player->GetSession()).PSendSysMessage("Battleground groups are limited to {} players.", sCFBG->GetMaxPlayersCountInGroup());
+                ChatHandler(player->GetSession()).PSendSysMessage("战场队伍人数上限为 {} 人。", sCFBG->GetMaxPlayersCountInGroup()); //By leewheel 2026年10月30日
                 err = ERR_BATTLEGROUND_JOIN_FAILED;
             }
 

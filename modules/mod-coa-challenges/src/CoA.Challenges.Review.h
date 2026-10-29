@@ -262,6 +262,7 @@ namespace CoAChallenges
         STR_ACT_LEVEL_LOWER          = 191, // Choose a lower Adventure Mode level, at least 1.
         STR_ACT_TRIAL_LOCK           = 192, // Cannot lower a custom trial or select an Adventure Mode level already completed.
         STR_ACT_MODE_REDUCED         = 193, // Adventure Mode reduced to level {}. Difficulty and rewards now use this level.
+        STR_RULE_PVE_MODE_REQUIRED   = 194, // Your active challenge requires PvE mode. //By leewheel 2026年10月30日 修复上游 C2672：补缺失的字符串 ID
     };
 
     /// One row of `module_string`, in the given session locale. A missing row

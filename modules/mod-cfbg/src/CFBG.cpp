@@ -1199,7 +1199,7 @@ void CFBG::SendMessageQueue(BattlegroundQueue* bgQueue, Battleground* bg, PvPDif
 
     if (sWorld->getBoolConfig(CONFIG_BATTLEGROUND_QUEUE_ANNOUNCER_PLAYERONLY))
     {
-        ChatHandler(leader->GetSession()).PSendSysMessage("CFBG {} (Levels: {} - {}). Registered: {}/{}", bgName.c_str(), q_min_level, q_max_level, qTotal, MinPlayers);
+        ChatHandler(leader->GetSession()).PSendSysMessage("跨阵营战场 {}（等级：{} - {}）。已报名：{}/{}", bgName.c_str(), q_min_level, q_max_level, qTotal, MinPlayers); //By leewheel 2026年10月30日
     }
     else
     {

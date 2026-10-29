@@ -20,7 +20,7 @@ namespace CoAChallenges
         if (ruleset == AscensionRulesets::Ruleset::PvE ||
             !PlayerHasRule(player, "CHALLENGE_RULES_TYPE_PVE_ONLY"))
             return true;
-        NotifyPlayer(player, "Your active challenge requires PvE mode.");
+        NotifyPlayer(player, STR_RULE_PVE_MODE_REQUIRED); //By leewheel 2026年10月30日 修复上游 C2672：字面串改为字符串 ID 194
         return false;
     }
 
@@ -2913,7 +2913,7 @@ namespace CoAChallenges
             for (uint32 challengeID : ActiveChallenges(player->GetGUID().GetCounter()))
                 if (challengeID == 211 || challengeID == 425)
                     return ActivateChallenge(player, challengeID, level) == 0;
-            handler->SendErrorMessage("You do not have an active Adventure Mode run.");
+            handler->SendErrorMessage("你当前没有进行中的冒险模式挑战。"); //By leewheel 2026年10月30日
             return false;
         }
 

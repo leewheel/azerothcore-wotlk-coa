@@ -42,7 +42,7 @@ public:
 
         if (sCFBG->RandomizeRaces() || sCFBG->KeepRace())
         {
-            handler->SendSysMessage("Race selection is currently disabled.");
+            handler->SendSysMessage("种族选择当前已关闭。"); //By leewheel 2026年10月30日 汉化玩家可见提示
             handler->SetSentErrorMessage(true);
             return true;
         }
@@ -57,28 +57,28 @@ public:
                 }
                 else
                 {
-                    handler->SendSysMessage("Race not available to your faction.");
+                    handler->SendSysMessage("该种族不适用于你的阵营。"); //By leewheel 2026年10月30日
                     handler->SetSentErrorMessage(true);
                     return true;
                 }
 
                 if (!IsRaceValidForClass(player, raceId))
                 {
-                    handler->SendSysMessage("Race not available to your class.");
+                    handler->SendSysMessage("该种族不适用于你的职业。"); //By leewheel 2026年10月30日
                     handler->SetSentErrorMessage(true);
                     return true;
                 }
 
                 if (raceId == RACE_NIGHTELF)
                 {
-                    handler->SendSysMessage("Night elf models are not available as the female model is missing and the male one causes client crashes.");
+                    handler->SendSysMessage("暗夜精灵模型不可用：女性模型缺失，男性模型会导致客户端崩溃。"); //By leewheel 2026年10月30日
                     handler->SetSentErrorMessage(true);
                     return true;
                 }
 
                 if (player->getGender() == GENDER_FEMALE && (raceId == RACE_TROLL || raceId == RACE_DWARF))
                 {
-                    handler->SendSysMessage("Female models are not available for the following races: troll, dwarf.");
+                    handler->SendSysMessage("以下种族没有可用的女性模型：巨魔、矮人。"); //By leewheel 2026年10月30日
                     handler->SetSentErrorMessage(true);
                     return true;
                 }
@@ -89,11 +89,11 @@ public:
 
         if (!raceId)
         {
-            handler->SendSysMessage("Race unavailable. CFBG selected race set to random. You will be morphed into a random race when you enter a battleground on the opposite team.");
+            handler->SendSysMessage("该种族不可用。跨阵营战场种族已设为随机：当你以对立阵营身份进入战场时，会被随机变形为一个种族。"); //By leewheel 2026年10月30日
         }
         else
         {
-            handler->PSendSysMessage("CFBG selected race set to {}", raceInput);
+            handler->PSendSysMessage("跨阵营战场种族已设为 {}", raceInput); //By leewheel 2026年10月30日
         }
 
         return true;
