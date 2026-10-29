@@ -13,8 +13,12 @@ namespace
 {
     using Kind = AscensionClientDbcColumnKind;
 
+    // 列后缀顺序必须与 src/common/Common.h 的 LocaleConstant 完全一致（enUS0 koKR1 frFR2 deDE3 zhCN4 zhTW5 esES6 esMX7 ruRU8）：
+    // LoadRows 按此顺序填 text[0..8]，发送时用 GetSessionDbcLocale()（acore 序）索引。
+    // 上游原序是 Ascension 客户端 locale 序（enUS enGB koKR frFR deDE enCN zhCN enTW zhTW），zhCN 会话会错配到 deDE 列。
+    // By leewheel 2026年10月29日
     constexpr std::array<char const*, TOTAL_LOCALES> LocaleColumnSuffixes = {
-        "enUS", "enGB", "koKR", "frFR", "deDE", "enCN", "zhCN", "enTW", "zhTW"};
+        "enUS", "koKR", "frFR", "deDE", "zhCN", "zhTW", "esES", "esMX", "ruRU"};
 
     std::vector<AscensionClientDbcTable> const Tables = {
         {AscensionClientDbcGameObjectDisplayInfoOpcode, "gameobjectdisplayinfo_dbc",

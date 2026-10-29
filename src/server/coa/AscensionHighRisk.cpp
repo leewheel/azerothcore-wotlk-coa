@@ -104,8 +104,9 @@ bool RefuseOutsideRest(Player* player, bool wholeGroup, std::string_view action)
     if (!blocked)
         return false;
 
+    // 玩家可见提示中文化 //By leewheel 2026年10月29日
     ChatHandler(player->GetSession()).SendSysMessage(Acore::StringFormat(
-        "{} must be in a city or inn to {} while in High-Risk.", blocked == player ? "You" : blocked->GetName(),
+        "高风险状态下，{}必须在主城或旅店才能{}。", blocked == player ? "你" : blocked->GetName(),
         action));
     return true;
 }
@@ -230,7 +231,7 @@ void Open(Player* player, GameObject* object)
     if (!Access(player, object))
     {
         ChatHandler(player->GetSession()).SendSysMessage(
-            "You must be alive, in High-Risk mode and close to the chest to recover its contents.");
+            "你必须存活、处于高风险状态并靠近宝箱，才能取回其中的物品。"); //By leewheel 2026年10月29日
         LOG_INFO("server.worldserver", "High Risk chest access denied for {}: alive {}, mode {}, distance {}",
             player->GetGUID().ToString(), player->IsAlive(), InHighRisk(player), player->GetDistance(object));
         player->SendLootError(object->GetGUID(), LOOT_ERROR_DIDNT_KILL);
@@ -331,7 +332,7 @@ void ClaimGold(Player* player, GameObject* object)
         return;
     if (uint64(player->GetMoney()) + chest->gold > MAX_MONEY_AMOUNT)
     {
-        ChatHandler(player->GetSession()).SendSysMessage("You cannot carry any more gold.");
+        ChatHandler(player->GetSession()).SendSysMessage("你的金币已达上限，无法再携带更多。"); //By leewheel 2026年10月29日
         return;
     }
 
@@ -430,7 +431,7 @@ void Drop(Player* player)
     if (losses.empty() && !gold && !insuranceFee)
     {
         ChatHandler(player->GetSession()).SendSysMessage(
-            "No High-Risk chest was created: you have no eligible items or money to lose.");
+            "未生成高风险宝箱：你没有可掉落的物品或金币。"); //By leewheel 2026年10月29日
         LOG_INFO("server.worldserver", "High Risk death for {}: no eligible losses; map {}, level {}",
             player->GetGUID().ToString(), player->GetMapId(), player->GetLevel());
         return;
@@ -477,7 +478,7 @@ void Drop(Player* player)
     auto [found, inserted] = chests.emplace(chest.id, std::move(chest));
     Spawn(player->GetMap(), found->second);
     ChatHandler(player->GetSession()).SendSysMessage(
-        "Your High-Risk losses are in a chest at your death location. Any High-Risk player can recover them.");
+        "你的高风险掉落已存放在死亡地点的宝箱中，任何处于高风险状态的玩家都可以取回。"); //By leewheel 2026年10月29日
     LOG_INFO("server.worldserver", "High Risk chest {} created for {}: {} items, {} copper",
         found->first, player->GetGUID().ToString(), losses.size(), chest.gold);
 }
@@ -578,7 +579,7 @@ public:
 
     bool OnPlayerCanJoinLfg(Player* player, uint8, lfg::LfgDungeonSet&, std::string const&) override
     {
-        if (!RefuseOutsideRest(player, true, "queue"))
+        if (!RefuseOutsideRest(player, true, "排队"))
             return true;
         player->GetSession()->SendLfgJoinResult(lfg::LfgJoinResultData(
             player->GetGroup() ? lfg::LFG_JOIN_PARTY_NOT_MEET_REQS : lfg::LFG_JOIN_NOT_MEET_REQS));
@@ -599,12 +600,12 @@ public:
 
     bool OnPlayerCanLfgTeleport(Player* player) override
     {
-        return !RefuseOutsideRest(player, false, "teleport into a dungeon");
+        return !RefuseOutsideRest(player, false, "传送到副本");
     }
 
     bool OnPlayerCanBattleFieldPort(Player* player, uint8, BattlegroundTypeId, uint8 action) override
     {
-        return action != BattlefieldPortEnter || !RefuseOutsideRest(player, false, "enter");
+        return action != BattlefieldPortEnter || !RefuseOutsideRest(player, false, "进入");
     }
 
 private:
@@ -612,7 +613,7 @@ private:
 
     static bool Refuse(Player* player, uint8 joinAsGroup, GroupJoinBattlegroundResult& err)
     {
-        if (!RefuseOutsideRest(player, joinAsGroup, "queue"))
+        if (!RefuseOutsideRest(player, joinAsGroup, "排队"))
             return false;
         err = ERR_BATTLEGROUND_NONE;
         return true;
