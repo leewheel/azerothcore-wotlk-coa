@@ -20,14 +20,15 @@ namespace AetherialReliquary
 {
 namespace
 {
+// 玩家可见文本中文化，术语对齐 item_template_locale 8263512「以太圣物箱」//By leewheel 2026年10月30日
 constexpr std::string_view CapturedMessage =
-    "Your Experience boosts have been preserved in your Aetherial Boon Reliquary.";
-constexpr std::string_view EmptyMessage = "Your Aetherial Reliquary holds no stored buffs.";
-constexpr std::string_view BelowMaxLevelMessage = "Your stored experience buffs only work below max level.";
+    "你的经验加成已封存进以太圣物箱。"; //By leewheel 2026年10月30日
+constexpr std::string_view EmptyMessage = "你的以太圣物箱中没有封存的增益效果。"; //By leewheel 2026年10月30日
+constexpr std::string_view BelowMaxLevelMessage = "封存的经验增益只在满级前可以使用。"; //By leewheel 2026年10月30日
 constexpr std::string_view SaveFailedMessage =
-    "Your Aetherial Reliquary could not be saved. Contact a game master.";
-constexpr char MailSubject[] = "Aetherial Reliquary";
-constexpr char MailBody[] = "Your bags were full, so your Aetherial Reliquary was sent by mail.";
+    "以太圣物箱保存失败，请联系游戏管理员。"; //By leewheel 2026年10月30日
+constexpr char MailSubject[] = "以太圣物箱"; //By leewheel 2026年10月30日
+constexpr char MailBody[] = "你的背包已满，以太圣物箱已通过邮件发送给你。"; //By leewheel 2026年10月30日
 
 std::string const& Source()
 {
