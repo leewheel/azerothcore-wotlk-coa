@@ -14784,6 +14784,17 @@ void Player::_LoadSkills(PreparedQueryResult result)
             uint16 max      = fields[2].Get<uint16>();
 
             SkillRaceClassInfoEntry const* rcEntry = GetSkillRaceClassInfo(skill, getRace(), getClass());
+            if (!rcEntry && IsAscensionClass(getClass()))
+            {
+                // SkillRaceClassInfo.dbc 是按 Ascension 自己的职业位编排的，覆盖面并不齐：
+                // 比如投掷（176）只登记了 Rogue/Hero/Barbarian，没登记 Guardian、Reaper。
+                // 自定义职业先按它的原型职业再查一次，查不到才真算非法 —— 否则这些技能
+                // 每次登录都会被判"非法"并从库里删掉。//By leewheel 2026年10月31日
+                Classes legacyClass = GetLegacyClassForCustomClass(Classes(getClass()));
+                if (legacyClass != Classes(getClass()))
+                    rcEntry = GetSkillRaceClassInfo(skill, getRace(), uint8(legacyClass));
+            }
+
             if (!rcEntry)
             {
                 LOG_ERROR("entities.player", "Player {} (GUID: {}), has skill ({}) that is invalid for the race/class combination (Race: {}, Class: {}). Will be deleted.",
