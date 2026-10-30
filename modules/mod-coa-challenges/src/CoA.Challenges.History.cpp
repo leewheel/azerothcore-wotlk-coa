@@ -32,7 +32,7 @@ namespace CoAChallenges
         }
 
         session->SendPacket(&data);
-        LOG_INFO("module.coa_challenges", "Sent SMSG 0x596 ACTIVE_LIST to {}",
+        LOG_DEBUG("module.coa_challenges", "Sent SMSG 0x596 ACTIVE_LIST to {}",  // 协议发送明细，降 DEBUG 免刷屏 //By leewheel 2026年10月31日
             player->GetName());
     }
 
@@ -100,7 +100,7 @@ namespace CoAChallenges
             pending.rollback = rollback;
         }
 
-        LOG_INFO("module.coa_challenges", "Sent SMSG 0x59B SYNC_REQUEST to {}: {} {} challenge(s) from {}",
+        LOG_DEBUG("module.coa_challenges", "Sent SMSG 0x59B SYNC_REQUEST to {}: {} {} challenge(s) from {}",  // 降 DEBUG //By leewheel 2026年10月31日
             player->GetName(), remove ? "remove" : "add", pairs.size(), requesterGuid);
     }
 
@@ -324,7 +324,7 @@ namespace CoAChallenges
         WorldPacket data(SMSG_COA_CHALLENGE_FAILURE_ADDED, 128);
         AppendFailureRecord(data, player->GetName(), challengeID, level);
         session->SendPacket(&data);
-        LOG_INFO("module.coa_challenges", "Sent SMSG 0x5A3 FAILURE_ADDED to {}: challengeID={} level={}",
+        LOG_DEBUG("module.coa_challenges", "Sent SMSG 0x5A3 FAILURE_ADDED to {}: challengeID={} level={}",  // 降 DEBUG //By leewheel 2026年10月31日
             player->GetName(), challengeID, level);
     }
 
@@ -354,7 +354,7 @@ namespace CoAChallenges
         }
 
         session->SendPacket(&data);
-        LOG_INFO("module.coa_challenges", "Sent SMSG 0x5A2 FAILURE_LIST to {}",
+        LOG_DEBUG("module.coa_challenges", "Sent SMSG 0x5A2 FAILURE_LIST to {}",  // 降 DEBUG //By leewheel 2026年10月31日
             player->GetName());
     }
 
@@ -425,7 +425,7 @@ namespace CoAChallenges
                 startTimes[i], completeTimes[i]);
 
         session->SendPacket(&data);
-        LOG_INFO("module.coa_challenges", "Sent SMSG 0x5C7 COMPLETION_LIST to {}: challengeID={} level={} entries={}",
+        LOG_DEBUG("module.coa_challenges", "Sent SMSG 0x5C7 COMPLETION_LIST to {}: challengeID={} level={} entries={}",  // 降 DEBUG //By leewheel 2026年10月31日
             player->GetName(), challengeID, level, names.size());
     }
 
@@ -513,7 +513,7 @@ namespace CoAChallenges
         }
 
         session->SendPacket(&data);
-        LOG_INFO("module.coa_challenges", "Sent SMSG 0x597 COMPLETED_LIST to {}",
+        LOG_DEBUG("module.coa_challenges", "Sent SMSG 0x597 COMPLETED_LIST to {}",  // 降 DEBUG //By leewheel 2026年10月31日
             player->GetName());
     }
 
@@ -607,7 +607,7 @@ namespace CoAChallenges
         data.append(reinterpret_cast<uint8 const*>(type.data()), type.size());
 
         session->SendPacket(&data);
-        LOG_INFO("module.coa_challenges",
+        LOG_DEBUG("module.coa_challenges",  // 降 DEBUG //By leewheel 2026年10月31日
             "Sent SMSG 0x5B6 REQUIREMENT to {}: id={} type={} v1={} v2={} v3={}",
             player->GetName(), id, type, v1, v2, v3);
     }
@@ -628,7 +628,7 @@ namespace CoAChallenges
             AppendCriteriaEntry(data, e[0], e[1], e[2], e[3], e[4], e[5], e[6], e[7], uint8(e[8]));
 
         session->SendPacket(&data);
-        LOG_INFO("module.coa_challenges", "Sent SMSG 0x599 CRITERIA_LIST to {}: {} entries",
+        LOG_DEBUG("module.coa_challenges", "Sent SMSG 0x599 CRITERIA_LIST to {}: {} entries",  // 降 DEBUG //By leewheel 2026年10月31日
             player->GetName(), entries.size());
     }
 
@@ -645,7 +645,7 @@ namespace CoAChallenges
         AppendCriteriaEntry(data, e[0], e[1], e[2], e[3], e[4], e[5], e[6], e[7], uint8(e[8]));
 
         session->SendPacket(&data);
-        LOG_INFO("module.coa_challenges",
+        LOG_DEBUG("module.coa_challenges",  // 降 DEBUG //By leewheel 2026年10月31日
             "Sent SMSG 0x59A CRITERIA_UPDATED to {}: challengeID={} level={} typeIdx={} done={}",
             player->GetName(), e[1], e[2], e[3], e[8]);
     }

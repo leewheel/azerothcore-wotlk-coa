@@ -58,7 +58,7 @@ namespace CoAChallenges
         AppendConfigString(data, trialID);
         AppendConfigString(data, response);
         session->SendPacket(&data);
-        LOG_INFO("module.coa_challenges", "Sent SMSG 0x{:X} trial result to {}: trialID={} response={}",
+        LOG_DEBUG("module.coa_challenges", "Sent SMSG 0x{:X} trial result to {}: trialID={} response={}",  // 降 DEBUG //By leewheel 2026年10月31日
             opcode, player->GetName(), trialID, response);
     }
 
@@ -282,7 +282,7 @@ namespace CoAChallenges
                 classes[i], startTimes[i], completeTimes[i]);
 
         session->SendPacket(&data);
-        LOG_INFO("module.coa_challenges", "Sent SMSG 0x5CA TRIAL_COMPLETIONS to {}: trialID={} entries={}",
+        LOG_DEBUG("module.coa_challenges", "Sent SMSG 0x5CA TRIAL_COMPLETIONS to {}: trialID={} entries={}",  // 降 DEBUG //By leewheel 2026年10月31日
             player->GetName(), trialID, names.size());
     }
 
@@ -490,7 +490,7 @@ namespace CoAChallenges
         }
 
         session->SendPacket(&data);
-        LOG_INFO("module.coa_challenges", "Sent SMSG 0x5AC TRIAL_DATA to {}",
+        LOG_DEBUG("module.coa_challenges", "Sent SMSG 0x5AC TRIAL_DATA to {}",  // 降 DEBUG //By leewheel 2026年10月31日
             player->GetName());
     }
 

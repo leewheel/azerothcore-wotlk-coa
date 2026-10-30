@@ -1607,7 +1607,7 @@ public:
     if (uint32 const learned = SynchronizeTaughtAbilities(player, true))
     {
         player->SendInitialSpells();
-        LOG_INFO("coa",
+        LOG_DEBUG("coa",  // 进世界前的技能预加载，降 DEBUG 免刷屏 //By leewheel 2026年10月31日
                  "Prepared {} taught abilities for {} before entering the world",
                  learned, player->GetName());
     }

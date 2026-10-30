@@ -29,6 +29,7 @@ void AddSC_AscensionClientHotPatch();
 void AddSC_AscensionCrowsCache();
 void AddSC_AscensionAetherialReliquary();
 void AddSC_CoAProbeRelay();
+void AddSC_AscensionCustomClassFallback();  // 自定义职业的原型职业映射 //By leewheel 2026年10月31日
 void AddSC_AscensionItemScaling();
 void AddSC_AscensionNativeItemScaling();
 void AddSC_AscensionQuestScaling();
@@ -789,6 +790,7 @@ void AddCoAScripts()
     AddSC_AscensionCrowsCache();
     AddSC_AscensionAetherialReliquary();
     AddSC_CoAProbeRelay();
+    AddSC_AscensionCustomClassFallback();
     AddSC_AscensionItemScaling();
     AddSC_AscensionNativeItemScaling();
     AddSC_AscensionQuestScaling();

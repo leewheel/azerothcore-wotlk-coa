@@ -88,7 +88,7 @@ namespace CoAChallenges
         data << uint16(0);
 
         session->SendPacket(&data);
-        LOG_INFO("module.coa_challenges", "Sent SMSG 0x5A6 DEATH_UPDATE to {}: challengeID={} level={} deaths={}",
+        LOG_DEBUG("module.coa_challenges", "Sent SMSG 0x5A6 DEATH_UPDATE to {}: challengeID={} level={} deaths={}",  // 降 DEBUG //By leewheel 2026年10月31日
             player->GetName(), challengeID, level, deaths);
     }
 

@@ -460,7 +460,7 @@ public:
             return;
 
         uint32 const marked = DestinyWeaver::RefreshClient(member);
-        LOG_INFO("module.destiny_weaver",
+        LOG_DEBUG("module.destiny_weaver",  // 入组刷新世界视图，降 DEBUG 免刷屏 //By leewheel 2026年10月31日
                  "{} joined a group whose leader has scaling {}: re-sent their view of the world "
                  "({} client(s))",
                  member->GetName(),

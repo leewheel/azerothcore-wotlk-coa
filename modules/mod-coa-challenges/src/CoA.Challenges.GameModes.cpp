@@ -267,7 +267,7 @@ namespace CoAChallenges
         WorldPacket data(SMSG_COA_GAME_MODE_STATE, 4);
         data << uint32(mask);
         session->SendPacket(&data);
-        LOG_INFO("module.coa_challenges", "Sent SMSG 0x90B GAME_MODE_STATE to {}: mask=0x{:X}",
+        LOG_DEBUG("module.coa_challenges", "Sent SMSG 0x90B GAME_MODE_STATE to {}: mask=0x{:X}",  // 降 DEBUG //By leewheel 2026年10月31日
             player->GetName(), mask);
     }
 
@@ -282,7 +282,7 @@ namespace CoAChallenges
         if (!response.empty())
             data.append(reinterpret_cast<uint8 const*>(response.data()), response.size());
         session->SendPacket(&data);
-        LOG_INFO("module.coa_challenges", "Sent SMSG 0x5A5 GAME_MODE_TOGGLE_RESULT to {}: {}",
+        LOG_DEBUG("module.coa_challenges", "Sent SMSG 0x5A5 GAME_MODE_TOGGLE_RESULT to {}: {}",  // 降 DEBUG //By leewheel 2026年10月31日
             player->GetName(), response);
     }
 

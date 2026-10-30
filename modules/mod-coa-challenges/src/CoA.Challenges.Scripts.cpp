@@ -466,7 +466,7 @@ namespace CoAChallenges
         data << uint32(sConfigMgr->GetOption<uint32>("CoAChallenges.Spellbind.OverlayG", 0));
         data << uint32(sConfigMgr->GetOption<uint32>("CoAChallenges.Spellbind.OverlayB", 0));
         session->SendPacket(&data);
-        LOG_INFO("module.coa_challenges", "Sent SMSG 0x9B1 SPELL_ACTIVATION_SHOW to {}: spell={}",
+        LOG_DEBUG("module.coa_challenges", "Sent SMSG 0x9B1 SPELL_ACTIVATION_SHOW to {}: spell={}",  // 降 DEBUG //By leewheel 2026年10月31日
             player->GetName(), spellId);
     }
 
@@ -480,7 +480,7 @@ namespace CoAChallenges
         data << uint32(spellId);
         data << uint32(0);
         session->SendPacket(&data);
-        LOG_INFO("module.coa_challenges", "Sent SMSG 0x9B2 SPELL_ACTIVATION_HIDE to {}: spell={}",
+        LOG_DEBUG("module.coa_challenges", "Sent SMSG 0x9B2 SPELL_ACTIVATION_HIDE to {}: spell={}",  // 降 DEBUG //By leewheel 2026年10月31日
             player->GetName(), spellId);
     }
 
@@ -2239,7 +2239,7 @@ namespace CoAChallenges
                         {
                             if (!KillCreditAllowed(member, killed))
                                 continue;
-                            LOG_INFO("module.coa_challenges",
+                            LOG_DEBUG("module.coa_challenges",  // 团队共享击杀，降 DEBUG //By leewheel 2026年10月31日
                                 "Kill credit shared: {} -> member {} (creature {})",
                                 player->GetName(), member->GetName(), killed->GetEntry());
                             MarkObjectives(member, "CHALLENGE_REQUIREMENT_TYPE_KILL_CREATURE_BEFORE_LEVEL", killed->GetEntry());
