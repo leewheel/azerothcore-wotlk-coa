@@ -15,6 +15,7 @@
 #include "AscensionCultist.h"
 #include "AscensionVenomancer.h"
 #include "AscensionTinker.h"
+#include "AscensionTinkerData.h"
 #include "AscensionSunCleric.h"
 #include "AscensionXoroth.h"
 #include "AllCreatureScript.h"
@@ -780,6 +781,26 @@ std::vector<uint32> GetAscensionRacialSpells(Player const* player)
     return spells;
 }
 
+bool IsForeignRacialSpell(Player const* player, uint32 spellId)
+{
+    auto const bounds = sSpellMgr->GetSkillLineAbilityMapBounds(spellId);
+    if (bounds.first == bounds.second)
+        return false;
+
+    bool racial = false;
+    for (auto itr = bounds.first; itr != bounds.second; ++itr)
+    {
+        uint8 race = AscensionRacialAbilities::GetRace(itr->second->SkillLine);
+        if (!race)
+            return false;
+        racial = true;
+        if (race == player->getRace() &&
+            AscensionRacialAbilities::CanLearn(*itr->second, player->getRace(), player->getClass()))
+            return false;
+    }
+    return racial;
+}
+
 struct FelswornRiftGrant
 {
     uint32 SpellId;
@@ -927,6 +948,15 @@ public:
     if (removed)
       LOG_INFO("coa", "Reconciled {} proven class grants for {} against live level {}",
           removed, player->GetName(), uint32(player->GetLevel()));
+    std::vector<uint32> foreignRacialSpells;
+    for (auto const& knownSpell : player->GetSpellMap())
+      if (IsForeignRacialSpell(player, knownSpell.first))
+        foreignRacialSpells.push_back(knownSpell.first);
+    for (uint32 spellId : foreignRacialSpells)
+      player->removeSpell(spellId, SPEC_MASK_ALL, false);
+    if (!foreignRacialSpells.empty())
+      LOG_INFO("coa", "Removed {} racial abilities that do not belong to race {} for {}",
+          uint32(foreignRacialSpells.size()), uint32(player->getRace()), player->GetName());
     uint32 learned = 0;
     bool const botCannotBuyBooksOfAscension = player->GetSession() && player->GetSession()->IsBot();
     bool const automaticProgression =
@@ -4374,6 +4404,9 @@ private:
   static constexpr uint32 SPELL_CAST_TIME_INDEX_FIELD = 28;
   static constexpr uint32 SPELL_CATEGORY_RECOVERY_TIME_FIELD = 30;
   static constexpr uint32 SPELL_INTERRUPT_FLAGS_FIELD = 31;
+  static constexpr uint32 SPELL_EFFECTS_FIELD = 71;
+  static constexpr uint32 SPELL_EFFECT_TARGETS_FIELD = 86;
+  static constexpr uint32 SPELL_EFFECT_TARGETS_B_FIELD = 89;
   static constexpr uint32 SPELL_FAMILY_NAME_FIELD = 208;
   static constexpr std::array<uint32, 19> RANGED_PREPARATION_CLIENT_SPELLS = {
       504582, 572343, 572344, 572345, 572383, 680902, 680903, 680904, 680905, 806288,
@@ -4382,6 +4415,9 @@ private:
   static constexpr uint32 SPELL_VISUAL_FIELD = 131;
   static constexpr uint32 VAULT_CLIENT_SPELL = 500085;
   static constexpr uint32 CHARGE_SPELL_VISUAL = 867;
+  static constexpr char const* REPLENISHMENT_FIELD_DESCRIPTION =
+      "Nearby allies are restored: $/10;560751s1 Rage, Energy, Focus and Runic Power and $560819s1% base mana "
+      "every $560751T1 sec.";
   struct ClientSpellText {
     std::string Description;
     std::string ToolTip;
@@ -5385,6 +5421,16 @@ private:
       row.Values[SPELL_WIRE_SLOT(SPELL_INTERRUPT_FLAGS_FIELD)] &= ~uint32(SPELL_INTERRUPT_FLAG_MOVEMENT);
     if (info->Id == VAULT_CLIENT_SPELL)
       row.Values[SPELL_WIRE_SLOT(SPELL_VISUAL_FIELD)] = CHARGE_SPELL_VISUAL;
+    if (info->Id == TinkerReplenishmentFieldAura)
+    {
+      for (uint8 effect = 0; effect < 2; ++effect)
+      {
+        row.Values[SPELL_WIRE_SLOT(SPELL_EFFECTS_FIELD + effect)] = SPELL_EFFECT_APPLY_AURA;
+        row.Values[SPELL_WIRE_SLOT(SPELL_EFFECT_TARGETS_FIELD + effect)] = TARGET_UNIT_TARGET_ALLY;
+        row.Values[SPELL_WIRE_SLOT(SPELL_EFFECT_TARGETS_B_FIELD + effect)] = 0;
+      }
+      row.Strings[SPELL_WIRE_DESCRIPTION] = REPLENISHMENT_FIELD_DESCRIPTION;
+    }
 
     if ((info->Attributes & SPELL_ATTR0_USES_RANGED_SLOT) && !info->IsAutoRepeatRangedSpell() &&
         info->CastTimeEntry && (info->CastTimeEntry->CastTime > 0 || !info->IsChanneled()))
@@ -5458,6 +5504,7 @@ private:
     std::unordered_set<uint32> descriptionIds;
     for (uint32 const spellId : RANGED_PREPARATION_CLIENT_SPELLS)
       Ascension::ClientSpellPatches::Instance().Register(spellId);
+    Ascension::ClientSpellPatches::Instance().Register(TinkerReplenishmentFieldAura);
     for (uint32 const spellId : {801292u, 501836u, 501837u, 501838u, 501839u, 501840u, 574346u, 567543u, 567544u,
         805027u, 807938u, 807939u, 807940u, 807941u})
       Ascension::ClientSpellPatches::Instance().Register(spellId);
