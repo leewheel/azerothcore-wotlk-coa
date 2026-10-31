@@ -2903,6 +2903,8 @@ private:
             return unit->GetName() == step.get<std::string>("name") ? 1.0 : 0.0;
         if (metric == "race")
             return unit->getRace();
+        if (metric == "faction")
+            return unit->GetFaction();
         if (metric == "name_lookup")
         {
             std::string name = step.get<std::string>("name");
@@ -6826,6 +6828,8 @@ private:
             uint32 const skill = step.get<uint32>("skill");
             player->UpdateGatherSkill(skill, player->GetPureSkillValue(skill), step.get<uint32>("required"));
         }
+        else if (action == "give_xp")
+            player->GiveXP(step.get<uint32>("amount"), nullptr);
         else if (action == "set_xp_enabled")
         {
             if (step.get<bool>("enabled"))

@@ -93,8 +93,8 @@ METRICS = TIMELINE_METRICS | {
     'unit_scale', 'combat_reach',
     'token_count', 'item_sell_price', 'monster_chat_count', 'creature_model_scale', 'creature_model_display',
     'taxi_node', 'in_flight', 'taxi_destination', 'stabled_pet_count', 'stable_result', 'pet_rows', 'instance_binds_listed', 'pet_entry', 'pet_aura_stacks', 'pet_aura_duration_ms', 'pet_is_banker', 'pet_display',
-    'pet_native_display', 'race', 'pet_scale', 'pet_knows_spell', 'pet_distance', 'pet_bearing', 'pet_casting',
-    'pet_loading', 'pet_spell_bar_count',
+    'pet_native_display', 'race', 'faction', 'pet_scale', 'pet_knows_spell', 'pet_distance', 'pet_bearing',
+    'pet_casting', 'pet_loading', 'pet_spell_bar_count',
     'owned_creature_count', 'owned_creature_spacing', 'owned_creature_weapon_damage_min',
     'owned_creature_spell_hit_chance', 'owned_creature_attackable', 'owned_creature_victim',
     'charm_entry', 'charm_aura_stacks', 'controls_self', 'viewpoint_entry', 'seer_entry', 'private_instance',
@@ -296,6 +296,7 @@ ACTIONS = {
     'mapless_loot_hook': ({'actor', 'store'}, {'actor', 'store'}),
     'set_skill': ({'actor', 'skill', 'value', 'maximum'}, {'actor', 'skill', 'value', 'maximum'}),
     'gather_skill': ({'actor', 'skill', 'required'}, {'actor', 'skill', 'required'}),
+    'give_xp': ({'actor', 'amount'}, {'actor', 'amount'}),
     'set_xp_enabled': ({'actor', 'enabled'}, {'actor', 'enabled'}),
     'set_level': ({'actor', 'value'}, {'actor', 'value'}),
     'set_health': ({'actor', 'value'}, {'actor', 'value', 'pet', 'maximum'}),
@@ -690,6 +691,8 @@ def validate(scenario):
         if action == 'gather_skill':
             require(step['skill'] in {182, 186, 393, 633, 773, 755}, f'{where}: unsupported gathering skill')
             number(step['required'], f'{where}.required', 0, 450, True)
+        if action == 'give_xp':
+            number(step['amount'], f'{where}.amount', 1, 2**31 - 1, True)
         if action == 'set_xp_enabled':
             require(type(step['enabled']) is bool, f'{where}: enabled must be boolean')
         if action == 'money':
