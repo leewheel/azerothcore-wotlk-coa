@@ -547,22 +547,39 @@ class spell_ascension_mystic_enchant_proc : public AuraScript
 
     void Register() override
     {
-        DoCheckEffectProc += AuraCheckEffectProcFn(spell_ascension_mystic_enchant_proc::CheckEffect, EFFECT_ALL,
-            SPELL_AURA_PROC_TRIGGER_SPELL);
-        OnEffectProc += AuraEffectProcFn(spell_ascension_mystic_enchant_proc::AimCastTrigger, EFFECT_ALL,
-            SPELL_AURA_PROC_TRIGGER_SPELL);
-        AfterEffectProc += AuraEffectProcFn(spell_ascension_mystic_enchant_proc::Consume, EFFECT_ALL,
-            SPELL_AURA_PROC_TRIGGER_SPELL);
-        DoCheckEffectProc += AuraCheckEffectProcFn(spell_ascension_mystic_enchant_proc::CheckDummy, EFFECT_ALL,
-            SPELL_AURA_DUMMY);
-        OnEffectProc += AuraEffectProcFn(spell_ascension_mystic_enchant_proc::CastRuleTrigger, EFFECT_ALL, SPELL_AURA_DUMMY);
-        AfterEffectProc += AuraEffectProcFn(spell_ascension_mystic_enchant_proc::Consume, EFFECT_ALL, SPELL_AURA_DUMMY);
-        DoCheckEffectProc += AuraCheckEffectProcFn(spell_ascension_mystic_enchant_proc::CheckEffect, EFFECT_ALL,
-            SPELL_AURA_ASCENSION_PROC_TRIGGER_PCT);
-        OnEffectProc += AuraEffectProcFn(spell_ascension_mystic_enchant_proc::CastPctTrigger, EFFECT_ALL,
-            SPELL_AURA_ASCENSION_PROC_TRIGGER_PCT);
-        AfterEffectProc += AuraEffectProcFn(spell_ascension_mystic_enchant_proc::Consume, EFFECT_ALL,
-            SPELL_AURA_ASCENSION_PROC_TRIGGER_PCT);
+        // 本脚本被 574 个附魔法术绑定，但每个附魔只用三类光环（PROC_TRIGGER_SPELL / DUMMY / ASCENSION_PROC_TRIGGER_PCT）
+        // 中的一两类；无条件注册会让启动校验期对"该法术没有的光环类型"逐 hook 刷
+        // "did not match dbc effect data"（Errors.log 3195 条）。按 m_scriptSpellId 查 DBC 条件注册，
+        // 只挂该法术真实拥有的光环类型，运行时行为不变、日志清零。
+        // 注意：Register 期 AuraScript::GetSpellInfo() 走 m_aura 为空会崩，须用 m_scriptSpellId 查 sSpellMgr //By leewheel 2026年10月31日
+        SpellInfo const* info = sSpellMgr->GetSpellInfo(m_scriptSpellId);
+        if (!info)
+            return;
+        if (info->HasAura(SPELL_AURA_PROC_TRIGGER_SPELL))
+        {
+            DoCheckEffectProc += AuraCheckEffectProcFn(spell_ascension_mystic_enchant_proc::CheckEffect, EFFECT_ALL,
+                SPELL_AURA_PROC_TRIGGER_SPELL);
+            OnEffectProc += AuraEffectProcFn(spell_ascension_mystic_enchant_proc::AimCastTrigger, EFFECT_ALL,
+                SPELL_AURA_PROC_TRIGGER_SPELL);
+            AfterEffectProc += AuraEffectProcFn(spell_ascension_mystic_enchant_proc::Consume, EFFECT_ALL,
+                SPELL_AURA_PROC_TRIGGER_SPELL);
+        }
+        if (info->HasAura(SPELL_AURA_DUMMY))
+        {
+            DoCheckEffectProc += AuraCheckEffectProcFn(spell_ascension_mystic_enchant_proc::CheckDummy, EFFECT_ALL,
+                SPELL_AURA_DUMMY);
+            OnEffectProc += AuraEffectProcFn(spell_ascension_mystic_enchant_proc::CastRuleTrigger, EFFECT_ALL, SPELL_AURA_DUMMY);
+            AfterEffectProc += AuraEffectProcFn(spell_ascension_mystic_enchant_proc::Consume, EFFECT_ALL, SPELL_AURA_DUMMY);
+        }
+        if (info->HasAura(SPELL_AURA_ASCENSION_PROC_TRIGGER_PCT))
+        {
+            DoCheckEffectProc += AuraCheckEffectProcFn(spell_ascension_mystic_enchant_proc::CheckEffect, EFFECT_ALL,
+                SPELL_AURA_ASCENSION_PROC_TRIGGER_PCT);
+            OnEffectProc += AuraEffectProcFn(spell_ascension_mystic_enchant_proc::CastPctTrigger, EFFECT_ALL,
+                SPELL_AURA_ASCENSION_PROC_TRIGGER_PCT);
+            AfterEffectProc += AuraEffectProcFn(spell_ascension_mystic_enchant_proc::Consume, EFFECT_ALL,
+                SPELL_AURA_ASCENSION_PROC_TRIGGER_PCT);
+        }
     }
 };
 

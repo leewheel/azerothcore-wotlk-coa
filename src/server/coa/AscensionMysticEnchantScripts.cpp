@@ -567,15 +567,27 @@ class spell_ascension_mystic_atonement_heal : public SpellScript
 
     void Register() override
     {
-        //By leewheel 2026年10月30日 合并上游后采用三目标全绑（上游 #9930 系修复）；
-        //此前本地曾按 spellId 拆绑（1567779→DEST_AREA_ALLY、1567780→DEST_AREA_ENTRY）以规避 DBC 失配启动报错，
-        //若门禁复现该报错再恢复拆绑方案
-        OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_ascension_mystic_atonement_heal::SelectLowest,
-            EFFECT_ALL, TARGET_UNIT_SRC_AREA_ALLY);
-        OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_ascension_mystic_atonement_heal::SelectLowest,
-            EFFECT_ALL, TARGET_UNIT_DEST_AREA_ALLY);
-        OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_ascension_mystic_atonement_heal::SelectLowest,
-            EFFECT_ALL, TARGET_UNIT_DEST_AREA_ENTRY);
+        //By leewheel 2026年10月31日 门禁复现 dbc 失配报错（Errors.log 9 条），改为按法术实际目标类型条件注册：
+        //各绑定法术只用三种区域目标之一，全绑会让未用到的目标在启动校验期逐条报警，运行期无副作用。
+        SpellInfo const* info = sSpellMgr->GetSpellInfo(m_scriptSpellId);
+        if (!info)
+            return;
+        auto hasTarget = [info](uint32 targetType)
+        {
+            for (SpellEffectInfo const& effect : info->Effects)
+                if (effect.TargetA.GetTarget() == targetType || effect.TargetB.GetTarget() == targetType)
+                    return true;
+            return false;
+        };
+        if (hasTarget(TARGET_UNIT_SRC_AREA_ALLY))
+            OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_ascension_mystic_atonement_heal::SelectLowest,
+                EFFECT_ALL, TARGET_UNIT_SRC_AREA_ALLY);
+        if (hasTarget(TARGET_UNIT_DEST_AREA_ALLY))
+            OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_ascension_mystic_atonement_heal::SelectLowest,
+                EFFECT_ALL, TARGET_UNIT_DEST_AREA_ALLY);
+        if (hasTarget(TARGET_UNIT_DEST_AREA_ENTRY))
+            OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_ascension_mystic_atonement_heal::SelectLowest,
+                EFFECT_ALL, TARGET_UNIT_DEST_AREA_ENTRY);
     }
 };
 

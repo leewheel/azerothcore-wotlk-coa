@@ -383,7 +383,12 @@ class spell_wildcard_cauterizing_heal : public SpellScript
     }
     void Register() override
     {
-        OnEffectHitTarget += SpellEffectFn(spell_wildcard_cauterizing_heal::Heal, EFFECT_0, SPELL_EFFECT_HEAL);
+        // 15 个通配灼烧附魔的治疗效果位不统一，无条件挂 EFFECT_0 会在启动校验期刷 dbc 失配（Errors.log 15 条）；
+        // 按 m_scriptSpellId 查 DBC，只挂实际带 SPELL_EFFECT_HEAL 的效果位。//By leewheel 2026年10月31日
+        if (SpellInfo const* info = sSpellMgr->GetSpellInfo(m_scriptSpellId))
+            for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
+                if (info->Effects[i].Effect == SPELL_EFFECT_HEAL)
+                    OnEffectHitTarget += SpellEffectFn(spell_wildcard_cauterizing_heal::Heal, SpellEffIndex(i), SPELL_EFFECT_HEAL);
     }
 };
 class aura_wildcard_cauterizing_hot : public AuraScript
@@ -396,8 +401,13 @@ class aura_wildcard_cauterizing_hot : public AuraScript
     }
     void Register() override
     {
-        OnEffectPeriodic += AuraEffectPeriodicFn(aura_wildcard_cauterizing_hot::Tick,
-            EFFECT_1, SPELL_AURA_PERIODIC_HEAL);
+        // 同 spell_wildcard_cauterizing_heal：灼烧附魔的 HoT 效果位不统一，无条件挂 EFFECT_1 会在启动校验期
+        // 刷 dbc 失配（Errors.log 15 条）；按 m_scriptSpellId 查 DBC，只挂实际带周期治疗光环的效果位。//By leewheel 2026年10月31日
+        if (SpellInfo const* info = sSpellMgr->GetSpellInfo(m_scriptSpellId))
+            for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
+                if (info->Effects[i].ApplyAuraName == SPELL_AURA_PERIODIC_HEAL)
+                    OnEffectPeriodic += AuraEffectPeriodicFn(aura_wildcard_cauterizing_hot::Tick,
+                        SpellEffIndex(i), SPELL_AURA_PERIODIC_HEAL);
     }
 };
 
