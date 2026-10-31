@@ -83,6 +83,8 @@ namespace
     /// layer answers the same message for the advancement handshake.
     constexpr uint16 CMSG_EXTENSION_INITIALIZED = 0x0561;
     constexpr char const *GREETING = "Hello! Ready for some training?";
+    //By leewheel 20261031 训练窗口问候语中文化(按会话 locale 下发)
+    constexpr char const *GREETING_ZH = "你好！准备好接受一些训练了吗？";
 
     constexpr uint32 BEGINNERS_BOOK = 75118;
     constexpr uint32 BEGINNERS_TEXT = 22;
@@ -534,7 +536,9 @@ namespace
             data << uint32(row.RequiredAbility) << uint32(0) << uint32(0);
         }
 
-        data << std::string(GREETING);
+        //By leewheel 20261031 中文会话下发中文问候语
+        bool const useZh = player->GetSession() && player->GetSession()->GetSessionDbLocaleIndex() == LOCALE_zhCN;
+        data << std::string(useZh ? GREETING_ZH : GREETING);
         player->SendDirectMessage(&data);
     }
 
