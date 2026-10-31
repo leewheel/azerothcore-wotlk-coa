@@ -1118,6 +1118,7 @@ void ObserveExtensionPacket(Actor& actor, WorldPacket const& packet)
         packet.GetOpcode() != SMSG_DUEL_COMPLETE && packet.GetOpcode() != SMSG_FRIEND_STATUS &&
         packet.GetOpcode() != SMSG_SEND_MAIL_RESULT && packet.GetOpcode() != SMSG_GOSSIP_MESSAGE &&
         packet.GetOpcode() != SMSG_BINDPOINTUPDATE &&         packet.GetOpcode() != SMSG_PET_SPELLS &&
+        packet.GetOpcode() != SMSG_TALENTS_INFO &&
         packet.GetOpcode() != SMSG_RESURRECT_REQUEST &&
         packet.GetOpcode() != SMSG_CORPSE_RECLAIM_DELAY &&
         packet.GetOpcode() != SMSG_TRADE_STATUS)
@@ -4388,9 +4389,15 @@ private:
                 return objects.size();
             if (objects.empty())
                 return 0;
-            Require(objects.size() == 1, "Gameobject metric needs exactly one owned object");
             if (metric == "gameobject_display")
-                return objects.front()->GetDisplayId();
+            {
+                uint32 const display = objects.front()->GetDisplayId();
+                Require(std::all_of(objects.begin(), objects.end(),
+                    [display](GameObject* object) { return object->GetDisplayId() == display; }),
+                    "Owned gameobjects of this entry have different displays");
+                return display;
+            }
+            Require(objects.size() == 1, "Gameobject metric needs exactly one owned object");
             if (metric == "gameobject_scale")
                 return objects.front()->GetObjectScale();
             time_t expiry = objects.front()->GetRespawnTime();
@@ -4494,11 +4501,11 @@ private:
             Require(creature != nullptr, "Armor observation needs a present owned creature");
             return creature->GetArmor();
         }
-        if (metric == "owned_creature_max_health")
+        if (metric == "owned_creature_max_health" || metric == "owned_creature_health")
         {
             Creature* creature = GetOwnedCreature(player, step.get<uint32>("entry"));
             Require(creature != nullptr, "Health observation needs a present owned creature");
-            return creature->GetMaxHealth();
+            return metric == "owned_creature_health" ? creature->GetHealth() : creature->GetMaxHealth();
         }
         if (metric == "owned_creature_virtual_item")
         {
@@ -4626,6 +4633,12 @@ private:
             Pet* pet = player->GetPet();
             Require(pet != nullptr, "Pet react state observation needs a current pet");
             return pet->GetReactState();
+        }
+        if (metric == "pet_free_talent_points")
+        {
+            Pet* pet = player->GetPet();
+            Require(pet != nullptr, "Pet talent point observation needs a current pet");
+            return pet->GetFreeTalentPoints();
         }
         if (metric == "pet_player_react_state")
         {
@@ -5383,6 +5396,21 @@ private:
                             Require(item != nullptr, "Packet item position requires a carried item");
                             request << uint8(kind == "item_bag" ? item->GetBagSlot() : item->GetSlot());
                         }
+                        else if (kind == "mail_id" || kind == "mail_item_guid")
+                        {
+                            uint32 const wanted = value.get_value<uint32>();
+                            Mail const* found = nullptr;
+                            MailItemInfo const* foundItem = nullptr;
+                            for (Mail const* mail : player->GetMails())
+                                for (MailItemInfo const& item : mail->items)
+                                    if (!found && item.item_template == wanted)
+                                    {
+                                        found = mail;
+                                        foundItem = &item;
+                                    }
+                            Require(found != nullptr, "Packet mail field requires a mail carrying the item");
+                            request << (kind == "mail_id" ? found->messageID : uint32(foundItem->item_guid));
+                        }
                         else if (kind == "gameobject_guid")
                         {
                             std::list<GameObject*> objects = OwnedGameObjects(player, value.get_value<uint32>());
@@ -5393,6 +5421,16 @@ private:
                             request << StabledPetNumber(player, value.get_value<uint32>());
                         else if (kind == "actor_guid")
                             request << GetUnit(value.get_value<std::string>())->GetGUID().GetRawValue();
+                        else if (kind == "nearest_creature_guid")
+                        {
+                            std::list<Creature*> creatures;
+                            player->GetCreatureListWithEntryInGrid(creatures, value.get_value<uint32>(), 100.0f);
+                            Require(!creatures.empty(), "Packet creature GUID requires that entry within 100 yards");
+                            Creature* nearest = *std::min_element(creatures.begin(), creatures.end(),
+                                [player](Creature* a, Creature* b)
+                                { return player->GetExactDistSq(a) < player->GetExactDistSq(b); });
+                            request << nearest->GetGUID().GetRawValue();
+                        }
                         else if (kind == "duel_arbiter")
                         {
                             ObjectGuid const arbiter = GetPlayer(value.get_value<std::string>())
@@ -6049,6 +6087,14 @@ private:
             player->GetSession()->HandleGroupDisbandOpcode(packet);
             Require(!player->GetGroup(), "Native leave request kept the player grouped");
         }
+        else if (action == "die" && step.get<bool>("pet", false))
+        {
+            Pet* pet = player->GetPet();
+            Require(pet && pet->IsAlive(), "Pet death fixture needs a living pet");
+            Unit::DealDamage(pet, pet, pet->GetHealth(), nullptr, SELF_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, nullptr,
+                false);
+            Require(!pet->IsAlive(), "Self damage did not kill the pet");
+        }
         else if (action == "die")
         {
             Require(player->IsAlive(), "Death fixture needs a living player");
@@ -6620,6 +6666,11 @@ private:
             {
                 target = player->GetPet();
                 Require(target != nullptr, "Cast at a pet needs a current pet");
+            }
+            if (auto ownedEntry = step.get_optional<uint32>("target_owned_entry"))
+            {
+                target = GetOwnedCreature(player, *ownedEntry);
+                Require(target != nullptr, "Cast at an owned creature needs a living creature of that entry");
             }
             if (auto targetItem = step.get_optional<uint32>("target_item"))
             {
