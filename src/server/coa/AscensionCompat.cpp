@@ -4370,6 +4370,9 @@ private:
     std::string Artwork;
     std::string Description;
     std::string AdditionalText;
+    // 中文（zhCN）文本，来自 coa_client_vanity_collection_locale；空则回落英文原文 //By leewheel 2026年10月31日
+    std::string DescriptionZh;
+    std::string AdditionalTextZh;
   };
 
   static constexpr uint32 CREATURE_MODEL_DATA_FIELD_COUNT = 28;
@@ -5049,7 +5052,11 @@ private:
     packet << row.Artwork;
     for (uint32 field = 4; field < VANITY_COLLECTION_DESCRIPTION_FIELD; ++field)
       packet << row.Values[field];
-    packet << row.Description << row.AdditionalText;
+    // 按会话语言下发获取途径描述：zhCN 有翻译用中文，否则回落英文原文 //By leewheel 2026年10月31日
+    bool const useZh = player->GetSession() && player->GetSession()->GetSessionDbLocaleIndex() == LOCALE_zhCN;
+    std::string const& desc = useZh && !row.DescriptionZh.empty() ? row.DescriptionZh : row.Description;
+    std::string const& addText = useZh && !row.AdditionalTextZh.empty() ? row.AdditionalTextZh : row.AdditionalText;
+    packet << desc << addText;
     packet << row.Values[VANITY_COLLECTION_LEARNED_SPELL_FIELD];
     packet << "" << "" << "";
     return SendRowPacket(player, packet);
@@ -5060,6 +5067,21 @@ private:
     std::map<uint32, VanityPrice> prices = LoadVanityPrices();
     if (prices.empty())
       return rows;
+
+    // 加载 zhCN 获取途径描述翻译（表缺失/为空时静默回落英文） //By leewheel 2026年10月31日
+    struct VanityLocaleText { std::string Description; std::string AdditionalText; };
+    std::map<uint32, VanityLocaleText> localeZh;
+    if (QueryResult localeResult = WorldDatabase.Query(
+            "SELECT `ItemID`, `Description`, `AdditionalText` "
+            "FROM `coa_client_vanity_collection_locale` WHERE `locale` = 'zhCN'"))
+    {
+      do {
+        Field const* fields = localeResult->Fetch();
+        VanityLocaleText& text = localeZh[fields[0].Get<uint32>()];
+        text.Description = fields[1].Get<std::string>();
+        text.AdditionalText = fields[2].Get<std::string>();
+      } while (localeResult->NextRow());
+    }
 
     ClientDBC vanity;
     if (!vanity.Load(GetClientDBCPath("VanityCollection.dbc"), VANITY_COLLECTION_DBC_FIELD_COUNT))
@@ -5084,6 +5106,12 @@ private:
       row.Artwork = std::string(record.GetString(3));
       row.Description = std::string(record.GetString(VANITY_COLLECTION_DESCRIPTION_FIELD));
       row.AdditionalText = std::string(record.GetString(VANITY_COLLECTION_ADDITIONAL_TEXT_FIELD));
+      //By leewheel 2026年10月31日
+      if (auto const locale = localeZh.find(record.GetUInt32(1)); locale != localeZh.end())
+      {
+        row.DescriptionZh = locale->second.Description;
+        row.AdditionalTextZh = locale->second.AdditionalText;
+      }
       prices.erase(price);
     }
 
