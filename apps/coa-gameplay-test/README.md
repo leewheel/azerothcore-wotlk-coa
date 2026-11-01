@@ -690,8 +690,8 @@ the `target` attacker.
 These observations do not test delivery to a network client.
 `spell_damage_count` and `spell_damage_total` require `spell` and count positive direct or periodic spell
 damage events, or sum their post-mitigation damage, from the actor's native combat packets. Optional `target`
-filters the victim, `pet: true` selects the actor's current pet as caster, and `critical` filters critical or
-noncritical hits. Values accumulate throughout the scenario; use snapshots and `relative_to` around a cast.
+filters the victim, `pet: true` selects the actor's current pet as caster, `caster` selects another actor such
+as a creature fixture, and `critical` filters critical or noncritical hits. Values accumulate throughout the scenario; use snapshots and `relative_to` around a cast.
 They exclude zero damage, melee swing packets, and healing, and do not test network delivery.
 `spell_heal_count`, `spell_heal_total` and `spell_effective_heal_total` similarly observe native direct and
 periodic healing logs, counting positive heals, summing healing including overhealing, or summing effective
@@ -1148,6 +1148,7 @@ must be a player but is not used.
 | `spawn_stand_state` | `guid`, `spawn_type` (`creature` only) | The creature's effective `creature_addon.bytes1` (else template addon) low byte: the `UNIT_STAND_STATE` a load applies, 0 `stand` without an addon. Fails "Stand state metric needs a creature spawn" for a gameobject. |
 | `spawn_clearance` | `guid`, `spawn_type` | Yards from the spawn to the nearest vmap model (building, wall, prop) along 24 level rays at 0.6, 1.2 and 1.8 yd above it, capped at 10. |
 | `spawn_headroom` | `guid`, `spawn_type` | Yards from 0.3 yd above the spawn straight up to the nearest vmap model (a roof or an overhang), capped at 10. |
+| `spawn_distance` | `guid`, `spawn_type`, `x`, `y`, `z` | Yards from the spawn's loaded position to the point, in 3D. |
 | `point_ground_gap` | `map`, `x`, `y`, `z` | The point's height above its ground, as for a spawn. Fails "No ground found for the point". |
 | `point_placement` | `map`, `x`, `y`, `z`, `tolerance` | The verdict code of the point, phase 1, without exemptions. |
 
