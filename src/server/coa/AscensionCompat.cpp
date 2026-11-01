@@ -4406,8 +4406,11 @@ private:
   static constexpr std::array<uint32, 4> SPELL_WIRE_STRING_FIELDS = {
       SPELL_NAME_FIELD, SPELL_DESCRIPTION_FIELD, SPELL_RANK_FIELD,
       SPELL_TOOLTIP_FIELD};
-  // 每个本地化字符串块内 zhCN 列相对 enUS 的固定偏移（enUS,enGB,koKR,frFR,deDE,enCN,zhCN） //By leewheel 2026年11月1日
+  // 每个本地化字符串块内 zhCN 列相对 enUS 的固定偏移
+  // SQL 表 spell_dbc 列序：enUS,enGB,koKR,frFR,deDE,enCN,zhCN → +6 //By leewheel 2026年11月1日
   static constexpr uint32 SPELL_LOCALE_ZHS_OFFSET = 6;
+  // DBC 文件 locale 序：enUS,koKR,frFR,deDE,zhCN → +4 //By leewheel 2026年11月1日
+  static constexpr uint32 SPELL_DBC_ZHS_OFFSET = 4;
   static constexpr std::size_t SPELL_WIRE_DESCRIPTION = 1;
   static constexpr std::size_t SPELL_WIRE_TOOLTIP = 3;
   static constexpr uint32 SPELL_CATEGORY_FIELD = 1;
@@ -4589,7 +4592,11 @@ private:
       field += localized ? LOCALIZED_STRING_DWORDS : 1;
     }
     for (std::size_t index = 0; index < SPELL_WIRE_STRING_FIELDS.size(); ++index)
+    {
       row.Strings[index] = text(SPELL_WIRE_STRING_FIELDS[index]);
+      // DBC 内 zhCN 槽同样读入，供中文会话下发 //By leewheel 2026年11月1日
+      row.StringsZh[index] = text(SPELL_WIRE_STRING_FIELDS[index] + SPELL_DBC_ZHS_OFFSET);
+    }
     return row;
   }
 
@@ -5631,8 +5638,13 @@ private:
 
         SpellPatchRow &row = rows[rowIndex];
         for (std::size_t text = 0; text < SPELL_WIRE_STRING_FIELDS.size(); ++text)
+        {
           if (row.Strings[text].empty())
             row.Strings[text] = std::string(record.GetString(SPELL_WIRE_STRING_FIELDS[text]));
+          // 服务端 DBC 的 zhCN 槽（enUS+4）同样补入，空则保持空由下发时回落英文 //By leewheel 2026年11月1日
+          if (row.StringsZh[text].empty())
+            row.StringsZh[text] = std::string(record.GetString(SPELL_WIRE_STRING_FIELDS[text] + SPELL_DBC_ZHS_OFFSET));
+        }
         if (description != descriptions.end())
         {
           row.Strings[SPELL_WIRE_DESCRIPTION] = description->second.Description;
