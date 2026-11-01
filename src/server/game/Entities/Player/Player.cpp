@@ -6257,7 +6257,12 @@ void Player::CheckAreaExploreAndOutdoor()
 
     if (offset >= PLAYER_EXPLORED_ZONES_SIZE)
     {
-        LOG_ERROR("entities.player", "Wrong area flag {} in map data for (X: {} Y: {}) point to field PLAYER_EXPLORED_ZONES_1 + {} ( {} must be < {} ).", areaEntry->flags, GetPositionX(), GetPositionY(), offset, offset, PLAYER_EXPLORED_ZONES_SIZE);
+        // COA 的 AreaTable.dbc 里有 63 个自定义区域（AreaBit 4480..5370）超出 3.3.5 客户端
+        // PLAYER_EXPLORED_ZONES 的 128 个字段（4096 个位）上限，这些区域在客户端协议里根本
+        // 没有位置可记，属数据缺口而非服务端错误；玩家和机器人都一样，按调试级记录即可，
+        // 不再按逐格 ERROR 刷 Errors.log / Server.log。By leewheel 2026年11月2日
+        LOG_DEBUG("entities.player", "Area {} (flags {}) has an explore flag beyond the client's explored-zones block for (X: {} Y: {}) - field offset {} of {}, area not recorded.",
+                  areaEntry->ID, areaEntry->flags, GetPositionX(), GetPositionY(), offset, PLAYER_EXPLORED_ZONES_SIZE);
         return;
     }
 

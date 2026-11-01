@@ -2211,8 +2211,9 @@ void AddSC_shaman_spell_scripts()
     RegisterSpellScript(spell_sha_mana_spring_totem);
     RegisterSpellScript(spell_sha_mana_tide);
     RegisterSpellScript(spell_sha_mana_tide_totem);
-        //By leewheel 2026年10月26日 经典脚本死注册注销：COA 改过 Spell.dbc 后 hook 绑定全失配且 DB 挂载已删，此注册无 DB 引用
-    //原行已注销（By leewheel 2026年10月26日）: RegisterSpellScript(spell_sha_nature_guardian);
+    // 恢复注册：spell_script_names 仍把 Reborn 同名法术 -1130881 挂到本脚本（上游 #10659 的 namesake 绑定），
+    // 注销会让核心报 "assigned in the database, but has no code"；By leewheel 2026年11月2日
+    RegisterSpellScript(spell_sha_nature_guardian);
     RegisterSpellScript(spell_sha_sentry_totem);
     RegisterSpellScript(spell_sha_stoneclaw_totem);
     RegisterSpellScript(spell_sha_thunderstorm);

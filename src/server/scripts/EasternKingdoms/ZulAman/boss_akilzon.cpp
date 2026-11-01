@@ -22,6 +22,7 @@
 #include "ScriptedCreature.h"
 #include "SpellAuras.h"
 #include "SpellAuraEffects.h"
+#include "SpellMgr.h"
 #include "SpellScript.h"
 #include "SpellScriptLoader.h"
 #include "Weather.h"
@@ -348,8 +349,11 @@ class spell_electrical_storm_proc : public SpellScript
 
     void Register() override
     {
-        //By leewheel 2026年10月26日 失效 hook 绑定注销：COA 改过 Spell.dbc 后该绑定与 DBC 失配，核心本就跳过执行，注释保持一致
-        //原行已注销（By leewheel 2026年10月26日）: OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_electrical_storm_proc::FilterTargets, EFFECT_0, TARGET_UNIT_SRC_AREA_ALLY);
+        // COA 的 Spell.dbc 里电气风暴不保证 EFFECT_0 的目标类型是友军范围，无条件绑定会在启动校验期
+        // 报 "did not match dbc effect data"，按 DBC 实际目标类型条件绑定；By leewheel 2026年11月2日
+        if (SpellInfo const* info = sSpellMgr->GetSpellInfo(m_scriptSpellId))
+            if (info->Effects[EFFECT_0].TargetA.GetTarget() == TARGET_UNIT_SRC_AREA_ALLY)
+                OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_electrical_storm_proc::FilterTargets, EFFECT_0, TARGET_UNIT_SRC_AREA_ALLY);
         OnEffectHitTarget += SpellEffectFn(spell_electrical_storm_proc::HandleDamageCalc, EFFECT_0, SPELL_EFFECT_SCHOOL_DAMAGE);
     }
 };

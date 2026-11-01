@@ -967,8 +967,15 @@ class spell_dru_savage_roar_aura : public AuraScript
 
     void Register() override
     {
-        AfterEffectApply += AuraEffectApplyFn(spell_dru_savage_roar_aura::AfterApply, EFFECT_1, SPELL_AURA_DUMMY, AURA_EFFECT_HANDLE_REAL);
-        AfterEffectRemove += AuraEffectRemoveFn(spell_dru_savage_roar_aura::AfterRemove, EFFECT_1, SPELL_AURA_DUMMY, AURA_EFFECT_HANDLE_REAL);
+        // COA 的 Spell.dbc 里挂在本光环脚本上的法术（含 Reborn 同名野蛮咆哮）不保证 EFFECT_1 是 DUMMY 光环，
+        // 无条件绑定会在启动校验期报 "did not match dbc effect data"，按 DBC 实际光环条件绑定；
+        // 注意：Register 期 AuraScript::GetSpellInfo() 走 m_aura 为空会崩，须用 m_scriptSpellId 查 sSpellMgr；By leewheel 2026年11月2日
+        if (SpellInfo const* info = sSpellMgr->GetSpellInfo(m_scriptSpellId))
+            if (info->Effects[EFFECT_1].ApplyAuraName == SPELL_AURA_DUMMY)
+            {
+                AfterEffectApply += AuraEffectApplyFn(spell_dru_savage_roar_aura::AfterApply, EFFECT_1, SPELL_AURA_DUMMY, AURA_EFFECT_HANDLE_REAL);
+                AfterEffectRemove += AuraEffectRemoveFn(spell_dru_savage_roar_aura::AfterRemove, EFFECT_1, SPELL_AURA_DUMMY, AURA_EFFECT_HANDLE_REAL);
+            }
     }
 };
 

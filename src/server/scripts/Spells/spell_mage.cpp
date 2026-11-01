@@ -1003,8 +1003,12 @@ class spell_mage_fingers_of_frost : public AuraScript
     void Register() override
     {
         DoPrepareProc += AuraProcFn(spell_mage_fingers_of_frost::PrepareProc);
-            //By leewheel 2026年10月26日 失效 hook 绑定注销：COA 改过 Spell.dbc 后该绑定与 DBC 失配，核心本就跳过执行，注释保持一致
-        //原行已注销（By leewheel 2026年10月26日）: AfterEffectRemove += AuraEffectRemoveFn(spell_mage_fingers_of_frost::OnRemove, EFFECT_0, SPELL_AURA_DUMMY, AURA_EFFECT_HANDLE_REAL);
+        // COA 改过的 Spell.dbc 里挂在本脚本上的法术不保证 EFFECT_0 就是 DUMMY 光环，
+        // 无条件绑定会在启动校验期报 "did not match dbc effect data"，按 DBC 实际光环条件绑定。
+        // 注意：Register 期 AuraScript::GetSpellInfo() 走 m_aura 为空会崩，须用 m_scriptSpellId 查 sSpellMgr；By leewheel 2026年11月2日
+        if (SpellInfo const* info = sSpellMgr->GetSpellInfo(m_scriptSpellId))
+            if (info->Effects[EFFECT_0].ApplyAuraName == SPELL_AURA_DUMMY)
+                AfterEffectRemove += AuraEffectRemoveFn(spell_mage_fingers_of_frost::OnRemove, EFFECT_0, SPELL_AURA_DUMMY, AURA_EFFECT_HANDLE_REAL);
     }
 };
 
@@ -1673,8 +1677,9 @@ void AddSC_mage_spell_scripts()
     RegisterSpellScript(spell_mage_brain_freeze);
     RegisterSpellScript(spell_mage_combustion);
     RegisterSpellScript(spell_mage_glyph_of_eternal_water);
-        //By leewheel 2026年10月26日 经典脚本死注册注销：COA 改过 Spell.dbc 后 hook 绑定全失配且 DB 挂载已删，此注册无 DB 引用
-    //原行已注销（By leewheel 2026年10月26日）: RegisterSpellScript(spell_mage_combustion_proc);
+    // 恢复注册：spell_script_names 仍把 Reborn 同名法术 1128682 挂到本脚本（上游 #10659 的 namesake 绑定），
+    // 注销会让核心报 "assigned in the database, but has no code"；By leewheel 2026年11月2日
+    RegisterSpellScript(spell_mage_combustion_proc);
     RegisterSpellScript(spell_mage_dragon_breath);
     //By leewheel 2026年10月26日 经典脚本死注册注销：DB 已换用 *_coa/新版脚本，此注册无 DB 引用
     //RegisterSpellScript(spell_mage_empowered_fire);
