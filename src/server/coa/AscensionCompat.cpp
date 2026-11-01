@@ -4406,6 +4406,8 @@ private:
   static constexpr std::array<uint32, 4> SPELL_WIRE_STRING_FIELDS = {
       SPELL_NAME_FIELD, SPELL_DESCRIPTION_FIELD, SPELL_RANK_FIELD,
       SPELL_TOOLTIP_FIELD};
+  // 每个本地化字符串块内 zhCN 列相对 enUS 的固定偏移（enUS,enGB,koKR,frFR,deDE,enCN,zhCN） //By leewheel 2026年11月1日
+  static constexpr uint32 SPELL_LOCALE_ZHS_OFFSET = 6;
   static constexpr std::size_t SPELL_WIRE_DESCRIPTION = 1;
   static constexpr std::size_t SPELL_WIRE_TOOLTIP = 3;
   static constexpr uint32 SPELL_CATEGORY_FIELD = 1;
@@ -4443,6 +4445,8 @@ private:
   struct SpellPatchRow {
     std::array<uint32, SPELL_CLIENT_RECORD_DWORDS> Values{};
     std::array<std::string, SPELL_WIRE_STRING_FIELDS.size()> Strings;
+    // zhCN 文本（spell_dbc 的 *_Lang_zhCN 列，仅 SQL 行填充；空则下发时回落英文） //By leewheel 2026年11月1日
+    std::array<std::string, SPELL_WIRE_STRING_FIELDS.size()> StringsZh;
     bool RequiresRegistration = false;
   };
 
@@ -4960,8 +4964,10 @@ private:
                        row.Values.size() * sizeof(uint32) + 1024);
     for (uint32 value : row.Values)
       packet << value;
-    for (std::string const &text : row.Strings)
-      AppendSizedString(packet, text);
+    // 中文会话优先下发 zhCN 文本，该槽无译文时逐槽回落英文 //By leewheel 2026年11月1日
+    bool const useZh = player->GetSession() && player->GetSession()->GetSessionDbLocaleIndex() == LOCALE_zhCN;
+    for (std::size_t index = 0; index < row.Strings.size(); ++index)
+      AppendSizedString(packet, useZh && !row.StringsZh[index].empty() ? row.StringsZh[index] : row.Strings[index]);
     return SendRowPacket(player, packet);
   }
 
@@ -5530,6 +5536,13 @@ private:
       }
       for (std::size_t text = 0; text < SPELL_WIRE_STRING_FIELDS.size(); ++text)
         row.Strings[text] = fields[SPELL_WIRE_STRING_FIELDS[text]].Get<std::string>();
+      // 同时读入 zhCN 列（同一本地化块内 enUS + 6），供中文会话下发 //By leewheel 2026年11月1日
+      for (std::size_t text = 0; text < SPELL_WIRE_STRING_FIELDS.size(); ++text)
+      {
+        uint32 const zhField = SPELL_WIRE_STRING_FIELDS[text] + SPELL_LOCALE_ZHS_OFFSET;
+        if (zhField < result->GetFieldCount())
+          row.StringsZh[text] = fields[zhField].Get<std::string>();
+      }
       ApplyServerSpellSelectors(row);
     }
     return rows;
