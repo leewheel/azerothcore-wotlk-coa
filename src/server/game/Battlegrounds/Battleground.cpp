@@ -967,25 +967,28 @@ void Battleground::EndBattleground(PvPTeamId winnerTeamId)
 
         if (isBattleground() && sWorld->getBoolConfig(CONFIG_BATTLEGROUND_STORE_STATISTICS_ENABLE))
         {
-            stmt = CharacterDatabase.GetPreparedStatement(CHAR_INS_PVPSTATS_PLAYER);
             auto const& score = PlayerScores.find(player->GetGUID().GetCounter());
+            if (score != PlayerScores.end())
+            {
+                stmt = CharacterDatabase.GetPreparedStatement(CHAR_INS_PVPSTATS_PLAYER);
 
-            stmt->SetData(0, battlegroundId);
-            stmt->SetData(1, player->GetGUID().GetCounter());
-            stmt->SetData(2, bgTeamId == GetTeamId(winnerTeamId));
-            stmt->SetData(3, score->second->GetKillingBlows());
-            stmt->SetData(4, score->second->GetDeaths());
-            stmt->SetData(5, score->second->GetHonorableKills());
-            stmt->SetData(6, score->second->GetBonusHonor());
-            stmt->SetData(7, score->second->GetDamageDone());
-            stmt->SetData(8, score->second->GetHealingDone());
-            stmt->SetData(9, score->second->GetAttr1());
-            stmt->SetData(10, score->second->GetAttr2());
-            stmt->SetData(11, score->second->GetAttr3());
-            stmt->SetData(12, score->second->GetAttr4());
-            stmt->SetData(13, score->second->GetAttr5());
+                stmt->SetData(0, battlegroundId);
+                stmt->SetData(1, player->GetGUID().GetCounter());
+                stmt->SetData(2, bgTeamId == GetTeamId(winnerTeamId));
+                stmt->SetData(3, score->second->GetKillingBlows());
+                stmt->SetData(4, score->second->GetDeaths());
+                stmt->SetData(5, score->second->GetHonorableKills());
+                stmt->SetData(6, score->second->GetBonusHonor());
+                stmt->SetData(7, score->second->GetDamageDone());
+                stmt->SetData(8, score->second->GetHealingDone());
+                stmt->SetData(9, score->second->GetAttr1());
+                stmt->SetData(10, score->second->GetAttr2());
+                stmt->SetData(11, score->second->GetAttr3());
+                stmt->SetData(12, score->second->GetAttr4());
+                stmt->SetData(13, score->second->GetAttr5());
 
-            CharacterDatabase.Execute(stmt);
+                CharacterDatabase.Execute(stmt);
+            }
         }
 
         WorldPacket data;
@@ -1595,6 +1598,13 @@ void Battleground::DoorOpen(uint32 type)
 
 GameObject* Battleground::GetBGObject(uint32 type)
 {
+    if (type >= BgObjects.size() || !FindBgMap())
+    {
+        LOG_ERROR("bg.battleground", "Battleground::GetBGObject: invalid request (type: {}, gameobjects: {}) for BG (map: {}, instance id: {})!",
+                       type, BgObjects.size(), m_MapId, m_InstanceID);
+        return nullptr;
+    }
+
     GameObject* obj = GetBgMap()->GetGameObject(BgObjects[type]);
     if (!obj)
         LOG_ERROR("bg.battleground", "Battleground::GetBGObject: gameobject (type: {}, {}) not found for BG (map: {}, instance id: {})!",
@@ -1604,6 +1614,13 @@ GameObject* Battleground::GetBGObject(uint32 type)
 
 Creature* Battleground::GetBGCreature(uint32 type)
 {
+    if (type >= BgCreatures.size() || !FindBgMap())
+    {
+        LOG_ERROR("bg.battleground", "Battleground::GetBGCreature: invalid request (type: {}, creatures: {}) for BG (map: {}, instance id: {})!",
+                       type, BgCreatures.size(), m_MapId, m_InstanceID);
+        return nullptr;
+    }
+
     Creature* creature = GetBgMap()->GetCreature(BgCreatures[type]);
     if (!creature)
         LOG_ERROR("bg.battleground", "Battleground::GetBGCreature: creature (type: {}, {}) not found for BG (map: {}, instance id: {})!",
