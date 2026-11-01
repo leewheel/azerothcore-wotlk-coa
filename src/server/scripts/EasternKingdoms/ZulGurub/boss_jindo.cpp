@@ -299,7 +299,9 @@ void AddSC_boss_jindo()
 {
     //By leewheel 2026年10月26日 经典脚本死注册注销：DB 已换用 *_coa/新版脚本，此注册无 DB 引用
     //RegisterZulGurubCreatureAI(boss_jindo);
-    RegisterZulGurubCreatureAI(npc_healing_ward);
+    //By leewheel 2026年11月1日 上游 rev_20261025_92 已把 14987 改为 NullCreatureAI + 法术脚本
+    //（spell_jindo_coa_healing_stream），经典 npc_healing_ward 无 DB 引用，注销以消 Errors.log 告警
+    //RegisterZulGurubCreatureAI(npc_healing_ward);
     RegisterZulGurubCreatureAI(npc_shade_of_jindo);
     RegisterZulGurubCreatureAI(npc_brain_wash_totem);
     RegisterSpellScript(spell_random_aggro);
