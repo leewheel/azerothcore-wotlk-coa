@@ -4687,6 +4687,12 @@ void Unit::_UpdateAutoRepeatSpell()
     // Check for ranged attack timer
     if (isAttackReady(RANGED_ATTACK))
     {
+        if (!m_currentSpells[CURRENT_AUTOREPEAT_SPELL]->UpdatePointers())
+        {
+            InterruptSpell(CURRENT_AUTOREPEAT_SPELL);
+            return;
+        }
+
         SpellCastResult result = m_currentSpells[CURRENT_AUTOREPEAT_SPELL]->CheckCast(true);
         if (result != SPELL_CAST_OK)
         {
