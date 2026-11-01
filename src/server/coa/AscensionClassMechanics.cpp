@@ -769,14 +769,25 @@ void ApplyRangerForestDwellerContract(SpellInfo* spellInfo)
         return;
 
     SpellEffectInfo const& heal = spellInfo->Effects[EFFECT_0];
-    SpellEffectInfo& obsoleteSpeed = spellInfo->Effects[EFFECT_1];
+    // 本契约只做一件事：清掉旧版 Spell.dbc 里 EFFECT_1 那条已废弃的加速修正。
+    // 现行 COA 的森林居民治疗分支形状与旧版不同（触发法术或间隔变了），此时 EFFECT_1 的
+    // 废弃修正本就不存在，契约无事可做，属于数据演进而不是错误，记调试级即可。
+    // By leewheel 2026年11月2日
     if (heal.Effect != SPELL_EFFECT_APPLY_AURA || heal.ApplyAuraName != SPELL_AURA_PERIODIC_TRIGGER_SPELL ||
-        heal.TriggerSpell != SPELL_RANGER_FOREST_DWELLER_HEAL || heal.Amplitude != 3000 ||
-        !((obsoleteSpeed.Effect == SPELL_EFFECT_APPLY_AURA &&
-            obsoleteSpeed.ApplyAuraName == SPELL_AURA_ADD_FLAT_MODIFIER &&
-            obsoleteSpeed.MiscValue == SPELLMOD_EFFECT1) || obsoleteSpeed.Effect == 0))
+        heal.TriggerSpell != SPELL_RANGER_FOREST_DWELLER_HEAL || heal.Amplitude != 3000)
     {
-        LOG_ERROR("coa", "Skipped unexpected Forest Dweller record {}", spellInfo->Id);
+        LOG_DEBUG("coa", "Forest Dweller {} keeps its own heal shape: no obsolete speed modifier to clear.", spellInfo->Id);
+        return;
+    }
+
+    SpellEffectInfo& obsoleteSpeed = spellInfo->Effects[EFFECT_1];
+    if (obsoleteSpeed.Effect == 0)
+        return;
+
+    if (obsoleteSpeed.Effect != SPELL_EFFECT_APPLY_AURA || obsoleteSpeed.ApplyAuraName != SPELL_AURA_ADD_FLAT_MODIFIER ||
+        obsoleteSpeed.MiscValue != SPELLMOD_EFFECT1)
+    {
+        LOG_DEBUG("coa", "Forest Dweller {} has no obsolete speed modifier at effect 1: nothing to clear.", spellInfo->Id);
         return;
     }
 

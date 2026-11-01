@@ -1114,8 +1114,11 @@ class spell_pal_lay_on_hands : public SpellScript
     {
         OnCheckCast += SpellCheckCastFn(spell_pal_lay_on_hands::CheckCast);
         AfterHit += SpellHitFn(spell_pal_lay_on_hands::HandleScript);
-            //By leewheel 2026年10月26日 失效 hook 绑定注销：COA 改过 Spell.dbc 后该绑定与 DBC 失配，核心本就跳过执行，注释保持一致
-        //原行已注销（By leewheel 2026年10月26日）: OnEffectHitTarget += SpellEffectFn(spell_pal_lay_on_hands::HandleMaxHealthHeal, EFFECT_0, SPELL_EFFECT_HEAL_MAX_HEALTH);
+        // COA 的 Spell.dbc 里圣疗（含 Reborn 同名法术）不保证 EFFECT_0 就是最大生命值治疗，
+        // 无条件绑定会在启动校验期报 "did not match dbc effect data"，按 DBC 实际效果条件绑定；By leewheel 2026年11月2日
+        if (SpellInfo const* info = sSpellMgr->GetSpellInfo(m_scriptSpellId))
+            if (info->Effects[EFFECT_0].Effect == SPELL_EFFECT_HEAL_MAX_HEALTH)
+                OnEffectHitTarget += SpellEffectFn(spell_pal_lay_on_hands::HandleMaxHealthHeal, EFFECT_0, SPELL_EFFECT_HEAL_MAX_HEALTH);
     }
 
     int32 _manaAmount;
@@ -1167,10 +1170,14 @@ class spell_pal_righteous_defense : public SpellScript
         //! target select will be executed in hitphase of effect 0
         //! so we must handle trigger spell also in hit phase (default execution in launch phase)
         //! see issue #3718
-            //By leewheel 2026年10月26日 失效 hook 绑定注销：COA 改过 Spell.dbc 后该绑定与 DBC 失配，核心本就跳过执行，注释保持一致
-        //原行已注销（By leewheel 2026年10月26日）: OnEffectLaunchTarget += SpellEffectFn(spell_pal_righteous_defense::HandleTriggerSpellLaunch, EFFECT_1, SPELL_EFFECT_TRIGGER_SPELL);
-            //By leewheel 2026年10月26日 失效 hook 绑定注销：COA 改过 Spell.dbc 后该绑定与 DBC 失配，核心本就跳过执行，注释保持一致
-        //原行已注销（By leewheel 2026年10月26日）: OnEffectHitTarget += SpellEffectFn(spell_pal_righteous_defense::HandleTriggerSpellHit, EFFECT_1, SPELL_EFFECT_TRIGGER_SPELL);
+        // COA 的 Spell.dbc 里正义防御不保证 EFFECT_1 就是触发法术，无条件绑定会在启动校验期
+        // 报 "did not match dbc effect data"，按 DBC 实际效果条件绑定；By leewheel 2026年11月2日
+        if (SpellInfo const* info = sSpellMgr->GetSpellInfo(m_scriptSpellId))
+            if (info->Effects[EFFECT_1].Effect == SPELL_EFFECT_TRIGGER_SPELL)
+            {
+                OnEffectLaunchTarget += SpellEffectFn(spell_pal_righteous_defense::HandleTriggerSpellLaunch, EFFECT_1, SPELL_EFFECT_TRIGGER_SPELL);
+                OnEffectHitTarget += SpellEffectFn(spell_pal_righteous_defense::HandleTriggerSpellHit, EFFECT_1, SPELL_EFFECT_TRIGGER_SPELL);
+            }
     }
 };
 

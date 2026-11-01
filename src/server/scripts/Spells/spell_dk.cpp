@@ -2489,11 +2489,17 @@ class spell_dk_army_of_the_dead_passive : public AuraScript
 
     void Register() override
     {
-            //By leewheel 2026年10月26日 失效 hook 绑定注销：COA 改过 Spell.dbc 后该绑定与 DBC 失配，核心本就跳过执行，注释保持一致
-        //原行已注销（By leewheel 2026年10月26日）: DoEffectCalcAmount += AuraEffectCalcAmountFn(spell_dk_army_of_the_dead_passive::CalculateAPAmount, EFFECT_0, SPELL_AURA_MOD_ATTACK_POWER);
+        // COA 的 Spell.dbc 里大军被动不保证 EFFECT_0 是攻强、EFFECT_2 是法术伤害，
+        // 无条件绑定会在启动校验期报 "did not match dbc effect data"，按 DBC 实际光环逐条条件绑定；
+        // 注意：Register 期 AuraScript::GetSpellInfo() 走 m_aura 为空会崩，须用 m_scriptSpellId 查 sSpellMgr；By leewheel 2026年11月2日
+        if (SpellInfo const* info = sSpellMgr->GetSpellInfo(m_scriptSpellId))
+        {
+            if (info->Effects[EFFECT_0].ApplyAuraName == SPELL_AURA_MOD_ATTACK_POWER)
+                DoEffectCalcAmount += AuraEffectCalcAmountFn(spell_dk_army_of_the_dead_passive::CalculateAPAmount, EFFECT_0, SPELL_AURA_MOD_ATTACK_POWER);
+            if (info->Effects[EFFECT_2].ApplyAuraName == SPELL_AURA_MOD_DAMAGE_DONE)
+                DoEffectCalcAmount += AuraEffectCalcAmountFn(spell_dk_army_of_the_dead_passive::CalculateSPAmount, EFFECT_2, SPELL_AURA_MOD_DAMAGE_DONE);
+        }
         DoEffectCalcAmount += AuraEffectCalcAmountFn(spell_dk_army_of_the_dead_passive::CalculateHealthAmount, EFFECT_1, SPELL_AURA_MOD_INCREASE_HEALTH);
-            //By leewheel 2026年10月26日 失效 hook 绑定注销：COA 改过 Spell.dbc 后该绑定与 DBC 失配，核心本就跳过执行，注释保持一致
-        //原行已注销（By leewheel 2026年10月26日）: DoEffectCalcAmount += AuraEffectCalcAmountFn(spell_dk_army_of_the_dead_passive::CalculateSPAmount, EFFECT_2, SPELL_AURA_MOD_DAMAGE_DONE);
         OnEffectApply += AuraEffectApplyFn(spell_dk_army_of_the_dead_passive::HandleEffectApply, EFFECT_ALL, SPELL_AURA_ANY, AURA_EFFECT_HANDLE_REAL);
         DoEffectCalcPeriodic += AuraEffectCalcPeriodicFn(spell_dk_army_of_the_dead_passive::CalcPeriodic, EFFECT_ALL, SPELL_AURA_ANY);
         OnEffectPeriodic += AuraEffectPeriodicFn(spell_dk_army_of_the_dead_passive::HandlePeriodic, EFFECT_ALL, SPELL_AURA_ANY);

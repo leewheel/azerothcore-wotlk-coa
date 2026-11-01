@@ -30,6 +30,7 @@
 #include "ReputationMgr.h"
 #include "SkillDiscovery.h"
 #include "SpellAuraEffects.h"
+#include "SpellMgr.h"
 #include "SpellScript.h"
 #include "SpellScriptLoader.h"
 #include "Unit.h"
@@ -4907,8 +4908,11 @@ class spell_gen_basic_campfire : public SpellScript
 
     void Register() override
     {
-            //By leewheel 2026年10月26日 失效 hook 绑定注销：COA 改过 Spell.dbc 后该绑定与 DBC 失配，核心本就跳过执行，注释保持一致
-        //原行已注销（By leewheel 2026年10月26日）: OnDestinationTargetSelect += SpellDestinationTargetSelectFn(spell_gen_basic_campfire::ModDest, EFFECT_0, TARGET_DEST_CASTER_SUMMON);
+        // COA 的 Spell.dbc 里基础篝火法术不保证 EFFECT_0 的落点类型就是施法者自身，
+        // 无条件绑定会在启动校验期报 "did not match dbc effect data"，按 DBC 实际落点类型条件绑定；By leewheel 2026年11月2日
+        if (SpellInfo const* info = sSpellMgr->GetSpellInfo(m_scriptSpellId))
+            if (info->Effects[EFFECT_0].TargetA.GetTarget() == TARGET_DEST_CASTER_SUMMON)
+                OnDestinationTargetSelect += SpellDestinationTargetSelectFn(spell_gen_basic_campfire::ModDest, EFFECT_0, TARGET_DEST_CASTER_SUMMON);
         OnEffectHit += SpellEffectFn(spell_gen_basic_campfire::ModifyCookingSkill, EFFECT_0, SPELL_EFFECT_TRANS_DOOR);
     }
 };
