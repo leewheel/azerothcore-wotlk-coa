@@ -446,9 +446,13 @@ void LoadDBCStores(std::string const& dataPath)
     }
 
     // The CoA client's Faction.dbc gives the unnamed faction 1162 Bloodsail Buccaneers' reputation index 0.
+    // 这里 ReleaseSharedReputationListIds 已经把冲突的那一方 reputationListID 释放成 -1（数据就地修正，
+    // 见 SharedReputationListIdTest），因此加载后的数据是自洽的，不属于服务端错误；按调试级记录这次校正，
+    // 排查数据时把 Logger.dbc 调到 DEBUG 即可看到。By leewheel 2026年11月2日
     for (auto const& [released, owner] : ReleaseSharedReputationListIds(factions))
-        LOG_ERROR("dbc", "Faction.dbc: faction {} shares its reputation index with faction {} and has no reputation.",
+        LOG_DEBUG("dbc", "Faction.dbc: faction {} shares its reputation index with faction {} and has no reputation; released.",
             released, owner);
+    // End By leewheel
 
     for (GameObjectDisplayInfoEntry const* info : sGameObjectDisplayInfoStore)
     {
