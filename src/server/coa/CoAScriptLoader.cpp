@@ -253,6 +253,7 @@ void AddSC_AscensionPrimalistEarthshaker();
 void AddSC_AscensionPrimalistRunningInstinct();
 void AddSC_AscensionPrimalistRideWave();
 void AddSC_AscensionPrimalistPowerHammer();
+void AddSC_AscensionAccountReputation();
 void AddSC_AscensionPrimalistEmeraldWill();
 void AddSC_AscensionPrimalistTotemicEchoes();
 void AddSC_AscensionPrimalistWildCarnage();
@@ -544,6 +545,7 @@ void AddCoAScripts()
     AddSC_AscensionPrimalistRunningInstinct();
     AddSC_AscensionPrimalistRideWave();
     AddSC_AscensionPrimalistPowerHammer();
+    AddSC_AscensionAccountReputation();
     AddSC_AscensionPrimalistEmeraldWill();
     AddSC_AscensionPrimalistTotemicEchoes();
     AddSC_AscensionPrimalistWildCarnage();
