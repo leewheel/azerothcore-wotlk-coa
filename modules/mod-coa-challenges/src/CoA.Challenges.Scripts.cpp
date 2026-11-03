@@ -34,7 +34,8 @@ namespace CoAChallenges
     {
         if (kind != AscensionPersonalBank::REALM || !PlayerHasRule(player, "CHALLENGE_RULES_TYPE_NO_REALM_BANK"))
             return true;
-        NotifyPlayer(player, "Your challenge forbids using the realm bank.");
+        // 上游新增的国度银行限制提示改走 module_string（ID 195）//By leewheel 2026年11月04日
+        NotifyPlayer(player, STR_RULE_NO_REALM_BANK);
         return false;
     }
 
@@ -42,7 +43,8 @@ namespace CoAChallenges
     {
         if (!PlayerHasRule(looter, "CHALLENGE_RULES_TYPE_NO_HIGH_RISK_LOOT"))
             return true;
-        NotifyPlayer(looter, "Your challenge forbids looting the spoils of other players in High-Risk.");
+        // 上游新增的高风险战利品限制提示改走 module_string（ID 196）//By leewheel 2026年11月04日
+        NotifyPlayer(looter, STR_RULE_NO_HIGH_RISK_LOOT);
         return false;
     }
 

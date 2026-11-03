@@ -263,6 +263,8 @@ namespace CoAChallenges
         STR_ACT_TRIAL_LOCK           = 192, // Cannot lower a custom trial or select an Adventure Mode level already completed.
         STR_ACT_MODE_REDUCED         = 193, // Adventure Mode reduced to level {}. Difficulty and rewards now use this level.
         STR_RULE_PVE_MODE_REQUIRED   = 194, // Your active challenge requires PvE mode. //By leewheel 2026年10月30日 修复上游 C2672：补缺失的字符串 ID
+        STR_RULE_NO_REALM_BANK       = 195, // Your challenge forbids using the realm bank. //By leewheel 2026年11月04日 上游新增规则提示纳入 module_string 体系
+        STR_RULE_NO_HIGH_RISK_LOOT   = 196, // Your challenge forbids looting the spoils of other players in High-Risk. //By leewheel 2026年11月04日
     };
 
     /// One row of `module_string`, in the given session locale. A missing row
