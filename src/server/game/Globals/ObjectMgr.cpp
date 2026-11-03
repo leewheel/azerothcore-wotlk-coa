@@ -3091,6 +3091,11 @@ void ObjectMgr::LoadGameobjects()
             {
                 case GAMEOBJECT_TYPE_TRAP:
                 case GAMEOBJECT_TYPE_SPELL_FOCUS:
+                // COA 存在刻意无模型的任务交互物件：乌瑟尔之墓的雕像（entry 181653）用 goober 承载任务点击，
+                // 模型 utherstatue.m2 会让 Ascension 客户端崩溃，墓碑本身已有雕像外观，因此允许 goober 无显示模型。
+                //By leewheel 2026年11月04日
+                case GAMEOBJECT_TYPE_GOOBER:
+                //End By leewheel
                     break;
                 default:
                     LOG_ERROR("sql.sql", "Gameobject (GUID: {} Entry {} GoType: {}) doesn't have a displayId ({}), not loaded.", guid, entry, gInfo->type, gInfo->displayId);
