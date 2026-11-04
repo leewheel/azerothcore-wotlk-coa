@@ -146,6 +146,7 @@ void AddAscensionThunderkegScripts();
 void AddAscensionPepeVanityScripts();
 void AddAscensionRaidMarkerScripts();
 void AddCoAContainerTriggerScripts();
+void AddCoAFreeNoticeScripts(); //By leewheel 2026年11月04日 免费服务器定时公告
 void AddAscensionAchievementConditionScripts();
 void AddAscensionAccountInfoScripts();
 void AddCoAGameplayTestScripts();
@@ -786,6 +787,7 @@ void AddCoAScripts()
     AddAscensionPepeVanityScripts();
     AddAscensionRaidMarkerScripts();
     AddCoAContainerTriggerScripts();
+    AddCoAFreeNoticeScripts(); //By leewheel 2026年11月04日
     AddAscensionAchievementConditionScripts();
     AddAscensionAccountInfoScripts();
     AddCoAGameplayTestScripts();
