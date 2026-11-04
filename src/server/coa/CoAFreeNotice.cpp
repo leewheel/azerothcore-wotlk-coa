@@ -20,7 +20,10 @@ namespace
     class CoAFreeNoticeWorldScript : public WorldScript
     {
     public:
-        CoAFreeNoticeWorldScript() : WorldScript("CoAFreeNoticeWorldScript") { }
+        // 必须显式声明 ON_UPDATE 钩子，否则这个脚本不会被世界更新派发
+        //By leewheel 2026年11月04日
+        CoAFreeNoticeWorldScript() : WorldScript("CoAFreeNoticeWorldScript", { WORLDHOOK_ON_UPDATE }) { }
+        //End By leewheel
 
         void OnUpdate(uint32 diff) override
         {
