@@ -12,6 +12,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <limits>
+#include <map> //By leewheel 2026年11月05日 合约类型中文名对照表
 #include <mutex>
 #include <optional>
 #include <string>
@@ -112,6 +113,30 @@ inline bool IsValidTypeName(std::string_view name)
 
 inline std::string DisplayName(std::string_view type)
 {
+    // 合约类型是玩家可见文本，统一给简体中文名；未登记的类型退回下面的驼峰拆词结果。
+    //By leewheel 2026年11月05日
+    static std::map<std::string_view, std::string_view> const zhNames = {
+        { "CallToArms", "响应号召" },
+        { "Duel", "决斗" },
+        { "ForTheFaction", "为阵营而战" },
+        { "OpenWorldVanillaZoneKill1", "旧世区域击杀（一）" },
+        { "OpenWorldVanillaZoneKill2", "旧世区域击杀（二）" },
+        { "OpenWorldVanillaZoneKill3", "旧世区域击杀（三）" },
+        { "TBCGatheringProfessions", "外域采集专业" },
+        { "TBCHighRiskWarInZone", "外域高风险区域战争" },
+        { "TBCOutlandCraftingProfessions", "外域制造专业" },
+        { "TBCSecondaryProfessions", "外域次级专业" },
+        { "VanillaCraftingShortOnSupplies", "旧世制造：材料短缺" },
+        { "VanillaGatheringADelicateSituation", "旧世采集：微妙局面" },
+        { "VanillaHeroicDungeonCrawling", "旧世英雄副本扫荡" },
+        { "VanillaMythicDungeonCrawling", "旧世神话副本扫荡" },
+        { "VanillaNormalDungeonCrawling", "旧世普通副本扫荡" },
+        { "VanillaSecondaryProfessions", "旧世次级专业" } };
+
+    if (auto const known = zhNames.find(type); known != zhNames.end())
+        return std::string(known->second);
+    //End By leewheel
+
     std::string name;
     for (std::size_t i = 0; i < type.size(); ++i)
     {

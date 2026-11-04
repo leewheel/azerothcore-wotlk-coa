@@ -477,14 +477,18 @@ uint32 Activate(Player* player, Catalogue const& contracts, Settings const& curr
     Quest const* quest = ChooseQuest(player, *contract);
     if (!quest)
     {
-        chat.PSendSysMessage("You cannot complete {} contracts yet.", name);
+        // 玩家可见提示中文化 //By leewheel 2026年11月05日
+        chat.PSendSysMessage("你暂时还不能完成{}合约。", name);
+        // End By leewheel
         return 0;
     }
 
     uint32 const spare = SpareFor(player, contracts, *contract, current);
     if (!spare)
     {
-        chat.PSendSysMessage("No {} completions remain. Finish or abandon the quest in your log first.", name);
+        // 玩家可见提示中文化 //By leewheel 2026年11月05日
+        chat.PSendSysMessage("{}可完成的次数已用尽。请先完成或放弃任务日志里的任务。", name);
+        // End By leewheel
         return 0;
     }
 
@@ -496,8 +500,10 @@ uint32 Activate(Player* player, Catalogue const& contracts, Settings const& curr
         uint32 const price = PriceFor(player, contracts, quest, current, request.payWithGold);
         if (!Charge(player, price, request.payWithGold))
         {
-            chat.PSendSysMessage(request.payWithGold ? "You do not have enough gold to complete {}."
-                : "You do not have enough Bazaar Tokens to complete {}.", name);
+            // 玩家可见提示中文化 //By leewheel 2026年11月05日
+            chat.PSendSysMessage(request.payWithGold ? "你的金币不足以完成{}。"
+                : "你的集市代币不足以完成{}。", name);
+            // End By leewheel
             break;
         }
         GrantRewards(player, quest);
@@ -505,7 +511,11 @@ uint32 Activate(Player* player, Catalogue const& contracts, Settings const& curr
     activating = false;
 
     if (completed)
-        chat.PSendSysMessage("Temporal Contract complete: {} x{}.", name, completed);
+    {
+        // 玩家可见提示中文化 //By leewheel 2026年11月05日
+        chat.PSendSysMessage("限时合约已完成：{} x{}。", name, completed);
+        // End By leewheel
+    }
     return completed;
 }
 
@@ -624,7 +634,9 @@ public:
         if (!exhausted)
             return false;
 
-        ChatHandler(player->GetSession()).PSendSysMessage("No {} completions remain this week.", *exhausted);
+        // 玩家可见提示中文化 //By leewheel 2026年11月05日
+        ChatHandler(player->GetSession()).PSendSysMessage("本周{}的可完成次数已用尽。", *exhausted);
+        // End By leewheel
         return true;
     }
 
