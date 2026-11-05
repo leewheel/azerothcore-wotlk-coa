@@ -284,16 +284,10 @@ class spell_delusions_of_jindo : public SpellScript
     }
 };
 
-struct npc_brain_wash_totem : public ScriptedAI
-{
-    npc_brain_wash_totem(Creature* creature) : ScriptedAI(creature)
-    {
-    }
-
-    void EnterEvadeMode(EvadeReason /*evadeReason*/) override
-    {
-    }
-};
+//By leewheel 2026年11月05日 上游 rev_20261104_01 已把 14987 / 15112 两个图腾改由模块脚本
+// npc_jindo_coa_totem 接管，经典 npc_brain_wash_totem 不再有 DB 引用（否则启动报
+// "Script named 'npc_brain_wash_totem' is not assigned in the database."），连同结构体一并移除。
+//End By leewheel
 
 void AddSC_boss_jindo()
 {
@@ -303,7 +297,6 @@ void AddSC_boss_jindo()
     //（spell_jindo_coa_healing_stream），经典 npc_healing_ward 无 DB 引用，注销以消 Errors.log 告警
     //RegisterZulGurubCreatureAI(npc_healing_ward);
     RegisterZulGurubCreatureAI(npc_shade_of_jindo);
-    RegisterZulGurubCreatureAI(npc_brain_wash_totem);
     RegisterSpellScript(spell_random_aggro);
     RegisterSpellScript(spell_delusions_of_jindo);
 }
