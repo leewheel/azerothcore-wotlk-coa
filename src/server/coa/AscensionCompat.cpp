@@ -5357,10 +5357,13 @@ private:
         LoadDbcIds(clientDbc, ITEM_DISPLAY_INFO_FIELD_COUNT, false); // dbc_clientset 缺失为默认设计态，静默走下方降级 //By leewheel 2026年10月29日
     if (!clientIds)
     {
-      LOG_WARN("coa",
+      //By leewheel 2026年11月5日 dbc_clientset 是可选目录，缺失属设计内的默认态（上面注释已说明“静默走降级”），
+      // 原来这里打 WARN，导致每次启动都往玩家可见的日志面板刷一条“is unavailable”，看着像报错。降到 DEBUG。
+      LOG_DEBUG("coa",
                "Client DBC copy {} is unavailable; streaming only the "
                "itemdisplayinfo_dbc rows",
                clientDbc.generic_string());
+      //End By leewheel
       return rows;
     }
 
@@ -5499,10 +5502,12 @@ private:
         LoadDbcIds(clientDbc, std::tuple_size_v<ItemPatchRow>, false); // dbc_clientset 缺失为默认设计态，静默走下方降级 //By leewheel 2026年10月29日
     if (!clientIds)
     {
-      LOG_WARN("coa",
+      //By leewheel 2026年11月5日 同上：可选客户端 DBC 副本缺失走设计内降级，不该按警告刷屏。
+      LOG_DEBUG("coa",
                "Client DBC copy {} is unavailable; streaming only the item_dbc "
                "rows",
                clientDbc.generic_string());
+      //End By leewheel
       return rows;
     }
 
@@ -5886,7 +5891,8 @@ private:
           std::filesystem::path(sWorld->GetDataPath()) / "dbc" / "CreatureDisplayInfo.dbc";
       clientDisplayIds = LoadDbcIds(serverDbc, 16);
       if (clientDisplayIds)
-        LOG_INFO("coa",
+        //By leewheel 2026年11月5日 走服务端 DBC 兜底是设计内的正常路径，降到 DEBUG，不再刷玩家可见的日志面板。
+        LOG_DEBUG("coa",
                  "Client DBC copy {} is unavailable; streaming the display ids "
                  "missing from the server's own {}",
                  clientDbc.generic_string(), serverDbc.generic_string());
