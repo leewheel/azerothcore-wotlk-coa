@@ -1,97 +1,136 @@
-# ![logo](https://raw.githubusercontent.com/azerothcore/azerothcore.github.io/master/images/logo-github.png) AzerothCore
+<!-- 主题视觉：征服艾泽拉斯：荣耀徽章.png，归档于 .github/assets/。请勿替换或改名。 -->
+<div align="center">
+  <img src="assets/征服艾泽拉斯：荣耀徽章.png" alt="征服艾泽拉斯 · Conquest of Azeroth 荣耀徽章" width="380" />
+</div>
 
-[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](CODE_OF_CONDUCT.md)
-[![CodeFactor](https://www.codefactor.io/repository/github/azerothcore/azerothcore-wotlk/badge)](https://www.codefactor.io/repository/github/azerothcore/azerothcore-wotlk)
-[![Discord](https://img.shields.io/discord/217589275766685707?logo=discord&logoColor=white)](https://discord.gg/gkt4y2x "Our community hub on Discord")
+<h1 align="center">征服艾泽拉斯 · Conquest of Azeroth</h1>
 
-## Build Status
+<p align="center">
+  <strong>面向 Ascension 3.3.5a 客户端的 AzerothCore 服务端重建工程</strong><br />
+  协议兼容 · 自定义职业 · 账号级收藏 · 玩法系统重建 · 可验证交付
+</p>
 
-[![nopch-build](https://github.com/azerothcore/azerothcore-wotlk/actions/workflows/core-build-nopch.yml/badge.svg?branch=master)](https://github.com/azerothcore/azerothcore-wotlk/actions/workflows/core-build-nopch.yml?query=branch%3Amaster)
-[![pch-build](https://github.com/azerothcore/azerothcore-wotlk/actions/workflows/core-build-pch.yml/badge.svg?branch=master)](https://github.com/azerothcore/azerothcore-wotlk/actions/workflows/core-build-pch.yml?query=branch%3Amaster)
-[![core-modules-build](https://github.com/azerothcore/azerothcore-wotlk/actions/workflows/core_modules_build.yml/badge.svg?branch=master)](https://github.com/azerothcore/azerothcore-wotlk/actions/workflows/core_modules_build.yml?query=branch%3Amaster)
-[![windows-build](https://github.com/azerothcore/azerothcore-wotlk/actions/workflows/windows_build.yml/badge.svg?branch=master)](https://github.com/azerothcore/azerothcore-wotlk/actions/workflows/windows_build.yml?query=branch%3Amaster)
-[![macos-build](https://github.com/azerothcore/azerothcore-wotlk/actions/workflows/macos_build.yml/badge.svg?branch=master)](https://github.com/azerothcore/azerothcore-wotlk/actions/workflows/macos_build.yml?query=branch%3Amaster)
-[![docker-build](https://github.com/azerothcore/azerothcore-wotlk/actions/workflows/docker_build.yml/badge.svg?branch=master)](https://github.com/azerothcore/azerothcore-wotlk/actions/workflows/docker_build.yml?query=branch%3Amaster)
-[![tools-build](https://github.com/azerothcore/azerothcore-wotlk/actions/workflows/tools_build.yml/badge.svg?branch=master)](https://github.com/azerothcore/azerothcore-wotlk/actions/workflows/tools_build.yml?query=branch%3Amaster)
-[![dashboard-ci](https://github.com/azerothcore/azerothcore-wotlk/actions/workflows/dashboard-ci.yml/badge.svg?branch=master)](https://github.com/azerothcore/azerothcore-wotlk/actions/workflows/dashboard-ci.yml?query=branch%3Amaster)
+<p align="center">
+  <img alt="客户端" src="https://img.shields.io/badge/client-Ascension_3.3.5a-1B3A6B?style=flat-square" />
+  <img alt="核心" src="https://img.shields.io/badge/core-AzerothCore-C9A227?style=flat-square" />
+  <img alt="语言" src="https://img.shields.io/badge/language-C%2B%2B-0E2A4A?style=flat-square" />
+  <img alt="构建" src="https://img.shields.io/badge/build-CMake-181818?style=flat-square" />
+  <img alt="许可" src="https://img.shields.io/badge/license-GPL--2.0-C9A227?style=flat-square" />
+</p>
 
-## Introduction
+---
 
-AzerothCore is an open-source game server application and framework designed for hosting massively multiplayer online role-playing games (MMORPGs). It is based on the popular MMORPG World of Warcraft (WoW) and seeks to recreate the gameplay experience of the original game from patch 3.3.5a.
+## 项目简介
 
-The original code is based on MaNGOS, TrinityCore, and SunwellCore and has since then had extensive development to improve stability, in-game mechanics, and modularity to the game. AC has also grown into a community-driven project with a significant number of contributors and developers. It is written in C++ and provides a solid foundation for creating private servers that mimic the mechanics and behavior of the official WoW servers.
+本仓库是 [AzerothCore](https://github.com/azerothcore/azerothcore-wotlk)（World of Warcraft 3.3.5a / WotLK，C++ / CMake / MySQL）的一个 fork。目标不是复刻一套原版怀旧服，而是在 AzerothCore 引擎之上，把 **Ascension 3.3.5a 客户端**所需的协议、数据与玩法，在服务端侧独立重建出来。
 
-## Philosophy
+CoA（Conquest of Azeroth）因此不是可选插件，而是编译进 worldserver 的**必选服务端组件**（`src/server/coa/`）：它承担客户端协议适配、账号级收藏（幻化衣橱）、角色成长、自定义职业与资源、以及职业机制修正，由 `AddCoAScripts()` 在 worldserver 脚本初始化时注册，与可选模块相互独立。
 
-Our main goal is to create a playable game server, offering a fully working in-game experience.
+> **说明**：这是对客户端可观测行为与公开资料的独立重建，不代表与任何官方服务端功能完全对等。客户端二进制、生成的 DBC 候选、运行时数据库与部署凭证均存放在本仓库之外；仓库内不提供、也不打包任何客户端资源。
 
-Here are the main points we focus on:
+## 项目特点
 
-* Stability
-  * We make sure all changes pass the CIs before being merged into the master branch.
+**1. 服务端与客户端之间的兼容层**
+扩展 opcode 与会话处理（登录、Realm 列表、外观套装、客户端配置、副本绑定、工单、物品能量提示等）、客户端 DBC 行流式下发、登录期 Lua 热补丁，均在 [CoA 组件文档](../docs/coa/README.md) 中逐一列出；登录心跳与自然回生按客户端实际节奏适配。
 
-* Blizzlike content
-  * We strive to make all in-game content to be blizzlike. Therefore we have a high standard for fixes being made.
+**2. 数据由客户端 DBC 驱动**
+天赋目录在启动时从 `CharacterAdvancement.dbc` 读取，法术与任务的获取路径可由 [coa-mechanics](../apps/coa-mechanics/README.md) 的机制图核对，DBC 的提取与校验由 [coa-dbc](../apps/coa-dbc/README.md) 完成。服务端不臆造外观记录或客户端 DBC 行。
 
-* Customization
-  * It is easy to customize your experience using [modules](#modules).
+**3. 玩法系统在服务端侧重建**
+思路是"客户端已有界面、服务端补齐权威逻辑"：威望模式（Chromie 时光回溯）、挑战 / 试炼（生命数、规则、目标、排行榜与奖励）、Path to Ascension 教程书进程、Ascension 法术书训练师、英雄召唤板日常、War Games 私人竞技场、世界锻造升级、无尽 Manastorm 等，均由服务端提供状态与裁决。
 
-* Community driven
-  * AzerothCore has an active community of developers, contributors, and users who collaborate, share knowledge, and provide support through forums, Discord channels, and other communication platforms. 
+**4. 高度模块化**
+`modules/` 下 30 余个内容模块，每个模块自带 `src/` 与配置模板，可用 `-DMODULE_<目录名大写>=disabled` 单独关闭（见[模块编写说明](../modules/how_to_make_a_module.md)）。`modules/mod-ascension/` 仅保存历史 SQL 迁移，不是可构建模块。
 
-### Modules
+**5. 世界数据库以"包"交付**
+worldserver 与 `dbimport` 在 `Updates.AutoSetup` 发现空库时，从 [世界数据库包](../apps/coa-world/README.md) 导入并校验 `baseline.json`、归档与逐表校验和，而不是使用 `data/sql/base/db_world/`。已应用的迁移按文件名与哈希追踪，历史 SQL 不可改动。
 
-AzerothCore is designed to be highly modular, allowing developers to extend and customize the game to suit their preferences or create unique gameplay experiences. This flexibility enables the addition of custom features, content, and modifications.
+**6. 单一验证门禁**
+所有改动统一通过 `python -B tools/verify_all.py` 验证，覆盖源码检查、构建、单元测试、Python 测试脚本、`apps/coa-tests` harness 与 gameplay 场景，并支持按 `--stages` / `--scenario` / `--harness` 聚焦。详见[验证指南](../docs/coa/verification.md)。
 
-We have a lot of modules already made by the community, many of which can be found in the [Module Catalogue](https://www.azerothcore.org/catalogue.html#/).
+### 代表模块
 
-## Installation
+| 方向 | 模块 | 说明 |
+| --- | --- | --- |
+| 进阶成长 | [mod-coa-prestige](../modules/mod-coa-prestige/README.md) | 威望模式：满级后回到 1 级重练，逐级领取奖励 |
+| 进阶成长 | [mod-path-to-ascension](../modules/mod-path-to-ascension/README.md) | 教程书目录与由服务端事件驱动的进度校验 |
+| 挑战副本 | [mod-coa-challenges](../modules/mod-coa-challenges/README.md) | 挑战 / 试炼的激活门槛、光环、生命、规则与奖励 |
+| 挑战副本 | [mod-coa-mythic-plus](../modules/mod-coa-mythic-plus/) · [mod-coa-raid-difficulty](../modules/mod-coa-raid-difficulty/) | 大秘境与团队副本难度 |
+| 挑战副本 | [mod-war-games](../modules/mod-war-games/README.md) · [mod-manastorm-endless](../modules/mod-manastorm-endless/README.md) | 私人竞技场约战与无尽 Manastorm |
+| 装备经济 | [mod-worldforged-upgrades](../modules/mod-worldforged-upgrades/README.md) | 时光守护者的自定义商店与装备升级 |
+| 装备经济 | [mod-ethereal-bazaar](../modules/mod-ethereal-bazaar/) · [mod-ah-bot-plus](../modules/mod-ah-bot-plus/README.md) | 幻化市集与拍卖行机器人 |
+| 职业技能 | [mod-spellbook](../modules/mod-spellbook/README.md) | 把 Ascension 之书恢复为带等级门槛的职业训练师 |
+| 日常便利 | [mod-hero-call-board](../modules/mod-hero-call-board/README.md) | 英雄召唤板 47 项日常与 PvE / 专业 / PvP 三类任务板 |
+| 伴侣系统 | [mod-playerbots](../modules/mod-playerbots/README.md) | CoA 分支的机器人玩家 |
 
-For this CoA fork, the worldserver and `dbimport` populate an empty world database from the
-[world database package](../apps/coa-world/README.md) when `Updates.AutoSetup` creates it.
+> 完整清单见 [`modules/`](../modules/)。第三方模块各自的许可与致谢以其目录内声明为准。
 
-Detailed installation instructions are available [here](http://www.azerothcore.org/wiki/installation).
+## 快速开始
 
-## Contributing
+1. **先读约定**：[AGENTS.md](../AGENTS.md) 与[构建指南](../.agents/docs/build.md)。
+2. **编译服务端**：CMake 工程，CoA 组件由 `src/server/coa/CMakeLists.txt` 独立构建并随 worldserver 注册，无需额外启用模块。
+3. **准备世界库**：留空即可，worldserver / `dbimport` 会自动导入[世界数据库包](../apps/coa-world/README.md)；手动导入、审计与更新的方式见同一文档。
+4. **放置客户端 DBC**：CoA 客户端 DBC 位于 `env/dist/data/dbc`，并在 `worldserver.conf` 中将 `DataDir` 指向 `env/dist/data`（详见 [CoA 组件文档](../docs/coa/README.md)）。
+5. **验证**：运行 `python -B tools/verify_all.py`，按需加 `--stages` 与聚焦参数（[验证指南](../docs/coa/verification.md)）。
 
-AzerothCore can also serve as a learning resource for aspiring developers who want to understand how WoW servers work, how MMORPGs are structured, how game server emulators are created, or to improve their C++ and SQL knowledge.
+配置模板安装到 `etc/modules/coa.conf` 与 `etc/modules/coa_bugreport.conf`；运行时配置请勿提交到仓库。环境准备也可参考上游的[安装文档](http://www.azerothcore.org/wiki/installation)。
 
-If you want to contribute to the project, you will find a lot of resources that will guide you in our [wiki](https://www.azerothcore.org/wiki/contribute).
+## 文档导航
 
-We also recommend you read our [Contributor Covenant Code of Conduct](https://github.com/azerothcore/azerothcore-wotlk/blob/master/.github/CODE_OF_CONDUCT.md).
+| 文档 | 用途 |
+| --- | --- |
+| [AGENTS.md](../AGENTS.md) | 仓库约定、SQL 边界、验证与任务路由 |
+| [.agents/README.md](../.agents/README.md) · [.agents/docs/build.md](../.agents/docs/build.md) | 智能体协作说明 / CMake 构建 |
+| [docs/coa/README.md](../docs/coa/README.md) | CoA 组件总览：协议、DBC、数据库、职业机制 |
+| [docs/coa/verification.md](../docs/coa/verification.md) | 验证门禁各阶段与参数 |
+| [apps/coa-dbc/README.md](../apps/coa-dbc/README.md) | 客户端 DBC 提取与校验 |
+| [apps/coa-mechanics/README.md](../apps/coa-mechanics/README.md) | 法术 / 任务机制图 |
+| [apps/coa-gameplay-test/README.md](../apps/coa-gameplay-test/README.md) | 玩法回归场景与已记录结果 |
+| [apps/coa-world/README.md](../apps/coa-world/README.md) · [data/coa-world/README.md](../data/coa-world/README.md) | 世界数据库包：导入、审计与更新 |
+| [modules/how_to_make_a_module.md](../modules/how_to_make_a_module.md) | 新增与关闭模块 |
 
-Feel free to join our [Discord server](https://discord.gg/gkt4y2x).
+## 参与贡献
 
-🤖 If you use any AI agent to work on AzerothCore, please read our [AI Agentic Engineering guidelines](https://www.azerothcore.org/wiki/agentic-engineering).
-Agent instructions for this repo live in [AGENTS.md](../AGENTS.md), with task-scoped guides in [.agents/docs/](../.agents/docs/); [.agents/README.md](../.agents/README.md) explains how to hook up your agent.
+AzerothCore 本身也是一份理解 MMORPG 服务端结构、游戏模拟器实现以及 C++ / SQL 的学习资料。参与本仓库时请留意：
 
-Click on the "⭐ Star" button to help us gain more visibility on GitHub!
+- 遵循 [AGENTS.md](../AGENTS.md) 与 `.editorconfig`（UTF-8、LF、无行尾空格）；CoA 自有代码用命名、结构与测试表达意图，不追加解释性注释；继承的 AzerothCore 源码保留原有注释，以便上游合并保持干净。
+- **SQL 边界**：`data/sql/base/`、`data/sql/archive/`、`data/sql/updates/db_*/` 不可改动，新迁移只写入 `data/sql/updates/pending_db_*/`。
+- **验证**：改动涉及源码时包含 `build` 阶段；提交前运行 `python -B tools/verify_all.py --stages source --base origin/main`。
+- 请先阅读 [Contributor Covenant 行为准则](CODE_OF_CONDUCT.md) 与上游[贡献指南](https://www.azerothcore.org/wiki/contribute)；若使用 AI 代理参与开发，另见上游的 [AI Agentic Engineering 指南](https://www.azerothcore.org/wiki/agentic-engineering)。
+- 欢迎在 [Discord](https://discord.gg/gkt4y2x) 交流。觉得项目有用，请点一个 Star 帮助我们获得更多曝光。
 
-## Authors & Contributors
+## 上游、版权与致谢
 
-The project was born in 2016 based on SunwellCore. Unfortunately, SunwellCore was published without any git history, so on git there are no credits for all the contributors before 2016.
+### 许可证
 
-You can check the [authors](https://github.com/azerothcore/azerothcore-wotlk/blob/master/AUTHORS) file for more details.
+本 fork（含 CoA 组件）与上游 AzerothCore 一样，遵循仓库根目录的 [GNU GPL v2](../LICENSE)。源码采用 C++ 编写，以 CMake 构建、MySQL 持久化。
 
-## Important Links
+> **注意**：多数 CoA 源文件仍保留来自 AzerothCore 模块模板的 "GNU AGPL v3" 短声明；改动这些声明需要相应代码贡献者的同意。请始终保留源码中的许可声明与上游署名，组件的迁移前历史可通过 `git log --follow` 追溯。
 
-- [Doxygen documentation](https://www.azerothcore.org/pages/doxygen/index.html)
-- [Website](http://www.azerothcore.org/)
-- [AzerothCore catalogue](http://www.azerothcore.org/catalogue.html  "Modules, tools, and other stuff for AzerothCore") (modules, tools, etc...)
-- [Our Discord server](https://discord.gg/gkt4y2x)
-- [Our wiki](http://www.azerothcore.org/wiki "Easy to use and developed by AzerothCore founder")
-- [Our forum](https://github.com/azerothcore/azerothcore-wotlk/discussions/)
-- [Our Facebook page](https://www.facebook.com/AzerothCore/)
-- [Our LinkedIn page](https://www.linkedin.com/company/azerothcore/)
+### 历史与作者
 
-## License
+AzerothCore 是一个社区驱动的开源 MMORPG 服务端框架，代码谱系可追溯到 MaNGOS、TrinityCore 与 SunwellCore，并在稳定性、游戏机制与模块化方面持续发展。完整历史与贡献者名单见 [AUTHORS](../AUTHORS)：WoW Daemon Team（2004）、MaNGOS（2005–2011）、SD2（2008–2009）、TrinityCore（2008–2012）、SunwellCore（2012–2016）、AzerothCore（2016 至今）。项目 2016 年基于 SunwellCore 诞生，而 SunwellCore 当年发布时未附带 git 历史，因此 2016 年之前的贡献者在 git 上没有署名记录。
 
-- The AzerothCore source code is released under the [GNU GPL v2](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)
+### 上游链接
+
+- [AzerothCore 官网](http://www.azerothcore.org/) · [Wiki](http://www.azerothcore.org/wiki) · [Doxygen 文档](https://www.azerothcore.org/pages/doxygen/index.html)
+- [模块目录（Module Catalogue）](http://www.azerothcore.org/catalogue.html)
+- [Discord](https://discord.gg/gkt4y2x) · [论坛 / Discussions](https://github.com/azerothcore/azerothcore-wotlk/discussions/)
+- [Facebook](https://www.facebook.com/AzerothCore/) · [LinkedIn](https://www.linkedin.com/company/azerothcore/)
+- [上游仓库](https://github.com/azerothcore/azerothcore-wotlk)
+
+### 非官方声明（上游原文）
 
 It's important to note that AzerothCore is not an official Blizzard Entertainment product, and it is not affiliated with or endorsed by World of Warcraft or Blizzard Entertainment. AzerothCore does not in any case sponsor nor support illegal public servers. If you use this project to run an illegal public server and not for testing and learning it is your own personal choice.
 
-## Special thanks
+本 fork 沿用上述声明，仅用于学习、研究与本地测试。
 
-[JetBrains](https://www.jetbrains.com/?from=AzerothCore) is providing free [open-source licenses](https://www.jetbrains.com/community/opensource/) to the AzerothCore developers.
+### 致谢
+
+[JetBrains](https://www.jetbrains.com/?from=AzerothCore) 为 AzerothCore 开发者提供免费的[开源许可](https://www.jetbrains.com/community/opensource/)。
 
 [![JetBrains logo.](https://resources.jetbrains.com/storage/products/company/brand/logos/jetbrains.svg)](https://jb.gg/OpenSourceSupport)
+
+---
+
+<p align="center">Conquest of Azeroth · 基于 AzerothCore 的独立重建工程</p>
