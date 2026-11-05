@@ -17,7 +17,7 @@ namespace
 using namespace Ascension::BattleResurrection;
 
 constexpr char const* BudgetKey = "AscensionBattleResurrection";
-constexpr char const* NoChargesMessage = "No battle resurrections left.";
+constexpr char const* NoChargesMessage = "本场战斗的复活次数已用尽。"; //By leewheel 2026年11月06日 玩家可见文本中文化
 
 struct InstanceBudget final : DataMap::Base
 {
@@ -97,8 +97,10 @@ public:
         if (!state || !state->budget.Consume())
             return;
 
-        std::string const text = Acore::StringFormat("{} used a battle resurrection: {} of {} left.",
+        // 玩家可见文本中文化 //By leewheel 2026年11月06日
+        std::string const text = Acore::StringFormat("{} 使用了一次战斗复活：剩余 {} / {}。",
             caster->GetName(), state->budget.Remaining(), state->budget.Total());
+        // End By leewheel
         caster->GetMap()->DoForAllPlayers([&text](Player* player)
         {
             ChatHandler(player->GetSession()).SendNotification(text);

@@ -7,7 +7,7 @@
 -- 品级与内部标记。颜色代码 |cRRGGBB...|r 原样保留，只换里面的词。
 UPDATE `item_template_locale` AS `l`
 JOIN `item_template` AS `i` ON `i`.`entry` = `l`.`ID`
-SET `l`.`Description` = CASE `i`.`description`
+SET `l`.`Description` = COALESCE(CONCAT('@', NULLIF(CASE `i`.`description`
     WHEN '@|cFFCC0000Bloodforged|r@' THEN '|cFFCC0000血铸|r'
     WHEN '@|cFFCC0000Heroic Bloodforged|r@' THEN '|cFFCC0000英雄血铸|r'
     WHEN '@|cFFCC0000Sanguine|r@' THEN '|cFFCC0000猩红|r'
@@ -20,7 +20,7 @@ SET `l`.`Description` = CASE `i`.`description`
     WHEN '@Bloodforged@' THEN '血铸'
     WHEN '@Felforged@' THEN '邪能铸'
     WHEN '@Worldforged@' THEN '世界铸造'
-    WHEN '@Mythic@' THEN '神话'
+    WHEN '@Mythic@' THEN '大秘境'
     WHEN '@Heroic@' THEN '英雄'
     WHEN '@Fabled@' THEN '传说'
     WHEN '@Refined@' THEN '精制'
@@ -43,19 +43,24 @@ SET `l`.`Description` = CASE `i`.`description`
     WHEN '@Metal@' THEN '金属'
     WHEN '@60@' THEN '60 级'
     WHEN '@Ascended Raid@' THEN '飞升团队副本'
-    WHEN '@Mythic Raid@' THEN '神话团队副本'
+    WHEN '@Mythic Raid@' THEN '大秘境团队副本'
     WHEN '@Heroic Raid@' THEN '英雄团队副本'
     WHEN '@Heroic Dungeon@' THEN '英雄地下城'
-    WHEN '@Mythic Dungeon@' THEN '神话地下城'
+    WHEN '@Mythic Dungeon@' THEN '大秘境地下城'
     WHEN '@Heroic World Boss@' THEN '英雄世界首领'
     WHEN '@Northrend World Drop@' THEN '诺森德世界掉落'
-    WHEN '@Karazhan Crypts Mythic@' THEN '卡拉赞地穴·神话'
-    WHEN '@Karazhan Crypts - Mythic@' THEN '卡拉赞地穴·神话'
+    WHEN '@Karazhan Crypts Mythic@' THEN '卡拉赞地穴·大秘境'
+    WHEN '@Karazhan Crypts - Mythic@' THEN '卡拉赞地穴·大秘境'
     WHEN '@Karazhan Crypts Heroic@' THEN '卡拉赞地穴·英雄'
-    WHEN '@Magisters'' Terrace Mythic@' THEN '魔导师平台·神话'
-    WHEN '@Onyxia''s Lair Mythic@' THEN '奥妮克希亚的巢穴·神话'
+    WHEN '@Magisters'' Terrace Mythic@' THEN '魔导师平台·大秘境'
+    WHEN '@Onyxia''s Lair Mythic@' THEN '奥妮克希亚的巢穴·大秘境'
+    WHEN '@Molten Core Mythic@' THEN '熔火之心·大秘境'
+    WHEN '@Mythic Raid: Naxxramas - 10 Player@' THEN '大秘境团队副本：纳克萨玛斯 - 10 人'
+    WHEN '@Mythic Quest: Judgement at the Eye of Eternity@' THEN '大秘境任务：永恒之眼的审判'
+    WHEN '@|cFFFF8000Mythic Raid - Unfixed|r@' THEN '|cFFFF8000大秘境团队副本 - 未固定|r'
+    WHEN '@|cFFFF8000Mythic Raid - Fixed|r@' THEN '|cFFFF8000大秘境团队副本 - 固定|r'
     ELSE ''
-END
+END, ''), '@'), '')
 WHERE `l`.`locale` = 'zhCN'
   AND (`l`.`Description` = '' OR `l`.`Description` IS NULL)
   AND `i`.`description` IN ('@|cFFCC0000Bloodforged|r@', '@|cFFCC0000Heroic Bloodforged|r@',
@@ -70,36 +75,38 @@ WHERE `l`.`locale` = 'zhCN'
     '@Mythic Raid@', '@Heroic Raid@', '@Heroic Dungeon@', '@Mythic Dungeon@',
     '@Heroic World Boss@', '@Northrend World Drop@', '@Karazhan Crypts Mythic@',
     '@Karazhan Crypts - Mythic@', '@Karazhan Crypts Heroic@', '@Magisters'' Terrace Mythic@',
-    '@Onyxia''s Lair Mythic@');
+    '@Onyxia''s Lair Mythic@', '@Molten Core Mythic@', '@Mythic Raid: Naxxramas - 10 Player@',
+    '@Mythic Quest: Judgement at the Eye of Eternity@', '@|cFFFF8000Mythic Raid - Unfixed|r@',
+    '@|cFFFF8000Mythic Raid - Fixed|r@');
 -- End By leewheel
 
--- 神话等级 @Mythic 1@ - @Mythic 100@。
+-- 大秘境等级 @Mythic 1@ - @Mythic 100@。
 -- By leewheel 2026年11月05日
 UPDATE `item_template_locale` AS `l`
 JOIN `item_template` AS `i` ON `i`.`entry` = `l`.`ID`
-SET `l`.`Description` = CASE `i`.`description`
-    WHEN '@Mythic 1@' THEN '神话 1' WHEN '@Mythic 2@' THEN '神话 2' WHEN '@Mythic 3@' THEN '神话 3' WHEN '@Mythic 4@' THEN '神话 4' WHEN '@Mythic 5@' THEN '神话 5'
-    WHEN '@Mythic 6@' THEN '神话 6' WHEN '@Mythic 7@' THEN '神话 7' WHEN '@Mythic 8@' THEN '神话 8' WHEN '@Mythic 9@' THEN '神话 9' WHEN '@Mythic 10@' THEN '神话 10'
-    WHEN '@Mythic 11@' THEN '神话 11' WHEN '@Mythic 12@' THEN '神话 12' WHEN '@Mythic 13@' THEN '神话 13' WHEN '@Mythic 14@' THEN '神话 14' WHEN '@Mythic 15@' THEN '神话 15'
-    WHEN '@Mythic 16@' THEN '神话 16' WHEN '@Mythic 17@' THEN '神话 17' WHEN '@Mythic 18@' THEN '神话 18' WHEN '@Mythic 19@' THEN '神话 19' WHEN '@Mythic 20@' THEN '神话 20'
-    WHEN '@Mythic 21@' THEN '神话 21' WHEN '@Mythic 22@' THEN '神话 22' WHEN '@Mythic 23@' THEN '神话 23' WHEN '@Mythic 24@' THEN '神话 24' WHEN '@Mythic 25@' THEN '神话 25'
-    WHEN '@Mythic 26@' THEN '神话 26' WHEN '@Mythic 27@' THEN '神话 27' WHEN '@Mythic 28@' THEN '神话 28' WHEN '@Mythic 29@' THEN '神话 29' WHEN '@Mythic 30@' THEN '神话 30'
-    WHEN '@Mythic 31@' THEN '神话 31' WHEN '@Mythic 32@' THEN '神话 32' WHEN '@Mythic 33@' THEN '神话 33' WHEN '@Mythic 34@' THEN '神话 34' WHEN '@Mythic 35@' THEN '神话 35'
-    WHEN '@Mythic 36@' THEN '神话 36' WHEN '@Mythic 37@' THEN '神话 37' WHEN '@Mythic 38@' THEN '神话 38' WHEN '@Mythic 39@' THEN '神话 39' WHEN '@Mythic 40@' THEN '神话 40'
-    WHEN '@Mythic 41@' THEN '神话 41' WHEN '@Mythic 42@' THEN '神话 42' WHEN '@Mythic 43@' THEN '神话 43' WHEN '@Mythic 44@' THEN '神话 44' WHEN '@Mythic 45@' THEN '神话 45'
-    WHEN '@Mythic 46@' THEN '神话 46' WHEN '@Mythic 47@' THEN '神话 47' WHEN '@Mythic 48@' THEN '神话 48' WHEN '@Mythic 49@' THEN '神话 49' WHEN '@Mythic 50@' THEN '神话 50'
-    WHEN '@Mythic 51@' THEN '神话 51' WHEN '@Mythic 52@' THEN '神话 52' WHEN '@Mythic 53@' THEN '神话 53' WHEN '@Mythic 54@' THEN '神话 54' WHEN '@Mythic 55@' THEN '神话 55'
-    WHEN '@Mythic 56@' THEN '神话 56' WHEN '@Mythic 57@' THEN '神话 57' WHEN '@Mythic 58@' THEN '神话 58' WHEN '@Mythic 59@' THEN '神话 59' WHEN '@Mythic 60@' THEN '神话 60'
-    WHEN '@Mythic 61@' THEN '神话 61' WHEN '@Mythic 62@' THEN '神话 62' WHEN '@Mythic 63@' THEN '神话 63' WHEN '@Mythic 64@' THEN '神话 64' WHEN '@Mythic 65@' THEN '神话 65'
-    WHEN '@Mythic 66@' THEN '神话 66' WHEN '@Mythic 67@' THEN '神话 67' WHEN '@Mythic 68@' THEN '神话 68' WHEN '@Mythic 69@' THEN '神话 69' WHEN '@Mythic 70@' THEN '神话 70'
-    WHEN '@Mythic 71@' THEN '神话 71' WHEN '@Mythic 72@' THEN '神话 72' WHEN '@Mythic 73@' THEN '神话 73' WHEN '@Mythic 74@' THEN '神话 74' WHEN '@Mythic 75@' THEN '神话 75'
-    WHEN '@Mythic 76@' THEN '神话 76' WHEN '@Mythic 77@' THEN '神话 77' WHEN '@Mythic 78@' THEN '神话 78' WHEN '@Mythic 79@' THEN '神话 79' WHEN '@Mythic 80@' THEN '神话 80'
-    WHEN '@Mythic 81@' THEN '神话 81' WHEN '@Mythic 82@' THEN '神话 82' WHEN '@Mythic 83@' THEN '神话 83' WHEN '@Mythic 84@' THEN '神话 84' WHEN '@Mythic 85@' THEN '神话 85'
-    WHEN '@Mythic 86@' THEN '神话 86' WHEN '@Mythic 87@' THEN '神话 87' WHEN '@Mythic 88@' THEN '神话 88' WHEN '@Mythic 89@' THEN '神话 89' WHEN '@Mythic 90@' THEN '神话 90'
-    WHEN '@Mythic 91@' THEN '神话 91' WHEN '@Mythic 92@' THEN '神话 92' WHEN '@Mythic 93@' THEN '神话 93' WHEN '@Mythic 94@' THEN '神话 94' WHEN '@Mythic 95@' THEN '神话 95'
-    WHEN '@Mythic 96@' THEN '神话 96' WHEN '@Mythic 97@' THEN '神话 97' WHEN '@Mythic 98@' THEN '神话 98' WHEN '@Mythic 99@' THEN '神话 99' WHEN '@Mythic 100@' THEN '神话 100'
+SET `l`.`Description` = COALESCE(CONCAT('@', NULLIF(CASE `i`.`description`
+    WHEN '@Mythic 1@' THEN '大秘境 1' WHEN '@Mythic 2@' THEN '大秘境 2' WHEN '@Mythic 3@' THEN '大秘境 3' WHEN '@Mythic 4@' THEN '大秘境 4' WHEN '@Mythic 5@' THEN '大秘境 5'
+    WHEN '@Mythic 6@' THEN '大秘境 6' WHEN '@Mythic 7@' THEN '大秘境 7' WHEN '@Mythic 8@' THEN '大秘境 8' WHEN '@Mythic 9@' THEN '大秘境 9' WHEN '@Mythic 10@' THEN '大秘境 10'
+    WHEN '@Mythic 11@' THEN '大秘境 11' WHEN '@Mythic 12@' THEN '大秘境 12' WHEN '@Mythic 13@' THEN '大秘境 13' WHEN '@Mythic 14@' THEN '大秘境 14' WHEN '@Mythic 15@' THEN '大秘境 15'
+    WHEN '@Mythic 16@' THEN '大秘境 16' WHEN '@Mythic 17@' THEN '大秘境 17' WHEN '@Mythic 18@' THEN '大秘境 18' WHEN '@Mythic 19@' THEN '大秘境 19' WHEN '@Mythic 20@' THEN '大秘境 20'
+    WHEN '@Mythic 21@' THEN '大秘境 21' WHEN '@Mythic 22@' THEN '大秘境 22' WHEN '@Mythic 23@' THEN '大秘境 23' WHEN '@Mythic 24@' THEN '大秘境 24' WHEN '@Mythic 25@' THEN '大秘境 25'
+    WHEN '@Mythic 26@' THEN '大秘境 26' WHEN '@Mythic 27@' THEN '大秘境 27' WHEN '@Mythic 28@' THEN '大秘境 28' WHEN '@Mythic 29@' THEN '大秘境 29' WHEN '@Mythic 30@' THEN '大秘境 30'
+    WHEN '@Mythic 31@' THEN '大秘境 31' WHEN '@Mythic 32@' THEN '大秘境 32' WHEN '@Mythic 33@' THEN '大秘境 33' WHEN '@Mythic 34@' THEN '大秘境 34' WHEN '@Mythic 35@' THEN '大秘境 35'
+    WHEN '@Mythic 36@' THEN '大秘境 36' WHEN '@Mythic 37@' THEN '大秘境 37' WHEN '@Mythic 38@' THEN '大秘境 38' WHEN '@Mythic 39@' THEN '大秘境 39' WHEN '@Mythic 40@' THEN '大秘境 40'
+    WHEN '@Mythic 41@' THEN '大秘境 41' WHEN '@Mythic 42@' THEN '大秘境 42' WHEN '@Mythic 43@' THEN '大秘境 43' WHEN '@Mythic 44@' THEN '大秘境 44' WHEN '@Mythic 45@' THEN '大秘境 45'
+    WHEN '@Mythic 46@' THEN '大秘境 46' WHEN '@Mythic 47@' THEN '大秘境 47' WHEN '@Mythic 48@' THEN '大秘境 48' WHEN '@Mythic 49@' THEN '大秘境 49' WHEN '@Mythic 50@' THEN '大秘境 50'
+    WHEN '@Mythic 51@' THEN '大秘境 51' WHEN '@Mythic 52@' THEN '大秘境 52' WHEN '@Mythic 53@' THEN '大秘境 53' WHEN '@Mythic 54@' THEN '大秘境 54' WHEN '@Mythic 55@' THEN '大秘境 55'
+    WHEN '@Mythic 56@' THEN '大秘境 56' WHEN '@Mythic 57@' THEN '大秘境 57' WHEN '@Mythic 58@' THEN '大秘境 58' WHEN '@Mythic 59@' THEN '大秘境 59' WHEN '@Mythic 60@' THEN '大秘境 60'
+    WHEN '@Mythic 61@' THEN '大秘境 61' WHEN '@Mythic 62@' THEN '大秘境 62' WHEN '@Mythic 63@' THEN '大秘境 63' WHEN '@Mythic 64@' THEN '大秘境 64' WHEN '@Mythic 65@' THEN '大秘境 65'
+    WHEN '@Mythic 66@' THEN '大秘境 66' WHEN '@Mythic 67@' THEN '大秘境 67' WHEN '@Mythic 68@' THEN '大秘境 68' WHEN '@Mythic 69@' THEN '大秘境 69' WHEN '@Mythic 70@' THEN '大秘境 70'
+    WHEN '@Mythic 71@' THEN '大秘境 71' WHEN '@Mythic 72@' THEN '大秘境 72' WHEN '@Mythic 73@' THEN '大秘境 73' WHEN '@Mythic 74@' THEN '大秘境 74' WHEN '@Mythic 75@' THEN '大秘境 75'
+    WHEN '@Mythic 76@' THEN '大秘境 76' WHEN '@Mythic 77@' THEN '大秘境 77' WHEN '@Mythic 78@' THEN '大秘境 78' WHEN '@Mythic 79@' THEN '大秘境 79' WHEN '@Mythic 80@' THEN '大秘境 80'
+    WHEN '@Mythic 81@' THEN '大秘境 81' WHEN '@Mythic 82@' THEN '大秘境 82' WHEN '@Mythic 83@' THEN '大秘境 83' WHEN '@Mythic 84@' THEN '大秘境 84' WHEN '@Mythic 85@' THEN '大秘境 85'
+    WHEN '@Mythic 86@' THEN '大秘境 86' WHEN '@Mythic 87@' THEN '大秘境 87' WHEN '@Mythic 88@' THEN '大秘境 88' WHEN '@Mythic 89@' THEN '大秘境 89' WHEN '@Mythic 90@' THEN '大秘境 90'
+    WHEN '@Mythic 91@' THEN '大秘境 91' WHEN '@Mythic 92@' THEN '大秘境 92' WHEN '@Mythic 93@' THEN '大秘境 93' WHEN '@Mythic 94@' THEN '大秘境 94' WHEN '@Mythic 95@' THEN '大秘境 95'
+    WHEN '@Mythic 96@' THEN '大秘境 96' WHEN '@Mythic 97@' THEN '大秘境 97' WHEN '@Mythic 98@' THEN '大秘境 98' WHEN '@Mythic 99@' THEN '大秘境 99' WHEN '@Mythic 100@' THEN '大秘境 100'
     ELSE ''
-END
+END, ''), '@'), '')
 WHERE `l`.`locale` = 'zhCN'
   AND (`l`.`Description` = '' OR `l`.`Description` IS NULL)
   AND `i`.`description` IN ('@Mythic 1@', '@Mythic 2@', '@Mythic 3@', '@Mythic 4@', '@Mythic 5@',
@@ -125,7 +132,7 @@ WHERE `l`.`locale` = 'zhCN'
 -- By leewheel 2026年11月05日
 UPDATE `item_template_locale` AS `l`
 JOIN `item_template` AS `i` ON `i`.`entry` = `l`.`ID`
-SET `l`.`Description` = CASE `i`.`description`
+SET `l`.`Description` = COALESCE(CONCAT('@', NULLIF(CASE `i`.`description`
     WHEN '@Tier 1@' THEN '第 1 套' WHEN '@Tier 2@' THEN '第 2 套' WHEN '@Tier 3@' THEN '第 3 套' WHEN '@Tier 4@' THEN '第 4 套' WHEN '@Tier 5@' THEN '第 5 套'
     WHEN '@Tier 6@' THEN '第 6 套' WHEN '@Tier 7@' THEN '第 7 套' WHEN '@Tier 8@' THEN '第 8 套' WHEN '@Tier 9@' THEN '第 9 套' WHEN '@Tier 10@' THEN '第 10 套'
     WHEN '@Tier 11@' THEN '第 11 套' WHEN '@Tier 12@' THEN '第 12 套' WHEN '@Tier 13@' THEN '第 13 套' WHEN '@Tier 14@' THEN '第 14 套' WHEN '@Tier 15@' THEN '第 15 套'
@@ -137,7 +144,7 @@ SET `l`.`Description` = CASE `i`.`description`
     WHEN '@61-70@' THEN '61-70 级' WHEN '@65-70@' THEN '65-70 级' WHEN '@71-80@' THEN '71-80 级' WHEN '@10-25@' THEN '10-25 级' WHEN '@201-300@' THEN '201-300 级'
     WHEN '@501-550@' THEN '501-550 级' WHEN '@801-900@' THEN '801-900 级' WHEN '@1301-1400@' THEN '1301-1400 级' WHEN '@1501-1600@' THEN '1501-1600 级'
     ELSE ''
-END
+END, ''), '@'), '')
 WHERE `l`.`locale` = 'zhCN'
   AND (`l`.`Description` = '' OR `l`.`Description` IS NULL)
   AND `i`.`description` IN ('@Tier 1@', '@Tier 2@', '@Tier 3@', '@Tier 4@', '@Tier 5@', '@Tier 6@',
@@ -153,14 +160,14 @@ WHERE `l`.`locale` = 'zhCN'
 -- By leewheel 2026年11月05日
 UPDATE `item_template_locale` AS `l`
 JOIN `item_template` AS `i` ON `i`.`entry` = `l`.`ID`
-SET `l`.`Description` = CASE `i`.`description`
-    WHEN '@Mythic Molten Core@' THEN '神话·熔火之心' WHEN '@Heroic Molten Core@' THEN '英雄·熔火之心' WHEN '@Ascended Molten Core@' THEN '飞升·熔火之心'
-    WHEN '@Mythic Naxxramas@' THEN '神话·纳克萨玛斯' WHEN '@Heroic Naxxramas@' THEN '英雄·纳克萨玛斯' WHEN '@Ascended Naxxramas@' THEN '飞升·纳克萨玛斯'
-    WHEN '@Mythic Blackwing Lair@' THEN '神话·黑翼之巢' WHEN '@Heroic Blackwing Lair@' THEN '英雄·黑翼之巢' WHEN '@Ascended Blackwing Lair@' THEN '飞升·黑翼之巢'
-    WHEN '@Mythic Temple of Ahn''Qiraj@' THEN '神话·安其拉神庙' WHEN '@Heroic Temple of Ahn''Qiraj@' THEN '英雄·安其拉神庙' WHEN '@Ascended Temple of Ahn''Qiraj@' THEN '飞升·安其拉神庙'
-    WHEN '@Mythic Ruins of Ahn''Qiraj@' THEN '神话·安其拉废墟' WHEN '@Heroic Ruins of Ahn''Qiraj@' THEN '英雄·安其拉废墟' WHEN '@Ascended Ruins of Ahn''Qiraj@' THEN '飞升·安其拉废墟'
-    WHEN '@Mythic Zul''Gurub@' THEN '神话·祖尔格拉布' WHEN '@Heroic Zul''Gurub@' THEN '英雄·祖尔格拉布' WHEN '@Ascended Zul''Gurub@' THEN '飞升·祖尔格拉布'
-    WHEN '@Mythic Onyxia@' THEN '神话·奥妮克希亚' WHEN '@Heroic Onyxia@' THEN '英雄·奥妮克希亚' WHEN '@Ascended Onyxia@' THEN '飞升·奥妮克希亚'
+SET `l`.`Description` = COALESCE(CONCAT('@', NULLIF(CASE `i`.`description`
+    WHEN '@Mythic Molten Core@' THEN '大秘境·熔火之心' WHEN '@Heroic Molten Core@' THEN '英雄·熔火之心' WHEN '@Ascended Molten Core@' THEN '飞升·熔火之心'
+    WHEN '@Mythic Naxxramas@' THEN '大秘境·纳克萨玛斯' WHEN '@Heroic Naxxramas@' THEN '英雄·纳克萨玛斯' WHEN '@Ascended Naxxramas@' THEN '飞升·纳克萨玛斯'
+    WHEN '@Mythic Blackwing Lair@' THEN '大秘境·黑翼之巢' WHEN '@Heroic Blackwing Lair@' THEN '英雄·黑翼之巢' WHEN '@Ascended Blackwing Lair@' THEN '飞升·黑翼之巢'
+    WHEN '@Mythic Temple of Ahn''Qiraj@' THEN '大秘境·安其拉神庙' WHEN '@Heroic Temple of Ahn''Qiraj@' THEN '英雄·安其拉神庙' WHEN '@Ascended Temple of Ahn''Qiraj@' THEN '飞升·安其拉神庙'
+    WHEN '@Mythic Ruins of Ahn''Qiraj@' THEN '大秘境·安其拉废墟' WHEN '@Heroic Ruins of Ahn''Qiraj@' THEN '英雄·安其拉废墟' WHEN '@Ascended Ruins of Ahn''Qiraj@' THEN '飞升·安其拉废墟'
+    WHEN '@Mythic Zul''Gurub@' THEN '大秘境·祖尔格拉布' WHEN '@Heroic Zul''Gurub@' THEN '英雄·祖尔格拉布' WHEN '@Ascended Zul''Gurub@' THEN '飞升·祖尔格拉布'
+    WHEN '@Mythic Onyxia@' THEN '大秘境·奥妮克希亚' WHEN '@Heroic Onyxia@' THEN '英雄·奥妮克希亚' WHEN '@Ascended Onyxia@' THEN '飞升·奥妮克希亚'
     WHEN '@Raid: Naxxramas - 10 Player@' THEN '团队副本：纳克萨玛斯 - 10 人'
     WHEN '@Raid: Naxxramas - 25 Player@' THEN '团队副本：纳克萨玛斯 - 25 人'
     WHEN '@Raid: Eye of Eternity - 10 Player@' THEN '团队副本：永恒之眼 - 10 人'
@@ -177,7 +184,7 @@ SET `l`.`Description` = CASE `i`.`description`
     WHEN '@Heroic World Boss: Doomwalker@' THEN '英雄世界首领：末日行者'
     WHEN '@Heroic World Boss: Doom Lord Kazzak@' THEN '英雄世界首领：末日领主卡扎克'
     ELSE ''
-END
+END, ''), '@'), '')
 WHERE `l`.`locale` = 'zhCN'
   AND (`l`.`Description` = '' OR `l`.`Description` IS NULL)
   AND `i`.`description` IN ('@Mythic Molten Core@', '@Heroic Molten Core@', '@Ascended Molten Core@',
@@ -200,21 +207,21 @@ WHERE `l`.`locale` = 'zhCN'
 -- By leewheel 2026年11月05日
 UPDATE `item_template_locale` AS `l`
 JOIN `item_template` AS `i` ON `i`.`entry` = `l`.`ID`
-SET `l`.`Description` = CASE `i`.`description`
-    WHEN '@Dungeon: Ahn''kahet, the Old Kingdom@' THEN '地下城：安卡赫特：古代王国' WHEN '@Heroic Dungeon: Ahn''kahet, the Old Kingdom@' THEN '英雄地下城：安卡赫特：古代王国' WHEN '@Mythic Dungeon: Ahn''kahet, the Old Kingdom@' THEN '神话地下城：安卡赫特：古代王国'
-    WHEN '@Dungeon: Azjol-Nerub@' THEN '地下城：艾卓-尼鲁布' WHEN '@Heroic Dungeon: Azjol-Nerub@' THEN '英雄地下城：艾卓-尼鲁布' WHEN '@Mythic Dungeon: Azjol-Nerub@' THEN '神话地下城：艾卓-尼鲁布'
-    WHEN '@Dungeon: Drak''Tharon Keep@' THEN '地下城：达克萨隆要塞' WHEN '@Heroic Dungeon: Drak''Tharon Keep@' THEN '英雄地下城：达克萨隆要塞' WHEN '@Mythic Dungeon: Drak''Tharon Keep@' THEN '神话地下城：达克萨隆要塞'
-    WHEN '@Dungeon: Gundrak@' THEN '地下城：古达克' WHEN '@Heroic Dungeon: Gundrak@' THEN '英雄地下城：古达克' WHEN '@Mythic Dungeon: Gundrak@' THEN '神话地下城：古达克'
-    WHEN '@Dungeon: Halls of Lightning@' THEN '地下城：闪电大厅' WHEN '@Heroic Dungeon: Halls of Lightning@' THEN '英雄地下城：闪电大厅' WHEN '@Mythic Dungeon: Halls of Lightning@' THEN '神话地下城：闪电大厅'
-    WHEN '@Dungeon: Halls of Stone@' THEN '地下城：岩石大厅' WHEN '@Heroic Dungeon: Halls of Stone@' THEN '英雄地下城：岩石大厅' WHEN '@Mythic Dungeon: Halls of Stone@' THEN '神话地下城：岩石大厅'
-    WHEN '@Dungeon: The Culling of Stratholme@' THEN '地下城：斯坦索姆的抉择' WHEN '@Heroic Dungeon: The Culling of Stratholme@' THEN '英雄地下城：斯坦索姆的抉择' WHEN '@Mythic Dungeon: The Culling of Stratholme@' THEN '神话地下城：斯坦索姆的抉择'
-    WHEN '@Dungeon: The Nexus@' THEN '地下城：魔枢' WHEN '@Heroic Dungeon: The Nexus@' THEN '英雄地下城：魔枢' WHEN '@Mythic Dungeon: The Nexus@' THEN '神话地下城：魔枢'
-    WHEN '@Dungeon: The Oculus@' THEN '地下城：魔环' WHEN '@Heroic Dungeon: The Oculus@' THEN '英雄地下城：魔环' WHEN '@Mythic Dungeon: The Oculus@' THEN '神话地下城：魔环'
-    WHEN '@Dungeon: The Violet Hold@' THEN '地下城：紫罗兰监狱' WHEN '@Heroic Dungeon: The Violet Hold@' THEN '英雄地下城：紫罗兰监狱' WHEN '@Mythic Dungeon: The Violet Hold@' THEN '神话地下城：紫罗兰监狱'
-    WHEN '@Dungeon: Utgarde Keep@' THEN '地下城：乌特加德城堡' WHEN '@Heroic Dungeon: Utgarde Keep@' THEN '英雄地下城：乌特加德城堡' WHEN '@Mythic Dungeon: Utgarde Keep@' THEN '神话地下城：乌特加德城堡'
-    WHEN '@Dungeon: Utgarde Pinnacle@' THEN '地下城：乌特加德之巅' WHEN '@Heroic Dungeon: Utgarde Pinnacle@' THEN '英雄地下城：乌特加德之巅' WHEN '@Mythic Dungeon: Utgarde Pinnacle@' THEN '神话地下城：乌特加德之巅'
+SET `l`.`Description` = COALESCE(CONCAT('@', NULLIF(CASE `i`.`description`
+    WHEN '@Dungeon: Ahn''kahet, the Old Kingdom@' THEN '地下城：安卡赫特：古代王国' WHEN '@Heroic Dungeon: Ahn''kahet, the Old Kingdom@' THEN '英雄地下城：安卡赫特：古代王国' WHEN '@Mythic Dungeon: Ahn''kahet, the Old Kingdom@' THEN '大秘境地下城：安卡赫特：古代王国'
+    WHEN '@Dungeon: Azjol-Nerub@' THEN '地下城：艾卓-尼鲁布' WHEN '@Heroic Dungeon: Azjol-Nerub@' THEN '英雄地下城：艾卓-尼鲁布' WHEN '@Mythic Dungeon: Azjol-Nerub@' THEN '大秘境地下城：艾卓-尼鲁布'
+    WHEN '@Dungeon: Drak''Tharon Keep@' THEN '地下城：达克萨隆要塞' WHEN '@Heroic Dungeon: Drak''Tharon Keep@' THEN '英雄地下城：达克萨隆要塞' WHEN '@Mythic Dungeon: Drak''Tharon Keep@' THEN '大秘境地下城：达克萨隆要塞'
+    WHEN '@Dungeon: Gundrak@' THEN '地下城：古达克' WHEN '@Heroic Dungeon: Gundrak@' THEN '英雄地下城：古达克' WHEN '@Mythic Dungeon: Gundrak@' THEN '大秘境地下城：古达克'
+    WHEN '@Dungeon: Halls of Lightning@' THEN '地下城：闪电大厅' WHEN '@Heroic Dungeon: Halls of Lightning@' THEN '英雄地下城：闪电大厅' WHEN '@Mythic Dungeon: Halls of Lightning@' THEN '大秘境地下城：闪电大厅'
+    WHEN '@Dungeon: Halls of Stone@' THEN '地下城：岩石大厅' WHEN '@Heroic Dungeon: Halls of Stone@' THEN '英雄地下城：岩石大厅' WHEN '@Mythic Dungeon: Halls of Stone@' THEN '大秘境地下城：岩石大厅'
+    WHEN '@Dungeon: The Culling of Stratholme@' THEN '地下城：斯坦索姆的抉择' WHEN '@Heroic Dungeon: The Culling of Stratholme@' THEN '英雄地下城：斯坦索姆的抉择' WHEN '@Mythic Dungeon: The Culling of Stratholme@' THEN '大秘境地下城：斯坦索姆的抉择'
+    WHEN '@Dungeon: The Nexus@' THEN '地下城：魔枢' WHEN '@Heroic Dungeon: The Nexus@' THEN '英雄地下城：魔枢' WHEN '@Mythic Dungeon: The Nexus@' THEN '大秘境地下城：魔枢'
+    WHEN '@Dungeon: The Oculus@' THEN '地下城：魔环' WHEN '@Heroic Dungeon: The Oculus@' THEN '英雄地下城：魔环' WHEN '@Mythic Dungeon: The Oculus@' THEN '大秘境地下城：魔环'
+    WHEN '@Dungeon: The Violet Hold@' THEN '地下城：紫罗兰监狱' WHEN '@Heroic Dungeon: The Violet Hold@' THEN '英雄地下城：紫罗兰监狱' WHEN '@Mythic Dungeon: The Violet Hold@' THEN '大秘境地下城：紫罗兰监狱'
+    WHEN '@Dungeon: Utgarde Keep@' THEN '地下城：乌特加德城堡' WHEN '@Heroic Dungeon: Utgarde Keep@' THEN '英雄地下城：乌特加德城堡' WHEN '@Mythic Dungeon: Utgarde Keep@' THEN '大秘境地下城：乌特加德城堡'
+    WHEN '@Dungeon: Utgarde Pinnacle@' THEN '地下城：乌特加德之巅' WHEN '@Heroic Dungeon: Utgarde Pinnacle@' THEN '英雄地下城：乌特加德之巅' WHEN '@Mythic Dungeon: Utgarde Pinnacle@' THEN '大秘境地下城：乌特加德之巅'
     ELSE ''
-END
+END, ''), '@'), '')
 WHERE `l`.`locale` = 'zhCN'
   AND (`l`.`Description` = '' OR `l`.`Description` IS NULL)
   AND `i`.`description` LIKE '@%Dungeon: %@';
@@ -224,7 +231,7 @@ WHERE `l`.`locale` = 'zhCN'
 -- By leewheel 2026年11月05日
 UPDATE `item_template_locale` AS `l`
 JOIN `item_template` AS `i` ON `i`.`entry` = `l`.`ID`
-SET `l`.`Description` = CASE `i`.`description`
+SET `l`.`Description` = COALESCE(CONCAT('@', NULLIF(CASE `i`.`description`
     WHEN '@Scorpid@' THEN '蝎' WHEN '@Skeleton@' THEN '骷髅' WHEN '@Zombie@' THEN '僵尸' WHEN '@Wolf@' THEN '狼' WHEN '@Spider@' THEN '蜘蛛'
     WHEN '@Satyr@' THEN '萨特' WHEN '@Cat@' THEN '猫' WHEN '@Bear@' THEN '熊' WHEN '@Raptor@' THEN '迅猛龙' WHEN '@Boar@' THEN '野猪'
     WHEN '@Crab@' THEN '螃蟹' WHEN '@Crocolisk@' THEN '鳄鱼' WHEN '@Hyena@' THEN '鬣狗' WHEN '@Turtle@' THEN '乌龟' WHEN '@Worm@' THEN '蠕虫'
@@ -262,7 +269,7 @@ SET `l`.`Description` = CASE `i`.`description`
     WHEN '@Air Revenant@' THEN '风之复仇亡魂' WHEN '@Water Revenant@' THEN '水之复仇亡魂' WHEN '@Fire Revenant@' THEN '火之复仇亡魂' WHEN '@Earth Revenant@' THEN '土之复仇亡魂'
     WHEN '@Ruby Attrition@' THEN '红宝石磨损者'
     ELSE ''
-END
+END, ''), '@'), '')
 WHERE `l`.`locale` = 'zhCN'
   AND (`l`.`Description` = '' OR `l`.`Description` IS NULL)
   AND `i`.`description` IN ('@Scorpid@', '@Skeleton@', '@Zombie@', '@Wolf@', '@Spider@', '@Satyr@',
@@ -299,7 +306,7 @@ WHERE `l`.`locale` = 'zhCN'
 -- By leewheel 2026年11月05日
 UPDATE `item_template_locale` AS `l`
 JOIN `item_template` AS `i` ON `i`.`entry` = `l`.`ID`
-SET `l`.`Description` = CASE `i`.`description`
+SET `l`.`Description` = COALESCE(CONCAT('@', NULLIF(CASE `i`.`description`
     WHEN '@Cyan@' THEN '青色' WHEN '@Teal@' THEN '蓝绿' WHEN '@Pink@' THEN '粉色' WHEN '@Magenta@' THEN '品红'
     WHEN '@Classic@' THEN '经典旧世' WHEN '@Test@' THEN '测试' WHEN '@Wrath of the Lich King@' THEN '巫妖王之怒'
     WHEN '@Hexxed - Mastercraft@' THEN '巫咒·杰作'
@@ -336,7 +343,7 @@ SET `l`.`Description` = CASE `i`.`description`
     WHEN '@1201 - 1250@' THEN '1201-1250 级' WHEN '@1501 - 1550@' THEN '1501-1550 级' WHEN '@1751 - 1800@' THEN '1751-1800 级'
     WHEN '@1951 - 2000+@' THEN '1951-2000+ 级'
     ELSE ''
-END
+END, ''), '@'), '')
 WHERE `l`.`locale` = 'zhCN'
   AND (`l`.`Description` = '' OR `l`.`Description` IS NULL)
   AND `i`.`description` IN ('@Cyan@', '@Teal@', '@Pink@', '@Magenta@', '@Classic@', '@Test@',

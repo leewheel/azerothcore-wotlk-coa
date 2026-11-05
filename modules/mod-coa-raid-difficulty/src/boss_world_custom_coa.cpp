@@ -487,7 +487,9 @@ namespace
             // Only the Normal difficulties are open for now.
             if (player->GetRaidDifficulty() > RAID_DIFFICULTY_25MAN_NORMAL)
             {
-                ChatHandler(player->GetSession()).SendNotification("Setis only answers the Normal difficulty.");
+                // 玩家可见提示中文化 //By leewheel 2026年11月06日
+                ChatHandler(player->GetSession()).SendNotification("塞蒂斯目前只接受普通难度。");
+                // End By leewheel
                 return true;
             }
             player->TeleportTo(SETIS_MAP, SetisEntrance.GetPositionX(), SetisEntrance.GetPositionY(),

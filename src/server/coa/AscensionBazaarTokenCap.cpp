@@ -142,18 +142,20 @@ uint32 AscensionBazaarTokenCap::LimitReward(Player* player, uint32 itemId, uint3
 
 std::string AscensionBazaarTokenCap::Describe(uint32 accountId)
 {
+    // 玩家可见文本中文化 //By leewheel 2026年11月06日
     uint32 const cap = GetCap();
     if (!cap)
-        return "Bazaar Tokens have no hourly limit.";
+        return "集市代币没有每小时上限。";
 
     uint32 const now = Now();
     std::lock_guard<std::mutex> guard(capLock);
     Window const& window = WindowRef(accountId);
     if (Expired(window, now))
-        return Acore::StringFormat("Bazaar Tokens this hour: 0 of {}. The hour starts with the next token earned.", cap);
+        return Acore::StringFormat("本小时集市代币：0 / {}。本小时从下一次获得代币时开始计算。", cap);
 
-    return Acore::StringFormat("Bazaar Tokens this hour: {} of {}. The hour ends in {} min.",
+    return Acore::StringFormat("本小时集市代币：{} / {}。本小时还有 {} 分钟结束。",
         std::min(window.earned, cap), cap, std::max<uint32>(1, MinutesLeft(window, now)));
+    // End By leewheel
 }
 
 void AscensionBazaarTokenCap::Set(uint32 accountId, uint32 earned, uint32 secondsAgo)
