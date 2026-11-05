@@ -61,4 +61,3 @@ INSERT INTO `quest_request_items_locale` (`ID`, `locale`, `CompletionText`, `Ver
 (53017, 'zhCN', '正义的决心在你眼里烧着，$N。带上审判官的信函了吗？对腐化的追猎永无止境。', 0),
 (53201, 'zhCN', '你好，$N。是给我带了什么东西吗？', 0);
 -- End By leewheel
-

@@ -217,7 +217,7 @@ SET `l`.`Description` = CASE `i`.`description`
 END
 WHERE `l`.`locale` = 'zhCN'
   AND (`l`.`Description` = '' OR `l`.`Description` IS NULL)
-  AND `i`.`description` LIKE '@%@Dungeon: %@';
+  AND `i`.`description` LIKE '@%Dungeon: %@';
 -- End By leewheel
 
 -- 生物种类名：逐个列出标记，译名与 creature_template_locale 的中文生物名保持一致。
@@ -292,4 +292,70 @@ WHERE `l`.`locale` = 'zhCN'
     '@Bronze Proto-dragon@', '@Pseudo-dragon@', '@Blue Aspect@', '@Red Aspect@',
     '@Man''ari Eredar@', '@Gan''arg@', '@Mo''arg Engineer@', '@Air Revenant@',
     '@Water Revenant@', '@Fire Revenant@', '@Earth Revenant@', '@Ruby Attrition@');
+-- End By leewheel
+
+-- 收尾：其余颜色、龙裔/傀儡族名、等级段、以及带颜色代码的团本标记。
+-- @build:xxx@ 与 @re:编号@ 是内部引用占位符，不是玩家可见文案，保持原样。
+-- By leewheel 2026年11月05日
+UPDATE `item_template_locale` AS `l`
+JOIN `item_template` AS `i` ON `i`.`entry` = `l`.`ID`
+SET `l`.`Description` = CASE `i`.`description`
+    WHEN '@Cyan@' THEN '青色' WHEN '@Teal@' THEN '蓝绿' WHEN '@Pink@' THEN '粉色' WHEN '@Magenta@' THEN '品红'
+    WHEN '@Classic@' THEN '经典旧世' WHEN '@Test@' THEN '测试' WHEN '@Wrath of the Lich King@' THEN '巫妖王之怒'
+    WHEN '@Hexxed - Mastercraft@' THEN '巫咒·杰作'
+    WHEN '@Heroic Bloodforged@' THEN '英雄血铸'
+    WHEN '@Contains one of the newest released legendary enchantments!@' THEN '内含一件最新发布的传说附魔！'
+    WHEN '@Onyxia''s Lair Ascended@' THEN '奥妮克希亚的巢穴·飞升' WHEN '@Onyxia''s Lair Heroic@' THEN '奥妮克希亚的巢穴·英雄'
+    WHEN '@|cFF00f3ffLeague 5 Supporter Pack|r@' THEN '|cFF00f3ff第五联盟支持者礼包|r'
+    WHEN '@|cFF1EFF00Heroic Dungeon|r@' THEN '|cFF1EFF00英雄地下城|r'
+    WHEN '@|cFFFF8000Ancient Ascended|r@' THEN '|cFFFF8000远古飞升|r'
+    WHEN '@|cFFFF8000Ascended Raid|r@' THEN '|cFFFF8000飞升团队副本|r'
+    WHEN '@|cFFFF8000Ascended|r@' THEN '|cFFFF8000飞升|r'
+    WHEN '@|cFFFF8000Heroic Raid|r@' THEN '|cFFFF8000英雄团队副本|r'
+    WHEN '@Black Aspect@' THEN '黑色化身' WHEN '@Infinite Dragon@' THEN '无限龙' WHEN '@Netherwing Dragon@' THEN '虚空之翼龙'
+    WHEN '@Frostbrood@' THEN '冰霜龙裔' WHEN '@Twilight Drake@' THEN '暮光飞龙' WHEN '@Plagued Whelp@' THEN '瘟疫龙崽'
+    WHEN '@Chromatic Whelp@' THEN '多彩龙崽' WHEN '@Infinite Whelp@' THEN '无限龙崽' WHEN '@Red Wyrmkin@' THEN '红色龙裔'
+    WHEN '@Bronze Wyrmkin@' THEN '青铜龙裔' WHEN '@Green Drakonid@' THEN '绿色龙人' WHEN '@Red Drakonid@' THEN '红色龙人'
+    WHEN '@Bronze Drakonid@' THEN '青铜龙人' WHEN '@Black Proto-dragon@' THEN '黑色原龙' WHEN '@Infinite Proto-dragon@' THEN '无限原龙'
+    WHEN '@Twilight Proto-dragon@' THEN '暮光原龙'
+    WHEN '@Drakkari War Golem@' THEN '达卡里战争傀儡' WHEN '@Runic War Golem@' THEN '符文战争傀儡'
+    WHEN '@Runic Siege Golem@' THEN '符文攻城傀儡' WHEN '@Molten War Golem@' THEN '熔火战争傀儡'
+    WHEN '@Molten Siege Golem@' THEN '熔岩攻城傀儡' WHEN '@Ragereaver Siege Golem@' THEN '暴怒者攻城傀儡'
+    WHEN '@Bloodpetal Lasher@' THEN '血瓣鞭笞者' WHEN '@Deathpetal Lasher@' THEN '死瓣鞭笞者' WHEN '@Frostpetal Lasher@' THEN '霜瓣鞭笞者'
+    WHEN '@Constrictor Lasher@' THEN '缠绕鞭笞者' WHEN '@Constrictor Orchid@' THEN '缠绕兰花' WHEN '@Frostpetal Orchid@' THEN '霜瓣兰花'
+    WHEN '@Winterwood Treant@' THEN '冬木树人' WHEN '@Darkhound@' THEN '黑暗猎犬' WHEN '@Ghost@' THEN '鬼魂' WHEN '@Mummy@' THEN '木乃伊'
+    WHEN '@Lich@' THEN '巫妖' WHEN '@Phoenix@' THEN '凤凰' WHEN '@Dog@' THEN '犬' WHEN '@Elekk@' THEN '雷象'
+    WHEN '@Dragonhawk@' THEN '龙鹰' WHEN '@Sporebat@' THEN '孢子蝠' WHEN '@Warp Stalker@' THEN '曲域捕食者'
+    WHEN '@Void Terror@' THEN '虚空恐魔' WHEN '@Fel Beast@' THEN '邪能兽' WHEN '@Thunder Lizard@' THEN '雷蜥'
+    WHEN '@Dreadsteed@' THEN '恐惧战马' WHEN '@Felsteed@' THEN '恶魔战马' WHEN '@Steam Elemental@' THEN '蒸汽元素'
+    WHEN '@Mojo Elemental@' THEN '活力元素' WHEN '@Ice Revenant@' THEN '冰之复仇亡魂' WHEN '@Death Revenant@' THEN '死亡复仇亡魂'
+    WHEN '@10-29 Win@' THEN '10-29 级胜场' WHEN '@20-29 Win@' THEN '20-29 级胜场' WHEN '@30-39 Win@' THEN '30-39 级胜场'
+    WHEN '@40-49 Win@' THEN '40-49 级胜场' WHEN '@50-60 Win@' THEN '50-60 级胜场' WHEN '@61-70 Win@' THEN '61-70 级胜场'
+    WHEN '@71-80 Win@' THEN '71-80 级胜场'
+    WHEN '@401 - 450@' THEN '401-450 级' WHEN '@651 - 700@' THEN '651-700 级' WHEN '@951 - 1000@' THEN '951-1000 级'
+    WHEN '@1201 - 1250@' THEN '1201-1250 级' WHEN '@1501 - 1550@' THEN '1501-1550 级' WHEN '@1751 - 1800@' THEN '1751-1800 级'
+    WHEN '@1951 - 2000+@' THEN '1951-2000+ 级'
+    ELSE ''
+END
+WHERE `l`.`locale` = 'zhCN'
+  AND (`l`.`Description` = '' OR `l`.`Description` IS NULL)
+  AND `i`.`description` IN ('@Cyan@', '@Teal@', '@Pink@', '@Magenta@', '@Classic@', '@Test@',
+    '@Wrath of the Lich King@', '@Hexxed - Mastercraft@', '@Heroic Bloodforged@',
+    '@Contains one of the newest released legendary enchantments!@', '@Onyxia''s Lair Ascended@',
+    '@Onyxia''s Lair Heroic@', '@|cFF00f3ffLeague 5 Supporter Pack|r@',
+    '@|cFF1EFF00Heroic Dungeon|r@', '@|cFFFF8000Ancient Ascended|r@', '@|cFFFF8000Ascended Raid|r@',
+    '@|cFFFF8000Ascended|r@', '@|cFFFF8000Heroic Raid|r@', '@Black Aspect@', '@Infinite Dragon@',
+    '@Netherwing Dragon@', '@Frostbrood@', '@Twilight Drake@', '@Plagued Whelp@',
+    '@Chromatic Whelp@', '@Infinite Whelp@', '@Red Wyrmkin@', '@Bronze Wyrmkin@',
+    '@Green Drakonid@', '@Red Drakonid@', '@Bronze Drakonid@', '@Black Proto-dragon@',
+    '@Infinite Proto-dragon@', '@Twilight Proto-dragon@', '@Drakkari War Golem@',
+    '@Runic War Golem@', '@Runic Siege Golem@', '@Molten War Golem@', '@Molten Siege Golem@',
+    '@Ragereaver Siege Golem@', '@Bloodpetal Lasher@', '@Deathpetal Lasher@',
+    '@Frostpetal Lasher@', '@Constrictor Lasher@', '@Constrictor Orchid@', '@Frostpetal Orchid@',
+    '@Winterwood Treant@', '@Darkhound@', '@Ghost@', '@Mummy@', '@Lich@', '@Phoenix@', '@Dog@',
+    '@Elekk@', '@Dragonhawk@', '@Sporebat@', '@Warp Stalker@', '@Void Terror@', '@Fel Beast@',
+    '@Thunder Lizard@', '@Dreadsteed@', '@Felsteed@', '@Steam Elemental@', '@Mojo Elemental@',
+    '@Ice Revenant@', '@Death Revenant@', '@10-29 Win@', '@20-29 Win@', '@30-39 Win@',
+    '@40-49 Win@', '@50-60 Win@', '@61-70 Win@', '@71-80 Win@', '@401 - 450@', '@651 - 700@',
+    '@951 - 1000@', '@1201 - 1250@', '@1501 - 1550@', '@1751 - 1800@', '@1951 - 2000+@');
 -- End By leewheel
