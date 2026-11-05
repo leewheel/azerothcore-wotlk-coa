@@ -32,6 +32,15 @@ data/sql/*    linguist-documentation
 # Compressed world data must retain its exact bytes under the repository-wide text rule.
 data/coa-world/*.zip -text -diff
 
+# Binary image assets must retain their exact bytes under the repository-wide text rule.
+# A PNG signature contains CRLF (0x0D 0x0A); normalizing it as text corrupts the file.
+*.png  -text -diff
+*.jpg  -text -diff
+*.jpeg -text -diff
+*.gif  -text -diff
+*.webp -text -diff
+*.ico  -text -diff
+
 # Preserve the exact bytes of this already-applied local migration on future checkouts.
 data/sql/updates/pending_db_world/rev_1787754600000000000.sql -text
 

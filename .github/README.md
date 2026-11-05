@@ -1,6 +1,8 @@
-<!-- 主题视觉：征服艾泽拉斯：荣耀徽章.png，归档于 .github/assets/。请勿替换或改名。 -->
+<!-- 主题视觉：征服艾泽拉斯：荣耀徽章.png。仓库内以 .github/assets/coa-emblem.png（420×420）归档。
+     图片使用仓库内绝对地址：.github/README.md 中的相对 img 路径不会被 GitHub 重写，主页会破图；
+     文件名用纯 ASCII，避免中文与全角冒号在图片 URL 中的编码问题。改分支名或仓库名时需同步此处。 -->
 <div align="center">
-  <img src="assets/征服艾泽拉斯：荣耀徽章.png" alt="征服艾泽拉斯 · Conquest of Azeroth 荣耀徽章" width="380" />
+  <img src="https://github.com/leewheel/azerothcore-wotlk-coa/blob/main/.github/assets/coa-emblem.png?raw=true" alt="征服艾泽拉斯 · Conquest of Azeroth 荣耀徽章" width="380" />
 </div>
 
 <h1 align="center">征服艾泽拉斯 · Conquest of Azeroth</h1>
@@ -11,11 +13,7 @@
 </p>
 
 <p align="center">
-  <img alt="客户端" src="https://img.shields.io/badge/client-Ascension_3.3.5a-1B3A6B?style=flat-square" />
-  <img alt="核心" src="https://img.shields.io/badge/core-AzerothCore-C9A227?style=flat-square" />
-  <img alt="语言" src="https://img.shields.io/badge/language-C%2B%2B-0E2A4A?style=flat-square" />
-  <img alt="构建" src="https://img.shields.io/badge/build-CMake-181818?style=flat-square" />
-  <img alt="许可" src="https://img.shields.io/badge/license-GPL--2.0-C9A227?style=flat-square" />
+  客户端 <strong>Ascension 3.3.5a</strong> · 核心 <strong>AzerothCore</strong> · 语言 <strong>C++</strong> · 构建 <strong>CMake</strong> · 许可 <strong>GPL-2.0</strong>
 </p>
 
 ---
@@ -127,9 +125,7 @@ It's important to note that AzerothCore is not an official Blizzard Entertainmen
 
 ### 致谢
 
-[JetBrains](https://www.jetbrains.com/?from=AzerothCore) 为 AzerothCore 开发者提供免费的[开源许可](https://www.jetbrains.com/community/opensource/)。
-
-[![JetBrains logo.](https://resources.jetbrains.com/storage/products/company/brand/logos/jetbrains.svg)](https://jb.gg/OpenSourceSupport)
+[JetBrains](https://www.jetbrains.com/?from=AzerothCore) 为 AzerothCore 开发者提供免费的[开源许可](https://www.jetbrains.com/community/opensource/)（[OpenSourceSupport](https://jb.gg/OpenSourceSupport)）。此致谢沿用上游 README，文字与链接均予保留。
 
 ---
 
