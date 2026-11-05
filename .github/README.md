@@ -95,7 +95,7 @@ AzerothCore 本身也是一份理解 MMORPG 服务端结构、游戏模拟器实
 - **SQL 边界**：`data/sql/base/`、`data/sql/archive/`、`data/sql/updates/db_*/` 不可改动，新迁移只写入 `data/sql/updates/pending_db_*/`。
 - **验证**：改动涉及源码时包含 `build` 阶段；提交前运行 `python -B tools/verify_all.py --stages source --base origin/main`。
 - 请先阅读 [Contributor Covenant 行为准则](CODE_OF_CONDUCT.md) 与上游[贡献指南](https://www.azerothcore.org/wiki/contribute)；若使用 AI 代理参与开发，另见上游的 [AI Agentic Engineering 指南](https://www.azerothcore.org/wiki/agentic-engineering)。
-- 欢迎在 [Discord](https://discord.gg/gkt4y2x) 交流。觉得项目有用，请点一个 Star 帮助我们获得更多曝光。
+- 欢迎在 [CoA 社群 Discord](https://discord.gg/k7qpSndvW) 与 [AzerothCore Discord](https://discord.gg/gkt4y2x) 交流。觉得项目有用，请点一个 Star 帮助我们获得更多曝光。
 
 ## 上游、版权与致谢
 
@@ -111,11 +111,18 @@ AzerothCore 是一个社区驱动的开源 MMORPG 服务端框架，代码谱系
 
 ### 上游链接
 
+**CoA 社群上游**（本仓库的 `upstream`，即本 fork 的直接来源）
+
+- [Conquest-of-AzerothCore / azerothcore-wotlk-coa](https://github.com/Conquest-of-AzerothCore/azerothcore-wotlk-coa)
+- [CoA 社群 Discord](https://discord.gg/k7qpSndvW)
+
+**AzerothCore 引擎上游**（服务端框架与代码谱系）
+
 - [AzerothCore 官网](http://www.azerothcore.org/) · [Wiki](http://www.azerothcore.org/wiki) · [Doxygen 文档](https://www.azerothcore.org/pages/doxygen/index.html)
 - [模块目录（Module Catalogue）](http://www.azerothcore.org/catalogue.html)
-- [Discord](https://discord.gg/gkt4y2x) · [论坛 / Discussions](https://github.com/azerothcore/azerothcore-wotlk/discussions/)
+- [AzerothCore Discord](https://discord.gg/gkt4y2x) · [论坛 / Discussions](https://github.com/azerothcore/azerothcore-wotlk/discussions/)
 - [Facebook](https://www.facebook.com/AzerothCore/) · [LinkedIn](https://www.linkedin.com/company/azerothcore/)
-- [上游仓库](https://github.com/azerothcore/azerothcore-wotlk)
+- [AzerothCore 仓库](https://github.com/azerothcore/azerothcore-wotlk)
 
 ### 非官方声明（上游原文）
 
