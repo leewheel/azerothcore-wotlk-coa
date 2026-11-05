@@ -41,6 +41,12 @@ namespace GameTime
     /// Uptime
     AC_GAME_API Seconds GetUptime();
 
+    //By leewheel 2026年11月5日 要发给客户端的世界时间（登录包 SMSG_LOGIN_SETTIMESPEED 用它）。
+    // 按 configs/modules/coa.conf 的 CoA.Clock.Mode / Hour / Minute / OffsetHours 调整：
+    // 0 = 跟随服务器时钟，1 = 每天固定时刻，2 = 固定偏移。返回 unix 秒。
+    AC_GAME_API time_t GetShownGameTime();
+    //End By leewheel
+
     /// Uptime since a given time point
     inline Microseconds Elapsed(TimePoint start)
     {

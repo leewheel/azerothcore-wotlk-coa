@@ -12452,7 +12452,9 @@ void Player::SendInitialPacketsBeforeAddToMap()
     SendEquipmentSetList();
 
     data.Initialize(SMSG_LOGIN_SETTIMESPEED, 4 + 4 + 4);
-    data.AppendPackedTime(GameTime::GetGameTime().count());
+    //By leewheel 2026年11月5日 客户端的世界时间以这个包为准：按 coa.conf 的 CoA.Clock.* 调整（0=跟随服务器时钟）
+    data.AppendPackedTime(GameTime::GetShownGameTime());
+    //End By leewheel
     data << float(0.01666667f);                             // game speed
     data << uint32(0);                                      // added in 3.1.2
     SendDirectMessage(&data);

@@ -16,6 +16,7 @@
  */
 
 #include "GameTime.h"
+#include "Config.h"
 #include "Timer.h"
 #include <algorithm>
 #include <atomic>
@@ -101,6 +102,68 @@ namespace GameTime
     {
         return GameTime;
     }
+
+    //By leewheel 2026年11月5日 游戏内时间设置：把服务器真实时间换算成要发给客户端的世界时间。
+    // 配置（configs/modules/coa.conf）：CoA.Clock.Mode 0/1/2，CoA.Clock.Hour，CoA.Clock.Minute，CoA.Clock.OffsetHours。
+    // 只在首次调用时读配置，改配置需要重启 worldserver（和老大要求的“每次重启按配置开始”一致）。
+    namespace
+    {
+        struct ShownClockSettings
+        {
+            int mode = 0;
+            int hour = 8;
+            int minute = 0;
+            float offsetHours = 0.0f;
+            bool loaded = false;
+        };
+
+        ShownClockSettings& ShownClock()
+        {
+            static ShownClockSettings settings;
+            if (!settings.loaded)
+            {
+                settings.mode = sConfigMgr->GetOption<int>("CoA.Clock.Mode", 0);
+                settings.hour = std::clamp(sConfigMgr->GetOption<int>("CoA.Clock.Hour", 8), 0, 23);
+                settings.minute = std::clamp(sConfigMgr->GetOption<int>("CoA.Clock.Minute", 0), 0, 59);
+                settings.offsetHours = std::clamp(sConfigMgr->GetOption<float>("CoA.Clock.OffsetHours", 0.0f), -24.0f, 24.0f);
+                if (settings.mode < 0 || settings.mode > 2)
+                    settings.mode = 0;
+                settings.loaded = true;
+            }
+            return settings;
+        }
+
+        time_t SameDayAt(time_t when, int hour, int minute)
+        {
+            std::tm local{};
+#ifdef _WIN32
+            localtime_s(&local, &when);
+#else
+            localtime_r(&when, &local);
+#endif
+            local.tm_hour = hour;
+            local.tm_min = minute;
+            local.tm_sec = 0;
+            local.tm_isdst = -1;
+            return std::mktime(&local);
+        }
+    }
+
+    time_t GetShownGameTime()
+    {
+        time_t const now = static_cast<time_t>(GetGameTime().count());
+        ShownClockSettings const& settings = ShownClock();
+        switch (settings.mode)
+        {
+            case 1:
+                return SameDayAt(now, settings.hour, settings.minute);
+            case 2:
+                return now + static_cast<time_t>(std::llround(settings.offsetHours * 3600.0f));
+            default:
+                return now;
+        }
+    }
+    //End By leewheel
 
     Milliseconds GetGameTimeMS()
     {

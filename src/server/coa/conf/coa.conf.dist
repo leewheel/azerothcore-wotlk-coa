@@ -7,6 +7,16 @@
 # Enable the compatibility packet filter.
 CoA.Enable = 1
 
+#By leewheel 2026年11月5日 游戏内时间：玩家晚上上线也能看到白天。
+# 0 = 跟随服务器时钟（默认）；1 = 每天固定时刻；2 = 在服务器时钟上偏移若干小时。
+# 固定时刻用 CoA.Clock.Hour / CoA.Clock.Minute；偏移用 CoA.Clock.OffsetHours（可负、可带小数）。
+# 改完要重启 worldserver 才生效，登录时的世界时间以这里为准。
+CoA.Clock.Mode = 0
+CoA.Clock.Hour = 8
+CoA.Clock.Minute = 0
+CoA.Clock.OffsetHours = 0
+#End By leewheel
+
 # One press of /s .rotation attempts one learned attack or heal on the selected target.
 # Uses CoA specialization priorities with a basic fallback for other builds.
 CoA.RotationAssist.Enable = 1
