@@ -134,6 +134,8 @@ public:
     }
 };
 
+// .leash 是 GM 指令，但输出同样属于可见文本，统一中文；数值格式保持原样
+//By leewheel 2026年11月07日
 class CoABossLeashCommands final : public CommandScript
 {
 public:
@@ -172,7 +174,7 @@ public:
         }
         if (!resolved || !sObjectMgr->GetCreatureTemplate(resolved))
         {
-            handler->SendErrorMessage("Select the boss or give its creature entry.");
+            handler->SendErrorMessage("请选中首领，或给出它的生物编号。");
             return {};
         }
         std::unique_lock lock(LeashLock);
@@ -199,7 +201,7 @@ public:
             Leash& leash = Leashes[*entry];
             if (leash.points.size() >= MaximumPoints)
             {
-                handler->SendErrorMessage("This leash already has {} points.", MaximumPoints);
+                handler->SendErrorMessage("这个拴绳区已经有 {} 个点了。", MaximumPoints);
                 return false;
             }
             index = leash.points.size();
@@ -208,9 +210,9 @@ public:
         WorldDatabase.Execute("INSERT IGNORE INTO `coa_boss_leash` (`entry`, `radius`) VALUES ({}, 0)", *entry);
         WorldDatabase.Execute("REPLACE INTO `coa_boss_leash_point` (`entry`, `point`, `x`, `y`, `z`) VALUES ({}, {}, {}, {}, {})",
             *entry, index, player->GetPositionX(), player->GetPositionY(), player->GetPositionZ());
-        handler->PSendSysMessage("{} ({}): leash point {} at {:.2f} {:.2f} {:.2f}.{}", BossName(*entry), *entry, index + 1,
+        handler->PSendSysMessage("{}（{}）：拴绳点 {} 位于 {:.2f} {:.2f} {:.2f}。{}", BossName(*entry), *entry, index + 1,
             player->GetPositionX(), player->GetPositionY(), player->GetPositionZ(),
-            index + 1 < 3 ? " The area is active from 3 points." : "");
+            index + 1 < 3 ? " 集满 3 个点后区域生效。" : "");
         return true;
     }
 
@@ -226,14 +228,14 @@ public:
             auto const itr = Leashes.find(*entry);
             if (itr == Leashes.end() || itr->second.points.empty())
             {
-                handler->SendErrorMessage("{} has no leash points.", BossName(*entry));
+                handler->SendErrorMessage("{} 还没有拴绳点。", BossName(*entry));
                 return false;
             }
             itr->second.points.pop_back();
             index = itr->second.points.size();
         }
         WorldDatabase.Execute("DELETE FROM `coa_boss_leash_point` WHERE `entry` = {} AND `point` = {}", *entry, index);
-        handler->PSendSysMessage("{} ({}): removed leash point {}; {} left.", BossName(*entry), *entry, index + 1, index);
+        handler->PSendSysMessage("{}（{}）：已删除拴绳点 {}，还剩 {} 个。", BossName(*entry), *entry, index + 1, index);
         return true;
     }
 
@@ -241,7 +243,7 @@ public:
     {
         if (radius < 0.0f || radius > 500.0f)
         {
-            handler->SendErrorMessage("The radius must be between 0 and 500 yards.");
+            handler->SendErrorMessage("半径必须在 0 到 500 码之间。");
             return false;
         }
         Optional<uint32> const entry = ResolveEntry(handler, entryArg);
@@ -253,7 +255,7 @@ public:
             Leashes[*entry].radius = radius;
         }
         WorldDatabase.Execute("REPLACE INTO `coa_boss_leash` (`entry`, `radius`) VALUES ({}, {})", *entry, radius);
-        handler->PSendSysMessage("{} ({}): leash radius {} yards around the spawn point; leash points, when 3 or more, take precedence.",
+        handler->PSendSysMessage("{}（{}）：拴绳半径 {} 码（以刷新点为中心）；拴绳点达到 3 个或更多时以拴绳点为准。",
             BossName(*entry), *entry, radius);
         return true;
     }
@@ -270,7 +272,7 @@ public:
         }
         WorldDatabase.Execute("DELETE FROM `coa_boss_leash_point` WHERE `entry` = {}", *entry);
         WorldDatabase.Execute("DELETE FROM `coa_boss_leash` WHERE `entry` = {}", *entry);
-        handler->PSendSysMessage("{} ({}): leash removed.", BossName(*entry), *entry);
+        handler->PSendSysMessage("{}（{}）：拴绳区已移除。", BossName(*entry), *entry);
         return true;
     }
 
@@ -283,12 +285,12 @@ public:
         Optional<Leash> const leash = FindLeash(*entry);
         if (!leash)
         {
-            handler->PSendSysMessage("{} ({}) has no leash.", BossName(*entry), *entry);
+            handler->PSendSysMessage("{}（{}）没有拴绳区。", BossName(*entry), *entry);
             return true;
         }
 
         Player* player = handler->GetPlayer();
-        handler->PSendSysMessage("{} ({}): radius {} yards, {} points.", BossName(*entry), *entry, leash->radius, leash->points.size());
+        handler->PSendSysMessage("{}（{}）：半径 {} 码，{} 个点。", BossName(*entry), *entry, leash->radius, leash->points.size());
         for (std::size_t i = 0; i < leash->points.size(); ++i)
         {
             Position const& point = leash->points[i];
@@ -297,8 +299,8 @@ public:
         }
 
         if (leash->points.size() >= 3)
-            handler->PSendSysMessage("You stand {} the leash area.",
-                InsidePolygon(leash->points, player->GetPositionX(), player->GetPositionY()) ? "inside" : "outside");
+            handler->PSendSysMessage("你当前站在拴绳区{}。",
+                InsidePolygon(leash->points, player->GetPositionX(), player->GetPositionY()) ? "内" : "外");
         return true;
     }
 };
