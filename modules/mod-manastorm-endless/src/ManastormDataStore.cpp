@@ -442,6 +442,20 @@ bool ManastormDataStore::LoadSegments()
         return true;
     }
 
+    // 先记住表里配置过的全部 segment（含 enabled=0 的待发布内容），
+    // 供后面区分“数据里引用了根本不存在的段”和“引用了暂未启用的段”。
+    // 未启用的段属于正常发布状态，不该按异常刷日志。
+    //By leewheel 2026年11月07日
+    _knownSegmentIds.clear();
+    if (QueryResult knownSegments = WorldDatabase.Query("SELECT `segment_id` FROM `manastorm_segment`"))
+    {
+        do
+        {
+            _knownSegmentIds.insert(knownSegments->Fetch()[0].Get<uint32>());
+        } while (knownSegments->NextRow());
+    }
+    //End By leewheel
+
     QueryResult result = WorldDatabase.Query(
         "SELECT "
         "`segment_id`, `map_id`, `runtime_map_id`, "
@@ -804,6 +818,18 @@ bool ManastormDataStore::LoadSegmentSpawns()
 
                 if (!segment)
                 {
+                    // 段在表里存在但 enabled=0（待发布内容）不算异常，只有引用到完全不存在的段才是数据错误。
+                    //By leewheel 2026年11月07日
+                    if (_knownSegmentIds.contains(segmentId))
+                    {
+                        LOG_DEBUG(LOG_FILTER,
+                            "Skipping authored spawn {} for disabled Manastorm segment {}.",
+                            spawnGuid,
+                            segmentId);
+                        continue;
+                    }
+                    //End By leewheel
+
                     LOG_WARN(
                         LOG_FILTER,
                         "Ignoring authored spawn {} for unknown or "
@@ -1281,6 +1307,19 @@ bool ManastormDataStore::LoadUnlocks()
         return true;
     }
 
+    // 先记住表里配置过的全部解锁（含未启用、以及当前模式/阶段未加载的），
+    // 后面用来区分“触发/奖励引用了不存在的解锁”和“引用了暂未启用的解锁”。
+    //By leewheel 2026年11月07日
+    _knownUnlockIds.clear();
+    if (QueryResult knownUnlocks = WorldDatabase.Query("SELECT `unlock_id` FROM `manastorm_unlock`"))
+    {
+        do
+        {
+            _knownUnlockIds.insert(knownUnlocks->Fetch()[0].Get<uint32>());
+        } while (knownUnlocks->NextRow());
+    }
+    //End By leewheel
+
     QueryResult result =
         WorldDatabase.Query(
             "SELECT "
@@ -1621,6 +1660,18 @@ bool ManastormDataStore::LoadUnlockTriggers()
             if (unlockItr ==
                 _unlocks.end())
             {
+                // 解锁存在但当前模式/阶段没有加载，属于正常状态；只有完全不存在的解锁才是数据错误。
+                //By leewheel 2026年11月07日
+                if (_knownUnlockIds.contains(unlockId))
+                {
+                    LOG_DEBUG(LOG_FILTER,
+                        "Skipping native-track trigger for inactive Manastorm unlock {}.",
+                        unlockId);
+
+                    continue;
+                }
+                //End By leewheel
+
                 LOG_WARN(
                     LOG_FILTER,
                     "Ignoring native-track trigger for unknown or "
@@ -1870,6 +1921,18 @@ bool ManastormDataStore::LoadUnlockGrants()
 
         if (unlockItr == _unlocks.end())
         {
+            // 同上：解锁存在但未启用/未加载不算异常。
+            //By leewheel 2026年11月07日
+            if (_knownUnlockIds.contains(unlockId))
+            {
+                LOG_DEBUG(LOG_FILTER,
+                    "Skipping grant for inactive Manastorm unlock {}.",
+                    unlockId);
+
+                continue;
+            }
+            //End By leewheel
+
             LOG_WARN(
                 LOG_FILTER,
                 "Ignoring grant for unknown or disabled "

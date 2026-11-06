@@ -5,6 +5,7 @@
 #include "CreatureData.h"
 
 #include <map>
+#include <unordered_set>
 #include <vector>
 
 struct ManastormHubReturn
@@ -116,6 +117,12 @@ private:
     std::map<uint32, ManastormAffixDefinition> _affixes;
     std::vector<ManastormAffixPolicy> _affixPolicies;
     std::map<uint32, ManastormUnlockDefinition> _unlocks;
+
+    // 表里配置过的全部 segment / unlock（含未启用），用于区分数据错误与待发布内容
+    //By leewheel 2026年11月07日
+    std::unordered_set<uint32> _knownSegmentIds;
+    std::unordered_set<uint32> _knownUnlockIds;
+    //End By leewheel
 
 };
 
