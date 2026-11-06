@@ -37,6 +37,7 @@ void Acore::Banner::Show(std::string_view applicationName, void(*log)(std::strin
     log("            ╚═════╝ ╚═╝         ╚═╝  ╚═╝╚══════╝╚══════╝╚═╝  ╚═╝ ╚═════╝    ╚═╝   ╚═╝  ╚═╝  \n");
     log("     AzerothCore 3.3.5a  -  www.azerothcore.org\n");
 
+    log("這是一個免費版本！Fork自 https://github.com/Conquest-of-AzerothCore/azerothcore-wotlk-coa ");
     if (logExtraInfo)
     {
         logExtraInfo();
