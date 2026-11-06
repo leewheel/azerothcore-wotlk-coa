@@ -1,0 +1,91 @@
+{
+  "schema": 1,
+  "name": "Hero's Call Board: a finished battleground daily is listed for turn-in",
+  "contract": "The Hero's Call Board (gameobject 402000, Stormwind) keeps a completed quest in its PvP category so the player can turn it in: after accepting 81260 (Call to Arms: Battleground) from the board and completing it, clicking the board, choosing PvP Quests must leave 81260 in the quest menu with the complete icon, which is what the client's CompleteActiveGossipQuest turns into CMSG_QUESTGIVER_COMPLETE_QUEST. The board itself must report the reward dialog status (yellow question mark) while such a quest is pending.",
+  "timeout_ms": 120000,
+  "players": [
+    {
+      "id": "hero",
+      "race": 1,
+      "class": 1,
+      "level": 60
+    }
+  ],
+  "location": {
+    "map": 0,
+    "x": -8822.9,
+    "y": 628.4,
+    "z": 93.8,
+    "o": 2.4
+  },
+  "steps": [
+    {
+      "action": "set_phase",
+      "label": "Join the world phase the board is spawned in",
+      "actor": "hero",
+      "value": 1
+    },
+    {
+      "action": "wait",
+      "label": "Let the Stormwind board's grid load",
+      "ms": 3000
+    },
+    {
+      "action": "assert",
+      "label": "The Hero's Call Board is within reach",
+      "actor": "hero",
+      "metric": "nearby_gameobject_count",
+      "entry": 402000,
+      "equals": 1
+    },
+    {
+      "action": "quest_accept",
+      "label": "Accept the battleground daily from the board",
+      "actor": "hero",
+      "gameobject": 402000,
+      "quest": 81260
+    },
+    {
+      "action": "assert",
+      "label": "The battleground daily is in the log",
+      "actor": "hero",
+      "metric": "quest_status",
+      "quest": 81260,
+      "equals": 3
+    },
+    {
+      "action": "quest_complete",
+      "label": "Win the battleground (fixture)",
+      "actor": "hero",
+      "quest": 81260
+    },
+    {
+      "action": "assert",
+      "label": "The battleground daily is complete",
+      "actor": "hero",
+      "metric": "quest_status",
+      "quest": 81260,
+      "equals": 1
+    },
+    {
+      "action": "use_nearby_gameobject",
+      "label": "Click the board again",
+      "actor": "hero",
+      "entry": 402000
+    },
+    {
+      "action": "gossip_select",
+      "label": "Choose PvP Quests",
+      "actor": "hero",
+      "option": 2
+    },
+    {
+      "action": "assert",
+      "label": "The finished battleground daily is listed for turn-in",
+      "actor": "hero",
+      "metric": "quest_menu_has",
+      "quest": 81260,
+      "equals": 1
+    }
+  ]
+}

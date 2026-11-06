@@ -328,11 +328,25 @@ class go_hero_call_board final : public GameObjectScript
 public:
     go_hero_call_board() : GameObjectScript("native_ascension_callboard") { }
 
-    uint32 GetDialogStatus(Player* /*player*/, GameObject* board) override
+    uint32 GetDialogStatus(Player* player, GameObject* board) override
     {
         // The board is a permanent service: daily quest flags must not turn its marker blue.
-        return enabled.load() && IsCallBoard(board->GetEntry()) ? DIALOG_STATUS_AVAILABLE
-            : DIALOG_STATUS_SCRIPTED_NO_STATUS;
+        if (!enabled.load() || !IsCallBoard(board->GetEntry()))
+            return DIALOG_STATUS_SCRIPTED_NO_STATUS;
+
+        //By leewheel 2026-11-06 玩家在召集板上有已完成待交还的任务时，板子必须显示可交还的黄色问号：
+        //原来固定返回 DIALOG_STATUS_AVAILABLE，日常任务做完后地图和板子上都没有交任务提示，
+        //玩家会认为"没有地方提交"（反馈：武装号召：战场）。
+        if (player)
+        {
+            auto const involved = sObjectMgr->GetGOQuestInvolvedRelationBounds(board->GetEntry());
+            for (auto itr = involved.first; itr != involved.second; ++itr)
+                if (player->GetQuestStatus(itr->second) == QUEST_STATUS_COMPLETE)
+                    return DIALOG_STATUS_REWARD;
+        }
+        //End By leewheel
+
+        return DIALOG_STATUS_AVAILABLE;
     }
 
     bool OnGossipHello(Player* player, GameObject* board) override
