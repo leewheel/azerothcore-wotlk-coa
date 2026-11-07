@@ -37,12 +37,14 @@ struct StaffChatTagData : public DataMap::Base
 
 inline constexpr char const* STAFF_CHAT_TAG_KEY = "CoAStaffChatTag";
 
+//By leewheel 20261108 员工聊天徽章前缀汉化（玩家可见，统一中文标签）
 inline constexpr std::string_view STAFF_CHAT_PREFIXES[] =
 {
-    "|cff33bbff<MOD>|r ",
-    "|cff33bbff<CM>|r ",
-    "|cff33bbff<ADMIN>|r ",
+    "|cff33bbff<版主>|r ",
+    "|cff33bbff<社区>|r ",
+    "|cff33bbff<管理员>|r ",
 };
+//End By leewheel
 
 inline std::string_view GetStaffChatPrefix(StaffChatTag tag)
 {

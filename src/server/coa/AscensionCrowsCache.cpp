@@ -160,16 +160,18 @@ unsigned EventZone(Event const& event)
 
 std::string PinPayload(Event const& event, bool visible)
 {
+    //By leewheel 20261108 鸦巢事件地图标记名称与说明汉化（玩家可见；JSON 键名保持英文协议不变）
     if (!visible)
         return Acore::StringFormat("{{\"Apply\":false,\"ID\":\"crows-cache-{}\"}}", event.id);
     return Acore::StringFormat(
-        "{{\"Apply\":true,\"ZoneId\":{},\"ID\":\"crows-cache-{}\",\"Name\":\"Crow's Cache\","
+        "{{\"Apply\":true,\"ZoneId\":{},\"ID\":\"crows-cache-{}\",\"Name\":\"鸦巢\","
         "\"Description\":\"{}\",\"X\":{:.4f},\"Y\":{:.4f},\"Z\":{:.4f},"
         "\"TextureId\":\"hr-event-gear-active\",\"Scale\":0.50,\"POIFlags\":{}}}",
         EventZone(event), event.id,
-        event.phase == Phase::Warning ? "High-Risk 60 PvP Event: materializing soon."
-            : "High-Risk 60 PvP Event: High-Risk level-60 players can claim it.",
+        event.phase == Phase::Warning ? "高风险 60 级 PvP 事件：即将降临。"
+            : "高风险 60 级 PvP 事件：高风险 60 级玩家可前往领取。",
         event.position.GetPositionX(), event.position.GetPositionY(), event.position.GetPositionZ(), PinFlags);
+    //End By leewheel
 }
 
 void SendPin(Player* player, Event const& event, bool visible)
@@ -204,14 +206,15 @@ void SendPins(Player* player)
                 SendPin(player, event, true);
 }
 
+//By leewheel 20261108 鸦巢事件地名与提示汉化（玩家可见）
 char const* LocationName(Event const& event)
 {
     switch (EventZone(event))
     {
-        case Silithus: return "Southwind Village, Silithus";
-        case ThousandNeedles: return "Weazel's Crater, Thousand Needles";
-        case Barrens: return "the Barrens";
-        default: return "Abyssal Sands, Tanaris";
+        case Silithus: return "希利苏斯·南风村";
+        case ThousandNeedles: return "千针石林·鼬鼠坑";
+        case Barrens: return "贫瘠之地";
+        default: return "塔纳利斯·流沙深渊";
     }
 }
 
@@ -219,11 +222,12 @@ char const* DeliveryTown(Event const& event)
 {
     switch (EventZone(event))
     {
-        case Silithus: return "Cenarion Hold";
-        case Barrens: return "Ratchet";
-        default: return "Gadgetzan";
+        case Silithus: return "塞纳里奥要塞";
+        case Barrens: return "棘齿城";
+        default: return "加基森";
     }
 }
+//End By leewheel
 
 void Announce(Event& event, uint64 now)
 {
@@ -235,8 +239,8 @@ void Announce(Event& event, uint64 now)
     event.announcements |= uint8((1u << (index + 1)) - 1);
     Save(event);
     BroadcastAnnouncement(Acore::StringFormat(
-        "Crow's Cache is materializing in {} in {} minute{}!",
-        LocationName(event), WarningSeconds[index] / 60, index == 3 ? "" : "s").c_str());
+        "鸦巢将在 {} 分钟后于 {} 降临！",
+        WarningSeconds[index] / 60, LocationName(event)).c_str());
 }
 
 bool Carries(Player const* player)
@@ -370,7 +374,7 @@ bool Claim(Player* player, GameObject* object, bool completedCast)
     Save(*event, player);
     RemoveObjects(player->GetMap(), *event);
     UpdateCarrier(player);
-    ChatHandler(player->GetSession()).PSendSysMessage("Crow's Cache claimed. Carry it to {} to open it.",
+    ChatHandler(player->GetSession()).PSendSysMessage("已领取鸦巢，请运送到 {} 开启。",
         DeliveryTown(*event));
     return true;
 }
@@ -408,7 +412,7 @@ bool Open(Player* player, Item* cache)
     if (!CanOpen(found != events.end(), Eligible(player), player->GetAreaId(), player->IsInCombat()))
     {
         ChatHandler(player->GetSession()).SendSysMessage(
-            "You must be level 60, in High-Risk mode and out of combat in Gadgetzan, Cenarion Hold or Ratchet to open a claimed Crow's Cache.");
+            "需要 60 级、处于高风险模式且脱离战斗，并在加基森、塞纳里奥要塞或棘齿城才能开启已领取的鸦巢。");
         return false;
     }
     if (gear.size() < RewardCount || materials.empty())
@@ -507,7 +511,7 @@ void Begin(uint32 seconds, Position const& point)
     if (std::none_of(std::begin(WarningSeconds), std::end(WarningSeconds), [seconds](unsigned value)
         { return value == seconds; }))
         BroadcastAnnouncement(Acore::StringFormat(
-            "Crow's Cache is materializing in {} in {} seconds!", LocationName(found->second), seconds).c_str());
+            "鸦巢将在 {} 秒后于 {} 降临！", seconds, LocationName(found->second)).c_str());
 }
 
 void UpdateEvents()
@@ -547,7 +551,7 @@ void UpdateEvents()
                             player->KnockbackFrom(event.position.GetPositionX(), event.position.GetPositionY(), 15, 6);
             BroadcastPin(event, true);
             BroadcastAnnouncement(Acore::StringFormat(
-                "Crow's Cache has appeared in {}! High-Risk level-60 players can claim it.", LocationName(event)));
+                "鸦巢已在 {} 降临！高风险 60 级玩家可前往领取。", LocationName(event)));
         }
         else if ((event.phase == Phase::Carried || event.phase == Phase::Dropped) && event.deadline <= now)
         {

@@ -836,20 +836,22 @@ uint32 Shield(Player* player, std::vector<Item*> const& insurable, std::vector<I
 
     Settlement const cost = DeathCost(player, hit.size());
     ChatHandler chat(player->GetSession());
+    //By leewheel 20261108 邪能置换保装提示汉化（玩家可见）
     if (!cost.covered)
     {
         chat.SendSysMessage(Acore::StringFormat(
-            "Fel Commutation could not protect your items: it needs {} and you carry {}.", FormatMoney(cost.total),
+            "邪能置换无法保护你的物品：需要 {}，你只携带了 {}。", FormatMoney(cost.total),
             FormatMoney(player->GetMoney())));
         return 0;
     }
 
     for (std::size_t i = 0; i < hit.size(); ++i)
     {
-        chat.SendSysMessage(Acore::StringFormat("Item {} kept safe for {}", ItemLink(hit[i]),
+        chat.SendSysMessage(Acore::StringFormat("物品 {} 已花费 {} 保全", ItemLink(hit[i]),
             FormatMoney(cost.perItem[i])));
         losses.erase(std::remove(losses.begin(), losses.end(), hit[i]), losses.end());
     }
+    //End By leewheel
     return uint32(cost.total);
 }
 
