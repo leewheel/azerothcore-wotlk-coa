@@ -105,6 +105,21 @@ namespace Movement
         // limit the speed in the same way the client does
         args.velocity = std::min(args.velocity, args.flags.catmullrom || args.flags.flying ? 50.0f : std::max(28.0f, unit->GetSpeed(MOVE_RUN) * 4.0f));
 
+        //By leewheel 20261108 单位为 0 速度时（被定身、或速度被减到 0）不构造移动样条：
+        //  原逻辑会带着 0 速度进入 Validate，必然触发 "expression 'velocity > 0.01f' failed" 错误日志，
+        //  且发出的样条本身没有意义。原地转向（path 首尾同点）仍需下发，给它一个最小速度即可。
+        if (args.velocity <= 0.01f)
+        {
+            if (isOrientationOnly)
+                args.velocity = 0.01f;
+            else
+            {
+                LOG_TRACE("movement", "跳过移动：{}（入口 {}）当前速度为 0，移动请求不发起", unit->GetGUID().ToString(), unit->GetEntry());
+                return 0;
+            }
+        }
+        //End By leewheel
+
         if (!args.Validate(unit))
             return 0;
 

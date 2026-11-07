@@ -64,7 +64,12 @@ enum MailStationery
     MAIL_STATIONERY_ORP     = 67,                           // Orphan
 };
 
-inline constexpr char RECRUIT_A_FRIEND_REWARD_MAIL_SUBJECT[] = "Recruit-A-Friend reward";
+//By leewheel 20261108 招募战友奖励邮件的标题汉化（玩家在邮箱里可见）
+//  注意：这个标题同时被挑战模块用来判断「服务器邮件」，历史上已入库的邮件标题是英文，
+//  因此保留英文旧标题常量，判断时两者都接受，避免老邮件被判成玩家邮件而无法领取。
+inline constexpr char RECRUIT_A_FRIEND_REWARD_MAIL_SUBJECT[] = "招募战友奖励";
+inline constexpr char RECRUIT_A_FRIEND_REWARD_MAIL_SUBJECT_LEGACY[] = "Recruit-A-Friend reward";
+//End By leewheel
 
 enum MailState
 {

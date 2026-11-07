@@ -1112,8 +1112,11 @@ namespace CoAChallenges
     // The warchest has no binding, so a copy mailed by another character is not exempt.
     bool IsRecruitAFriendRewardMail(Mail const& mail)
     {
+        //By leewheel 20261108 标题已汉化，历史邮件仍是英文标题：两种都认，避免老邮件被当成玩家邮件而领不出
         return mail.IsSentByPlayer() && mail.sender == 0 && mail.stationery == MAIL_STATIONERY_GM
-            && mail.subject == RECRUIT_A_FRIEND_REWARD_MAIL_SUBJECT;
+            && (mail.subject == RECRUIT_A_FRIEND_REWARD_MAIL_SUBJECT
+                || mail.subject == RECRUIT_A_FRIEND_REWARD_MAIL_SUBJECT_LEGACY);
+        //End By leewheel
     }
 
     bool IsGameMasterMail(Mail const& mail)
