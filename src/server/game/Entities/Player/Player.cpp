@@ -15323,6 +15323,19 @@ void Player::LearnPetTalent(ObjectGuid petGuid, uint32 talentId, uint32 talentRa
     if (curtalent_maxrank >= (talentRank + 1))
         return;
 
+    //By leewheel 20261108 COA 自定义宠物天赋在 Talent.dbc 里存在等级空洞（某等级的 RankID 为 0）：
+    //  客户端可能请求一个 DBC 未定义的更高等级，走到后面取到 spell id = 0 并报
+    //  "Talent.dbc have for talent ... spell id = 0" 错误。这里先把请求等级夹到该天赋实际定义的最高等级，
+    //  再按原有逻辑学习，避免请求一个不存在的等级。
+    while (talentRank > 0 && talentInfo->RankID[talentRank] == 0)
+        --talentRank;
+    if (talentInfo->RankID[talentRank] == 0)
+        return;   // 该天赋在 DBC 里没有任何等级，无法学习
+    // 夹完等级后可能已经满足「已学到同级或更高」的条件
+    if (curtalent_maxrank >= (talentRank + 1))
+        return;
+    //End By leewheel
+
     // check if we have enough talent points
     if (CurTalentPoints < (talentRank - curtalent_maxrank + 1))
         return;
