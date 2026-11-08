@@ -6267,10 +6267,23 @@ void Player::CheckAreaExploreAndOutdoor()
 
     if (!areaEntry)
     {
-        LOG_ERROR("entities.player", "Player '{}' ({}) discovered unknown area (x: {} y: {} z: {} map: {})",
-                       GetName(), GetGUID().ToString(), GetPositionX(), GetPositionY(), GetPositionZ(), GetMapId());
-        return;
+        //By leewheel 20261108 COA 地图数据里存在服务端 AreaTable.dbc 没有的 area id（DBC 缺口）：
+        //  直接报错会让玩家站在那儿就不停刷 ERROR。这里先回退到同一位置的 zone（zone 有记录就能正常
+        //  记探索）；只有连 zone 都查不到时才算真正的数据缺失，仍按 ERROR 记录并带出 areaId 便于定位。
+        uint32 const zoneId = GetZoneId();
+        if (zoneId && zoneId != areaId)
+            areaEntry = sAreaTableStore.LookupEntry(zoneId);
+
+        if (!areaEntry)
+        {
+            LOG_ERROR("entities.player",
+                      "Player '{}' ({}) discovered unknown area {} and zone {} (x: {} y: {} z: {} map: {})",
+                      GetName(), GetGUID().ToString(), areaId, zoneId, GetPositionX(), GetPositionY(), GetPositionZ(),
+                      GetMapId());
+            return;
+        }
     }
+    //End By leewheel
 
     uint32 offset = areaEntry->exploreFlag / 32;
 
