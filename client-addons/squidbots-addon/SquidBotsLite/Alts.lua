@@ -1,0 +1,1870 @@
+-- 本文件已汉化：简体中文译文位于 zh 表（原第 165 行起），与 en / fr 三语并列，共 150 条。
+-- 本服默认语言为 zh，见 SquidBotsLite.lua 的 SetLanguage；玩家可用 /sbl lang zh|en|fr 切换。
+-- By leewheel 20261109
+-- SquidBots Lite, the alts as a team (CoA Bots 2.8.3): what each logged-in alt can do with the quest open at a
+-- quest giver, what it can learn at the trainer open, the lines it sends back, and a small team bar.
+-- Contract with the server: release/v2.8.3/CONTRAT-ALTS-2.8.3.md. Addon messages, prefix "SQBA", tab-separated
+-- fields, the first one the type; the alt whispers them to its player (CHAT_MSG_ADDON, "WHISPER", sender = the alt):
+--   HELLO 1 <catch-up on 0|1> <quiet mode on 0|1>
+--   Q <questId> <can_take|in_log|done|missing_prev|exclusive|level|class_race|reputation|skill|other> <detail> <catchable 0|1>
+--   QR <questId> <taken|caught_up|refused|log_full|bags_full|no_giver> <detail>
+--   T_BEGIN <npcEntry> <npc name>, T <spellId> <copper> <name>, T_END <count> <total copper> <its money>
+--   L <spellId> <ok|too_expensive|failed>, L_END <learned> <spent copper>, T_ERR no_trainer (no trainer found)
+-- The addon sends "HELLO\t1" (at login, when an alt comes, then every 5 min): for 15 min the server sends the
+-- repetitive lines ("Can't take", "Quest Available", trainer lists) as these messages instead of whispers.
+--   TEAM <level> <hp %> <follow|stay|mission|dead|far> <free bag slots> <zoneId>   (on change, at least once a minute)
+--   OBJ <questId> <incomplete|complete|failed|done|none> <current>/<needed>,...   (each quest of the player's log)
+--   ENCH <enchanter|-> <mail|bank> <this alt's Enchanting> <AltDisenchant 0|1> <limits>   (CoA Bots 2.8.4, after HELLO
+--   and each change; limits: 1 alts' greens, 2 guild bank greens, 4 blue bind on equip, 8 even an upgrade for an alt)
+-- Commands: "quest <id>", "take <id>", "catchup <id>", "train", "learn all", "learn <spellId>",
+-- "enchanter [set <name>|clear|mode mail|mode bank|limit <altgreens|bankgreens|blues|wearable> on|off]"
+-- (2.8.4, release/v2.8.4/CONTRAT-ALTS-2.8.4.md).
+-- In quiet mode the alts no longer take a quest the player accepts: they send their Q and wait for "take".
+-- STAT, PROF and the "sheet" command (2.8.4, HELLO's 5th field = 1): the team dashboard, Dashboard.lua.
+
+local PREFIX, VERSION = "SQBA", 1
+local HELLO_EVERY, HELLO_RETRY, SEEN_FOR, OFFLINE_WAIT, TRAIN_WAIT, ACCEPT_WINDOW = 300, 15, 600, 3, 1.5, 6
+local LOG_LINES = 200
+
+local STRINGS = {
+	en = {
+		QUESTS = "Take for the team", TRAINER = "Trainer", LOG = "Alts' log", TEAM = "Team",
+		QUEST_N = "Quest #%d", NO_QUEST = "Open a quest at a quest giver: each alt's state shows here.",
+		NO_ALTS = "No alt logged in: log one in from My alts.", ASKING = "Asking...", NO_ANSWER = "No answer yet",
+		JUST_ME = "Just me", TAKE_TEAM = "Take for the team", TAKE_ALL = "Take for all", CATCH_UP = "Catch up",
+		TIP_JUST_ME = "Accept it for you only: your alts do not take it.",
+		QA_ASK = "Your alts take this quest too?\n%s", QA_ALWAYS = "Always",
+		QA_ALWAYS_SET = "Your alts in the group now take each quest you accept (/sbl questask on to be asked again).",
+		QA_ON = "Each quest you accept: you are asked whether your alts take it too.",
+		QA_OFF = "Your alts no longer take the quests you accept (Take for the team still works).",
+		QA_TAKEN = "taken by %s", QA_NONE = "no answer from %s", QA_log_full = "log full", QA_bags_full = "bags full",
+		QA_no_giver = "no quest giver in range", QA_too_far = "quest giver out of reach",
+		S_level_bare = "Wrong level", S_missing_bare = "Chain not done", S_exclusive_bare = "Took the other branch",
+		S_reputation_bare = "Reputation too low", S_skill_bare = "Skill too low",
+		TIP_TAKE_TEAM = "Each alt that can takes it too; a chain left behind is caught up first if the server allows it.",
+		TIP_CATCH_UP = "Marks the earlier quests of the chain as done (no reward, no xp), then takes this one.",
+		TIP_REFRESH_Q = "Ask each alt again.", TIP_QUESTS = "Take for the team: each alt's state for a quest, the last one seen.",
+		TIP_LOG = "What your alts said: quests taken, chains caught up, recipes learned, refusals.",
+		TIP_TEAM = "Show or hide the team bar.",
+		STEP = "Step %d of the chain", STEP_FIRST = "Start of a chain", QLEVEL = "Level %d",
+		S_can_take = "Can take it", S_in_log = "Already in its quest log (%s)", S_done = "Already turned in",
+		IN_incomplete = "in progress", IN_complete = "complete", IN_failed = "failed",
+		S_missing_one = "Chain not done: %s missing", S_missing_more = "Chain not done: %d quests missing, from %s",
+		S_exclusive = "Took the other branch: %s", S_level_min = "Level %d needed", S_level_range = "For levels %d to %d",
+		S_class_race = "Not for its class or race", S_reputation = "Reputation needed: %s", S_skill = "%s %d needed",
+		S_other = "Not available (daily done, condition, next quest started...)", CATCHABLE = "can be caught up",
+		PILL_can_take = "Can take", PILL_in_log = "In log", PILL_done = "Done", PILL_missing_prev = "Chain",
+		PILL_blocked = "Blocked", PILL_wait = "...",
+		FACTION = "faction %d", SKILL_N = "Skill %d",
+		QR_taken = "%s took %s.", QR_caught_up = "%s caught up the chain of %s (%d quests).",
+		QR_refused = "%s cannot take %s: %s.", QR_log_full = "%s: quest log full, %s not taken.",
+		QR_bags_full = "%s: bags full, %s not taken.", QR_no_giver = "%s: no quest giver in range for %s, and you do not have it to share.",
+		QR_too_far = "%s: the quest giver of %s is near you but out of its reach.",
+		Q_BLOCKED = "%s cannot take %s: %s.",
+		TRAINER_OF = "%s", TRAIN_NOTHING = "Nothing to learn here", ERR_no_trainer = "Talk to the trainer first", TRAIN_SUM = "%d to learn: %s", TRAIN_HAS = "has %s",
+		TRAIN_MORE = "+ %d more", LEARN_ALL = "Learn all", TIP_LEARN_ALL = "It learns everything listed, in order, while its money lasts.",
+		TIP_LEARN_ONE = "Click: learn only this one.", TIP_REFRESH_T = "Ask again. The server lists what the trainer you target teaches.",
+		TRAIN_WAIT = "Asking your alts what they can learn here...", POOR = "Not enough money for all of it.",
+		L_ok = "%s learned %s.", L_too_expensive = "%s: not enough money for %s.", L_failed = "%s could not learn %s.",
+		L_END = "%s learned %d (%s).",
+		MODE = "Alts' messages:", MODE_chat = "Chat", MODE_addon = "Addon", MODE_both = "Both",
+		TIP_MODE_chat = "Your alts whisper as before (no handshake with the server).",
+		TIP_MODE_addon = "The repetitive lines go to these panels and this log only.",
+		TIP_MODE_both = "In this log, and the main ones in the chat too.",
+		HELLO_ON = "Server: quiet mode on%s.", HELLO_CATCH = ", chains caught up automatically",
+		HELLO_NONE = "The server has not answered the handshake: it needs CoA Bots 2.8.3.", HELLO_OFF = "Handshake off: chat mode.",
+		CLEAR = "Clear",
+		T_SUMMON = "Regroup", T_FOLLOW = "Recall all", T_LEARN = "Learn all", T_MISSIONS = "Missions", T_REPAIR = "Repair, sell junk",
+		T_ACCOUNTS = "Accounts", TIP_T_ACCOUNTS = "Your linked accounts: show them, link one, set this account's key.",
+		T_DASHBOARD = "Alts Dashboard", TIP_T_DASHBOARD = "The whole team in one window: levels, gold, missions, professions and what needs doing.",
+		TIP_T_SUMMON = "Each logged-in alt teleports next to you.", TIP_T_FOLLOW = "Calls back every alt out on a mission (after a question).",
+		TIP_T_LEARN = "At a trainer: each alt learns all it can here.", TIP_T_MISSIONS = "Send your alts gathering on their own (opens Missions).", TIP_T_REPAIR = "At a vendor: each alt repairs and sells its junk (grey items, gear it cannot use). Target a vendor: your alts walk to it and sell.",
+		ST_follow = "Follows", ST_stay = "Stays", ST_far = "Far", ST_bags = "Bags full", ST_mission = "Mission %d min", ST_quest = "Quest missing", ST_dead = "Dead", ST_away = "Away", TIP_REMOVE = "Right-click: remove from the bar",BADGE_MISSION = "On a mission",
+		TEAM_EMPTY = "No alt logged in", TIP_TEAM_DRAG = "Drag to move. Click a portrait: its bot sheet.",
+		SETTINGS = "Team settings", TIP_SETTINGS = "The disenchanter of the team, and how your alts' unused greens reach it.",
+		ENCH_TITLE = "Disenchanter of the team", ENCH_NONE = "Nobody (the greens are sold)",
+		ENCH_NOBODY = "No alt with Enchanting logged in", ENCH_SKILL = "%s (Enchanting %d)",
+		ENCH_MODE = "The greens go to it", MODE_MAIL = "By mail", MODE_BANK = "Through the guild bank",
+		TIP_MODE_MAIL = "Your alts mail it their unused greens; it disenchants them and mails you the dusts, or puts them in the guild bank near a vault.",
+		TIP_MODE_BANK = "Your alts put their unused greens in the guild bank; near the vault it takes them out, disenchants them and puts the dusts back. Their ranks need the tab rights.",
+		ENCH_OFF = "Turned off on this server", ENCH_LINE = "Disenchanter of the team: %s", ENCH_WAIT = "Asking your alts...",
+		LIMITS = "What it may disenchant", LIMIT_altgreens = "Greens sent by my alts", LIMIT_bankgreens = "Greens from the guild bank",
+		LIMIT_blues = "Blue bind on equip (alts and bank)", LIMIT_wearable = "Upgrades for an alt of the team", LIMIT_EPICS = "Epics: never",
+		TIP_LIMIT_altgreens = "The green gear your alts have no use for, mailed to it or put in the bank, and its own.",
+		TIP_LIMIT_bankgreens = "Green gear it takes out of the guild bank tab (bank mode). Anything of that kind in the tab, a guildmate's too.",
+		TIP_LIMIT_blues = "Blue gear that binds when equipped, from your alts and the bank.",
+		TIP_LIMIT_wearable = "Off: an item that is an upgrade for an alt of the team logged in is kept in the bags, neither sold nor disenchanted. On: disenchanted too. Blues and epics go to the guild bank.",
+		TIP_LIMIT_BANK = "The guild bank mode works only with greens or blues from the bank allowed.",
+	},
+	fr = {
+		QUESTS = "Prendre pour l'équipe", TRAINER = "Entraîneur", LOG = "Journal des alts", TEAM = "Équipe",
+		QUEST_N = "Quête n°%d", NO_QUEST = "Ouvrez une quête chez un PNJ : l'état de chaque alt s'affiche ici.",
+		NO_ALTS = "Aucun alt connecté : connectez-en un depuis Mes alts.", ASKING = "Je demande...", NO_ANSWER = "Pas encore de réponse",
+		JUST_ME = "Juste moi", TAKE_TEAM = "Prendre pour l'équipe", TAKE_ALL = "Prendre pour tous", CATCH_UP = "Rattraper",
+		TIP_JUST_ME = "L'accepter pour vous seul : vos alts ne la prennent pas.",
+		QA_ASK = "Vos alts prennent aussi cette quête ?\n%s", QA_ALWAYS = "Toujours",
+		QA_ALWAYS_SET = "Vos alts du groupe prennent désormais chaque quête que vous acceptez (/sbl questask on pour être de nouveau consulté).",
+		QA_ON = "À chaque quête acceptée, on vous demande si vos alts la prennent aussi.",
+		QA_OFF = "Vos alts ne prennent plus les quêtes que vous acceptez (Prendre pour l'équipe marche toujours).",
+		QA_TAKEN = "prise par %s", QA_NONE = "pas de réponse de %s", QA_log_full = "journal plein", QA_bags_full = "sacs pleins",
+		QA_no_giver = "aucun PNJ à portée", QA_too_far = "donneur hors de portée",
+		S_level_bare = "Mauvais niveau", S_missing_bare = "Chaîne incomplète", S_exclusive_bare = "A pris l'autre branche",
+		S_reputation_bare = "Réputation trop basse", S_skill_bare = "Métier trop bas",
+		TIP_TAKE_TEAM = "Chaque alt qui le peut la prend aussi ; une chaîne en retard est d'abord rattrapée si le serveur le permet.",
+		TIP_CATCH_UP = "Marque faites les quêtes d'avant de la chaîne (sans récompense ni XP), puis prend celle-ci.",
+		TIP_REFRESH_Q = "Redemander à chaque alt.", TIP_QUESTS = "Prendre pour l'équipe : l'état de chaque alt pour une quête, la dernière vue.",
+		TIP_LOG = "Ce que vos alts ont dit : quêtes prises, chaînes rattrapées, recettes apprises, refus.",
+		TIP_TEAM = "Afficher ou cacher la barre d'équipe.",
+		STEP = "Étape %d de la chaîne", STEP_FIRST = "Début d'une chaîne", QLEVEL = "Niveau %d",
+		S_can_take = "Peut la prendre", S_in_log = "Déjà dans son journal (%s)", S_done = "Déjà rendue",
+		IN_incomplete = "en cours", IN_complete = "terminée", IN_failed = "échouée",
+		S_missing_one = "Chaîne incomplète : il manque %s", S_missing_more = "Chaîne incomplète : %d quêtes manquent, depuis %s",
+		S_exclusive = "A pris l'autre branche : %s", S_level_min = "Niveau %d requis", S_level_range = "Pour les niveaux %d à %d",
+		S_class_race = "Pas pour sa classe ou sa race", S_reputation = "Réputation requise : %s", S_skill = "%s %d requis",
+		S_other = "Indisponible (journalière faite, condition, quête suivante commencée...)", CATCHABLE = "rattrapable",
+		PILL_can_take = "Peut prendre", PILL_in_log = "Au journal", PILL_done = "Faite", PILL_missing_prev = "Chaîne",
+		PILL_blocked = "Bloqué", PILL_wait = "...",
+		FACTION = "faction %d", SKILL_N = "Métier %d",
+		QR_taken = "%s a pris %s.", QR_caught_up = "%s a rattrapé la chaîne de %s (%d quêtes).",
+		QR_refused = "%s ne peut pas prendre %s : %s.", QR_log_full = "%s : journal de quêtes plein, %s non prise.",
+		QR_bags_full = "%s : sacs pleins, %s non prise.", QR_no_giver = "%s : pas de donneur à portée pour %s, et vous ne l'avez pas à partager.",
+		QR_too_far = "%s : le donneur de %s est près de vous mais hors de sa portée.",
+		Q_BLOCKED = "%s ne peut pas prendre %s : %s.",
+		TRAINER_OF = "%s", TRAIN_NOTHING = "Rien à apprendre ici", ERR_no_trainer = "Parle d'abord à l'entraîneur", TRAIN_SUM = "%d à apprendre : %s", TRAIN_HAS = "a %s",
+		TRAIN_MORE = "+ %d autres", LEARN_ALL = "Tout apprendre", TIP_LEARN_ALL = "Il apprend toute la liste, dans l'ordre, tant que son argent suffit.",
+		TIP_LEARN_ONE = "Clic : apprendre seulement celle-ci.", TIP_REFRESH_T = "Redemander. Le serveur liste ce qu'enseigne l'entraîneur que vous ciblez.",
+		TRAIN_WAIT = "Je demande à vos alts ce qu'ils peuvent apprendre ici...", POOR = "Pas assez d'argent pour tout.",
+		L_ok = "%s a appris %s.", L_too_expensive = "%s : pas assez d'argent pour %s.", L_failed = "%s n'a pas pu apprendre %s.",
+		L_END = "%s a appris %d (%s).",
+		MODE = "Messages des alts :", MODE_chat = "Chat", MODE_addon = "Addon", MODE_both = "Les deux",
+		TIP_MODE_chat = "Vos alts chuchotent comme avant (pas de poignée de main avec le serveur).",
+		TIP_MODE_addon = "Les lignes répétitives vont seulement dans ces panneaux et ce journal.",
+		TIP_MODE_both = "Dans ce journal, et les principales aussi dans le chat.",
+		HELLO_ON = "Serveur : mode silencieux actif%s.", HELLO_CATCH = ", chaînes rattrapées automatiquement",
+		HELLO_NONE = "Le serveur n'a pas répondu à la poignée de main : il faut CoA Bots 2.8.3.", HELLO_OFF = "Poignée de main coupée : mode chat.",
+		CLEAR = "Effacer",
+		T_SUMMON = "Regrouper", T_FOLLOW = "Rappeler tous", T_LEARN = "Tout apprendre", T_MISSIONS = "Missions", T_REPAIR = "Réparer, vendre la camelote",
+		T_ACCOUNTS = "Comptes", TIP_T_ACCOUNTS = "Vos comptes liés : les voir, en lier un, définir la clé de ce compte.",
+		T_DASHBOARD = "Dashboard Alts", TIP_T_DASHBOARD = "Toute l'équipe dans une fenêtre : niveaux, or, missions, métiers et ce qu'il reste à faire.",
+		TIP_T_SUMMON = "Chaque alt connecté se téléporte près de vous.", TIP_T_FOLLOW = "Rappelle tous les alts partis en mission (après une question).",
+		TIP_T_LEARN = "Chez un entraîneur : chaque alt apprend tout ce qu'il peut ici.", TIP_T_MISSIONS = "Envoyer tes alts récolter seuls (ouvre Missions).", TIP_T_REPAIR = "Chez un marchand : chaque alt répare et vend sa camelote (objets gris, équipement qu'il ne peut pas porter). Cible un marchand : tes alts y vont et vendent.",
+		ST_follow = "Suit", ST_stay = "Reste", ST_far = "Loin", ST_bags = "Sacs pleins", ST_mission = "Mission %d min", ST_quest = "Quête manquante", ST_dead = "Mort", ST_away = "Absent", TIP_REMOVE = "Clic droit : retirer de la barre",BADGE_MISSION = "En mission",
+		TEAM_EMPTY = "Aucun alt connecté", TIP_TEAM_DRAG = "Glisser pour déplacer. Clic sur un portrait : sa fiche de bot.",
+		SETTINGS = "Réglages de l'équipe", TIP_SETTINGS = "Le désenchanteur de l'équipe, et comment les verts inutiles de vos alts lui parviennent.",
+		ENCH_TITLE = "Désenchanteur de l'équipe", ENCH_NONE = "Personne (les verts sont vendus)",
+		ENCH_NOBODY = "Aucun alt avec Enchantement connecté", ENCH_SKILL = "%s (Enchantement %d)",
+		ENCH_MODE = "Les verts lui parviennent", MODE_MAIL = "Par courrier", MODE_BANK = "Par la banque de guilde",
+		TIP_MODE_MAIL = "Vos alts lui postent leurs verts inutiles ; il les désenchante et vous poste les poussières, ou les met en banque de guilde près d'un coffre.",
+		TIP_MODE_BANK = "Vos alts déposent leurs verts inutiles en banque de guilde ; près du coffre il les retire, les désenchante et redépose les poussières. Leurs rangs ont besoin des droits de l'onglet.",
+		ENCH_OFF = "Désactivé sur ce serveur", ENCH_LINE = "Désenchanteur de l'équipe : %s", ENCH_WAIT = "Je demande à vos alts...",
+		LIMITS = "Ce qu'il peut désenchanter", LIMIT_altgreens = "Verts envoyés par mes alts", LIMIT_bankgreens = "Verts de la banque de guilde",
+		LIMIT_blues = "Bleus liés quand équipés (alts et banque)", LIMIT_wearable = "Améliorations pour un alt de l'équipe", LIMIT_EPICS = "Épiques : jamais",
+		TIP_LIMIT_altgreens = "L'équipement vert dont vos alts n'ont pas l'usage, posté ou déposé en banque, et le sien.",
+		TIP_LIMIT_bankgreens = "L'équipement vert qu'il retire de l'onglet de la banque de guilde (mode banque). Tout objet de ce genre dans l'onglet, celui d'un membre de la guilde aussi.",
+		TIP_LIMIT_blues = "L'équipement bleu lié quand équipé, de vos alts et de la banque.",
+		TIP_LIMIT_wearable = "Désactivé : un objet qui améliore un alt connecté de l'équipe reste dans les sacs, ni vendu ni désenchanté. Activé : désenchanté aussi. Les bleus et épiques vont en banque de guilde.",
+		TIP_LIMIT_BANK = "Le mode banque de guilde ne marche qu'avec les verts ou les bleus de la banque autorisés.",
+	,},
+		zh = {
+		QUESTS = "为队伍接取", TRAINER = "训练师", LOG = "小号日志", TEAM = "队伍",
+		QUEST_N = "任务 #%d", NO_QUEST = "在任务给予者处打开一个任务：每个小号的状态会显示在这里。",
+		NO_ALTS = "没有小号登录：请在「我的小号」里登录一个。", ASKING = "正在询问...", NO_ANSWER = "暂无回应",
+		JUST_ME = "只给我自己", TAKE_TEAM = "为队伍接取", TAKE_ALL = "为所有人接取", CATCH_UP = "补做前置",
+		TIP_JUST_ME = "仅你接受此任务：你的小号不会接。",
+		TIP_TAKE_TEAM = "每个能接的小号也会接；若服务器允许，会先补做落后的前置任务链。",
+		TIP_CATCH_UP = "把该任务链前面的任务标记为已完成（没有奖励、没有经验），然后接取当前这个。",
+		TIP_REFRESH_Q = "再次询问每个小号。", TIP_QUESTS = "为队伍接取：每个小号对某个任务的状态，只显示最后一次结果。",
+		TIP_LOG = "你的小号都说了什么：接取的任务、补做的前置、学会的配方、被拒绝的情况。",
+		TIP_TEAM = "显示或隐藏队伍栏。",
+		STEP = "任务链第 %d 步", STEP_FIRST = "任务链起点", QLEVEL = "%d 级",
+		S_can_take = "可以接取", S_in_log = "已在它的任务日志中（%s）", S_done = "已交付",
+		IN_incomplete = "进行中", IN_complete = "已完成", IN_failed = "已失败",
+		S_missing_one = "任务链未完成：缺少 %s", S_missing_more = "任务链未完成：缺少 %d 个任务，从 %s 起",
+		S_exclusive = "接取的是另一分支：%s", S_level_min = "需要 %d 级", S_level_range = "适用于 %d 到 %d 级",
+		S_class_race = "不符合它的职业或种族", S_reputation = "需要声望：%s", S_skill = "需要 %s %d",
+		S_other = "不可接取（日常已完成、条件不符、后续任务已开始等）", CATCHABLE = "可补做前置",
+		PILL_can_take = "可接", PILL_in_log = "在日志中", PILL_done = "已完成", PILL_missing_prev = "前置",
+		PILL_blocked = "受阻", PILL_wait = "...",
+		FACTION = "阵营 %d", SKILL_N = "技能 %d",
+		QR_taken = "%s 接取了 %s。", QR_caught_up = "%s 补做了 %s 的任务链（%d 个任务）。",
+		QR_refused = "%s 无法接取 %s：%s。", QR_log_full = "%s：任务日志已满，未接取 %s。",
+		QR_bags_full = "%s：背包已满，未接取 %s。", QR_no_giver = "%s：范围内没有任务给予者，%s 也接不到（你手上没有可共享的）。",
+		Q_BLOCKED = "%s 无法接取 %s：%s。",
+		TRAINER_OF = "%s", TRAIN_NOTHING = "这里没有可学的", ERR_no_trainer = "请先与训练师对话", TRAIN_SUM = "可学 %d 项：%s", TRAIN_HAS = "已有 %s",
+		TRAIN_MORE = "+ 另外 %d 项", LEARN_ALL = "全部学习", TIP_LEARN_ALL = "只要钱够，它会按顺序学会列出的全部内容。",
+		TIP_LEARN_ONE = "点击：只学这一项。", TIP_REFRESH_T = "再次询问。服务器会列出你选中的训练师所教的内容。",
+		TRAIN_WAIT = "正在询问你的小号能在这里学什么...", POOR = "钱不足以全部学完。",
+		L_ok = "%s 学会了 %s。", L_too_expensive = "%s：钱不足以学 %s。", L_failed = "%s 未能学会 %s。",
+		L_END = "%s 学会了 %d 项（%s）。",
+		MODE = "小号消息：", MODE_chat = "聊天", MODE_addon = "插件", MODE_both = "两者",
+		TIP_MODE_chat = "你的小号像以前一样私聊你（不与服务器握手）。",
+		TIP_MODE_addon = "重复的提示只出现在这些面板和本日志里。",
+		TIP_MODE_both = "写入本日志，主要提示同时私聊给你。",
+		HELLO_ON = "服务器：安静模式已开启%s。", HELLO_CATCH = "，自动补做前置任务链",
+		HELLO_NONE = "服务器没有回应该握手：需要 CoA Bots 2.8.3。", HELLO_OFF = "握手已关闭：使用聊天模式。",
+		CLEAR = "清空",
+		T_SUMMON = "集合", T_FOLLOW = "召回全部", T_LEARN = "全部学习", T_MISSIONS = "出征任务", T_REPAIR = "修理、卖掉垃圾",
+		T_ACCOUNTS = "账号", TIP_T_ACCOUNTS = "已关联的账号：查看、关联、设置本账号的密钥。",
+		T_DASHBOARD = "小号总览", TIP_T_DASHBOARD = "整支队伍一窗可见：等级、金币、出征、专业以及待办事项。",
+		TIP_T_SUMMON = "每个已登录的小号传送到你身边。", TIP_T_FOLLOW = "召回所有在外出征的小号（会先询问）。",
+		TIP_T_LEARN = "在训练师处：每个小号学会它能学的一切。", TIP_T_MISSIONS = "派你的小号独自采集（打开出征任务）。", TIP_T_REPAIR = "在商人处：每个小号修理装备并卖掉垃圾（灰色物品、它用不上的装备）。选中一个商人：小号会走过去卖掉。",
+		ST_follow = "跟随中", ST_stay = "停留中", ST_far = "距离远", ST_bags = "背包已满", ST_mission = "出征 %d 分钟", ST_quest = "缺少任务", ST_dead = "已死亡", ST_away = "外出", TIP_REMOVE = "右键点击：从栏上移除", BADGE_MISSION = "出征中",
+		TEAM_EMPTY = "没有小号登录", TIP_TEAM_DRAG = "拖动可移动。点击头像：打开它的机器人面板。",
+		SETTINGS = "队伍设置", TIP_SETTINGS = "队伍的附魔师，以及小号闲置绿装如何送到它手里。",
+		ENCH_TITLE = "队伍附魔师", ENCH_NONE = "无人（绿装直接出售）",
+		ENCH_NOBODY = "没有会附魔的小号登录", ENCH_SKILL = "%s（附魔 %d）",
+		ENCH_MODE = "绿装送达方式", MODE_MAIL = "通过邮件", MODE_BANK = "通过公会银行",
+		TIP_MODE_MAIL = "你的小号把闲置绿装邮寄给它；它分解后把尘、精华邮寄给你，或在公会银行柜员旁存入银行。",
+		TIP_MODE_BANK = "你的小号把闲置绿装放进公会银行；它在柜员旁取出、分解并把材料存回。它们的会阶需要相应权限。",
+		ENCH_OFF = "本服务器已关闭此功能", ENCH_LINE = "队伍附魔师：%s", ENCH_WAIT = "正在询问你的小号...",
+		LIMITS = "它可以分解什么", LIMIT_altgreens = "我的小号寄来的绿装", LIMIT_bankgreens = "来自公会银行的绿装",
+		LIMIT_blues = "装备后绑定的蓝装（小号与银行）", LIMIT_wearable = "对队内某个小号是升级的装备", LIMIT_EPICS = "紫装：从不",
+		TIP_LIMIT_altgreens = "你的小号用不上的绿装，邮寄给它或存入银行的，以及它自己的。",
+		TIP_LIMIT_bankgreens = "它从公会银行标签里取出的绿装（银行模式）。该标签里任何此类物品，包括公会成员存放的。",
+		TIP_LIMIT_blues = "装备后绑定的蓝装，来自你的小号和银行。",
+		TIP_LIMIT_wearable = "关闭时：对已登录的队内小号属于升级的物品会留在背包里，既不出售也不分解。开启时：一并分解。蓝装与紫装会存入公会银行。",
+		TIP_LIMIT_BANK = "公会银行模式只有在允许取用银行的绿装或蓝装时才能工作。",
+		QA_ALWAYS = "总是",
+		QA_ALWAYS_SET = "队伍里的小号现在会自动接取你接的任务（输入 /sbl questask on 可恢复询问）。",
+		QA_ASK = "你的小号也接这个任务吗？\n%s",
+		QA_NONE = "%s 没有回应",
+		QA_OFF = "你的小号不再自动接取你接的任务（「全队接取」仍然可用）。",
+		QA_ON = "你每接一个任务，都会询问你的小号是否也接。",
+		QA_TAKEN = "已由 %s 接取",
+		QA_bags_full = "背包已满",
+		QA_log_full = "任务日志已满",
+		QA_no_giver = "范围内没有任务发布者",
+		QA_too_far = "任务发布者超出可及范围",
+		QR_too_far = "%s：%s 的任务发布者就在你附近，但超出了可及范围。",
+		S_exclusive_bare = "选了另一条分支",
+		S_level_bare = "等级不符",
+		S_missing_bare = "前置任务未完成",
+		S_reputation_bare = "声望不足",
+		S_skill_bare = "技能不足",
+		},
+}
+local function T(key)
+	local lang = SquidBotsLiteDB and SquidBotsLiteDB.lang
+	return (STRINGS[lang] or STRINGS.en)[key] or STRINGS.en[key] or key
+end
+
+-- Skill ids of the "skill" refusal (SkillLine.dbc), by language.
+local SKILLS = {
+	en = { [171] = "Alchemy", [164] = "Blacksmithing", [185] = "Cooking", [333] = "Enchanting", [202] = "Engineering",
+		[129] = "First Aid", [356] = "Fishing", [182] = "Herbalism", [773] = "Inscription", [755] = "Jewelcrafting",
+		[165] = "Leatherworking", [186] = "Mining", [393] = "Skinning", [197] = "Tailoring", [762] = "Riding" },
+	fr = { [171] = "Alchimie", [164] = "Forge", [185] = "Cuisine", [333] = "Enchantement", [202] = "Ingénierie",
+		[129] = "Secourisme", [356] = "Pêche", [182] = "Herboristerie", [773] = "Calligraphie", [755] = "Joaillerie",
+		[165] = "Travail du cuir", [186] = "Minage", [393] = "Dépeçage", [197] = "Couture", [762] = "Monte" ,},
+		zh = { [171] = "炼金术", [164] = "锻造", [185] = "烹饪", [333] = "附魔", [202] = "工程学",
+		[129] = "急救", [356] = "钓鱼", [182] = "草药学", [773] = "铭文学", [755] = "珠宝加工",
+		[165] = "制皮", [186] = "采矿", [393] = "剥皮", [197] = "裁缝", [762] = "骑术" },
+}
+
+local BACKDROP = { bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
+	tile = false, edgeSize = 24, insets = { left = 6, right = 6, top = 6, bottom = 6 } }
+local GREEN, GOLD, ORANGE, RED, GREY, BLUE = { 0.3, 0.85, 0.3 }, { 1, 0.82, 0 }, { 1, 0.6, 0.1 }, { 1, 0.3, 0.3 },
+	{ 0.6, 0.6, 0.6 }, { 0.4, 0.7, 1 }
+-- Each state: its pill's word and colour, its icon (the client's own: ready check, LFG lock, quest marks).
+local STATE = {
+	can_take = { "PILL_can_take", GREEN, "Interface\\RaidFrame\\ReadyCheck-Ready" },
+	in_log = { "PILL_in_log", BLUE, "Interface\\GossipFrame\\ActiveQuestIcon" },
+	done = { "PILL_done", GREY, "Interface\\Buttons\\UI-CheckBox-Check" },
+	missing_prev = { "PILL_missing_prev", ORANGE, "Interface\\LFGFrame\\UI-LFG-ICON-LOCK" },
+	blocked = { "PILL_blocked", RED, "Interface\\RaidFrame\\ReadyCheck-NotReady" },
+	wait = { "PILL_wait", GREY, "Interface\\RaidFrame\\ReadyCheck-Waiting" },
+}
+
+-- seen: alts heard from lately (a message, "add: X - ok"); gone: "No player named" after a message to it.
+-- quests[id][alt] = { state, detail, catchable, at }; asked[id][alt] = when asked.
+-- train[alt] = { npc, list = { { id, cost, name } }, count, total, money, at }.
+-- members[alt] = the last TEAM; obj[questId][alt] = { state, done, needed } from OBJ.
+-- ench: the team's disenchanter and mode (ENCH); enchSkill[alt] = its Enchanting.
+local A = { seen = {}, gone = {}, sent = {}, quests = {}, asked = {}, titles = {}, recent = {}, train = {}, journal = {},
+	nextHello = 0, members = {}, obj = {}, enchSkill = {}, left = {}, grouped = {} }
+-- An alt that sent TEAM and has been silent this long is gone (TEAM comes at least once a minute).
+local TEAM_SILENT = 150
+local UI = SquidBotsLite_UI
+-- Read by Dashboard.lua: the alts online, their TEAM, the enchanter, the messages (A.Handle) and Send.
+SquidBotsLite_Alts = A
+A.SKILLS = SKILLS
+
+local function Print(text)
+	DEFAULT_CHAT_FRAME:AddMessage("|cff66ccffSquidBots Lite|r: " .. text)
+end
+
+local function IsAlt(name)
+	return name and SquidBotsLiteDB and SquidBotsLiteDB.alts and SquidBotsLiteDB.alts[name]
+end
+
+local function Mode()
+	return SquidBotsLiteDB and SquidBotsLiteDB.altsMessages or "addon"
+end
+
+local function GroupUnits()
+	local units = {}
+	if GetNumRaidMembers() > 0 then
+		for i = 1, GetNumRaidMembers() do table.insert(units, "raid" .. i) end
+	else
+		for i = 1, 4 do table.insert(units, "party" .. i) end
+	end
+	return units
+end
+
+local function UnitOf(name)
+	for _, unit in ipairs(GroupUnits()) do
+		if UnitName(unit) == name then return unit end
+	end
+end
+
+-- The alts logged in now: the My alts roster, the alts in the group, those heard from lately.
+function A.Online()
+	local list, have, now = {}, {}, GetTime()
+	local function Add(name, sure)
+		if not name or have[name] or name == UnitName("player") then return end
+		if not sure and A.gone[name] and A.gone[name] >= (A.seen[name] or 0) then return end
+		-- Left the group (or removed with a right-click): off the bar until it is back, unless on a mission.
+		if not sure and A.left[name] and not (SquidBotsLite_MissionOf and SquidBotsLite_MissionOf(name)) then return end
+		have[name] = true
+		table.insert(list, name)
+	end
+	for _, unit in ipairs(GroupUnits()) do
+		local name = UnitName(unit)
+		if IsAlt(name) and UnitIsConnected(unit) then Add(name, true) end
+	end
+	for _, name in ipairs(SquidBotsLite_OnlineAlts and SquidBotsLite_OnlineAlts() or {}) do Add(name) end
+	for name, at in pairs(A.seen) do
+		local member = A.members[name]
+		if IsAlt(name) and now - at < SEEN_FOR and not (member and now - member.at > TEAM_SILENT) then Add(name) end
+	end
+	table.sort(list)
+	return list
+end
+
+local function Send(name, text)
+	A.sent[name] = GetTime()
+	SendAddonMessage(PREFIX, text, "WHISPER", name)
+end
+A.Send = Send
+
+local function Split(message)
+	local fields = {}
+	for field in (message .. "\t"):gmatch("([^\t]*)\t") do table.insert(fields, field) end
+	return fields
+end
+
+local function Money(copper)
+	copper = tonumber(copper) or 0
+	local g, s, c = math.floor(copper / 10000), math.floor(copper / 100) % 100, copper % 100
+	-- Short on purpose (one line on a card): copper only below 1 gold, silver only below 100 gold.
+	local parts = {}
+	if g > 0 then table.insert(parts, g .. "|TInterface\\MoneyFrame\\UI-GoldIcon:10:10:1:0|t") end
+	if s > 0 and g < 100 then table.insert(parts, s .. "|TInterface\\MoneyFrame\\UI-SilverIcon:10:10:1:0|t") end
+	if (c > 0 and g == 0) or #parts == 0 then table.insert(parts, c .. "|TInterface\\MoneyFrame\\UI-CopperIcon:10:10:1:0|t") end
+	return table.concat(parts, " ")
+end
+
+-- A quest's title: the quest frame, the player's log, else the client's cache through a hidden tooltip.
+function A.Title(id)
+	id = tonumber(id)
+	if not id then return "?" end
+	if A.titles[id] then return A.titles[id] end
+	for i = 1, GetNumQuestLogEntries() do
+		local link = GetQuestLink(i)
+		if link and tonumber(link:match("|Hquest:(%d+)")) == id then
+			A.titles[id] = (GetQuestLogTitle(i))
+			return A.titles[id]
+		end
+	end
+	A.scan = A.scan or CreateFrame("GameTooltip", "SquidBotsLiteAltsScan", UIParent, "GameTooltipTemplate")
+	A.scan:SetOwner(UIParent, "ANCHOR_NONE")
+	A.scan:ClearLines()
+	pcall(A.scan.SetHyperlink, A.scan, "quest:" .. id)
+	local line = _G.SquidBotsLiteAltsScanTextLeft1
+	local text = line and line:GetText()
+	A.scan:Hide()
+	if text and text ~= "" then
+		A.titles[id] = text
+		return text
+	end
+	return string.format(T("QUEST_N"), id)
+end
+
+local function QuestLink(id)
+	return "|cffffff00[" .. A.Title(id) .. "]|r"
+end
+
+-- Why an alt cannot take it, in words.
+function A.Reason(s)
+	if not s then return "" end
+	local state, detail = s.state, s.detail or ""
+	if state == "can_take" or state == "done" then return T("S_" .. state) end
+	if state == "in_log" then return string.format(T("S_in_log"), T("IN_" .. (detail ~= "" and detail or "incomplete"))) end
+	-- A refusal (QR) carries the state alone: no "Level 0 needed" or "Quest #0".
+	local bare = { level = "S_level_bare", missing_prev = "S_missing_bare", exclusive = "S_exclusive_bare",
+		reputation = "S_reputation_bare", skill = "S_skill_bare" }
+	if detail == "" and bare[state] then return T(bare[state]) end
+	if state == "missing_prev" then
+		local ids = {}
+		for id in detail:gmatch("(%d+)") do table.insert(ids, tonumber(id)) end
+		local text
+		if #ids <= 1 then
+			text = string.format(T("S_missing_one"), ids[1] and A.Title(ids[1]) or "?")
+		else
+			text = string.format(T("S_missing_more"), #ids, A.Title(ids[#ids]))
+		end
+		if s.catchable then text = text .. " (" .. T("CATCHABLE") .. ")" end
+		return text
+	end
+	if state == "exclusive" then return string.format(T("S_exclusive"), A.Title(tonumber(detail) or 0)) end
+	if state == "level" then
+		local min, max = detail:match("^(%d+)%-(%d+)$")
+		min, max = tonumber(min) or 0, tonumber(max) or 0
+		if max > 0 then return string.format(T("S_level_range"), min, max) end
+		return string.format(T("S_level_min"), min)
+	end
+	if state == "class_race" then return T("S_class_race") end
+	if state == "reputation" then
+		local id = tonumber(detail) or 0
+		local name = GetFactionInfoByID and GetFactionInfoByID(id)
+		return string.format(T("S_reputation"), name or string.format(T("FACTION"), id))
+	end
+	if state == "skill" then
+		local id, value = detail:match("^(%d+):(%d+)$")
+		id, value = tonumber(id) or 0, tonumber(value) or 0
+		local names = SKILLS[SquidBotsLiteDB.lang] or SKILLS.en
+		return string.format(T("S_skill"), names[id] or string.format(T("SKILL_N"), id), value)
+	end
+	return T("S_other")
+end
+
+local function StateOf(s)
+	if not s then return STATE.wait end
+	return STATE[s.state] or STATE.blocked
+end
+
+-- ---------------------------------------------------------------------------
+-- The log: what the alts said, with the time; the main lines in the chat too in "both" mode
+-- ---------------------------------------------------------------------------
+function A.Log(text, chat, r, g, b)
+	local line = "|cff9d9d9d" .. date("%H:%M") .. "|r  " .. text
+	table.insert(A.journal, { line, r or 1, g or 1, b or 1 })
+	if #A.journal > LOG_LINES then table.remove(A.journal, 1) end
+	if A.logFrame then A.logFrame.lines:AddMessage(line, r or 1, g or 1, b or 1) end
+	if chat and Mode() == "both" then Print(text) end
+end
+
+function A.BuildLog()
+	local f = CreateFrame("Frame", "SquidBotsLiteAltLog", UIParent)
+	f:SetWidth(400)
+	f:SetHeight(260)
+	f:SetPoint("CENTER", 220, -60)
+	f:SetBackdrop(BACKDROP)
+	f:SetBackdropColor(0.04, 0.04, 0.05, 0.96)
+	f:SetFrameStrata("DIALOG")
+	f:SetToplevel(true)
+	f:SetMovable(true)
+	f:EnableMouse(true)
+	f:SetClampedToScreen(true)
+	f:RegisterForDrag("LeftButton")
+	f:SetScript("OnDragStart", f.StartMoving)
+	f:SetScript("OnDragStop", f.StopMovingOrSizing)
+	table.insert(UISpecialFrames, "SquidBotsLiteAltLog")
+	f.title = f:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+	f.title:SetPoint("TOP", 0, -14)
+	local close = CreateFrame("Button", nil, f, "UIPanelCloseButton")
+	close:SetPoint("TOPRIGHT", -4, -4)
+	-- Chat / Addon / Both, the one in use lit.
+	f.modeLabel = f:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+	f.modeLabel:SetPoint("TOPLEFT", 20, -42)
+	f.modes = {}
+	local previous
+	for _, mode in ipairs({ "chat", "addon", "both" }) do
+		local button = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
+		button:SetWidth(66)
+		button:SetHeight(20)
+		if previous then button:SetPoint("LEFT", previous, "RIGHT", 4, 0) else button:SetPoint("LEFT", f.modeLabel, "RIGHT", 8, 0) end
+		button:SetScript("OnClick", function()
+			SquidBotsLiteDB.altsMessages = mode
+			if mode ~= "chat" then A.nextHello = 0 end
+			A.RefreshLog()
+		end)
+		button:SetScript("OnEnter", function(self)
+			GameTooltip:SetOwner(self, "ANCHOR_TOP")
+			GameTooltip:SetText(T("MODE_" .. mode), 1, 0.82, 0)
+			GameTooltip:AddLine(T("TIP_MODE_" .. mode), 1, 1, 1, true)
+			GameTooltip:Show()
+		end)
+		button:SetScript("OnLeave", function() GameTooltip:Hide() end)
+		button.mode = mode
+		f.modes[mode] = button
+		previous = button
+	end
+	f.clear = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
+	f.clear:SetWidth(70)
+	f.clear:SetHeight(20)
+	f.clear:SetPoint("TOPRIGHT", -18, -38)
+	f.clear:SetScript("OnClick", function()
+		A.journal = {}
+		f.lines:Clear()
+	end)
+	UI.Rule(f, -64)
+	f.lines = CreateFrame("ScrollingMessageFrame", nil, f)
+	f.lines:SetPoint("TOPLEFT", 18, -70)
+	f.lines:SetPoint("BOTTOMRIGHT", -18, 40)
+	f.lines:SetFontObject(GameFontHighlightSmall)
+	f.lines:SetJustifyH("LEFT")
+	f.lines:SetFading(false)
+	f.lines:SetMaxLines(LOG_LINES)
+	f.lines:EnableMouseWheel(true)
+	f.lines:SetScript("OnMouseWheel", function(self, delta)
+		if delta > 0 then self:ScrollUp() else self:ScrollDown() end
+	end)
+	for _, entry in ipairs(A.journal) do f.lines:AddMessage(entry[1], entry[2], entry[3], entry[4]) end
+	local footer = f:CreateTexture(nil, "ARTWORK")
+	footer:SetTexture("Interface\\Buttons\\WHITE8X8")
+	footer:SetVertexColor(1, 0.82, 0, 0.18)
+	footer:SetHeight(1)
+	footer:SetPoint("BOTTOMLEFT", 16, 34)
+	footer:SetPoint("BOTTOMRIGHT", -16, 34)
+	f.status = f:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+	f.status:SetPoint("BOTTOMLEFT", 18, 16)
+	f.status:SetWidth(364)
+	f.status:SetJustifyH("LEFT")
+	UI.FlattenAll(f)
+	f:Hide()
+	A.logFrame = f
+end
+
+function A.RefreshLog()
+	local f = A.logFrame
+	if not f or not f:IsShown() then return end
+	f.title:SetText("SquidBots Lite - " .. T("LOG"))
+	f.modeLabel:SetText(T("MODE"))
+	f.clear:SetText(T("CLEAR"))
+	for mode, button in pairs(f.modes) do
+		button:SetText(T("MODE_" .. mode))
+		if Mode() == mode then button:LockHighlight() else button:UnlockHighlight() end
+	end
+	if Mode() == "chat" then
+		f.status:SetText(T("HELLO_OFF"))
+	elseif A.hello then
+		f.status:SetText(string.format(T("HELLO_ON"), A.hello.catchup and T("HELLO_CATCH") or ""))
+	elseif A.helloAt and GetTime() - A.helloAt > 10 then
+		f.status:SetText(T("HELLO_NONE"))
+	else
+		f.status:SetText("")
+	end
+end
+
+function SquidBotsLite_ShowAltLog()
+	if not A.logFrame then A.BuildLog() end
+	if A.logFrame:IsShown() then A.logFrame:Hide() return end
+	A.logFrame:Show()
+	A.logFrame:Raise()
+	A.RefreshLog()
+end
+
+-- ---------------------------------------------------------------------------
+-- Take for the team: next to the quest frame, a card per logged-in alt with its state for the quest open
+-- ---------------------------------------------------------------------------
+local QROWS, QROW_H, QTOP = 8, 40, 82
+
+local function Pill(row, key, color)
+	row.badge:SetText(T(key))
+	row.badge:SetTextColor(color[1], color[2], color[3])
+	row.pill:SetVertexColor(color[1], color[2], color[3], 0.18)
+end
+
+function A.QuestRow(f, i)
+	local row = CreateFrame("Frame", nil, f)
+	row:SetWidth(308)
+	row:SetHeight(QROW_H - 4)
+	row:SetPoint("TOPLEFT", 16, -QTOP - (i - 1) * QROW_H)
+	row:SetScript("OnEnter", function(self)
+		if not self.alt then return end
+		GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+		GameTooltip:SetText(UI.ClassName(self.alt))
+		local s = A.quests[A.current] and A.quests[A.current][self.alt]
+		if s then
+			GameTooltip:AddLine(A.Reason(s), 1, 1, 1, true)
+			if s.state == "missing_prev" then
+				for id in (s.detail or ""):gmatch("(%d+)") do GameTooltip:AddLine("- " .. A.Title(tonumber(id)), 0.8, 0.8, 0.8) end
+			end
+		end
+		GameTooltip:Show()
+	end)
+	row:SetScript("OnLeave", function() GameTooltip:Hide() end)
+	UI.Card(row)
+	row.icon = row:CreateTexture(nil, "ARTWORK")
+	row.icon:SetWidth(28)
+	row.icon:SetHeight(28)
+	row.icon:SetPoint("LEFT", 6, 0)
+	row.state = row:CreateTexture(nil, "OVERLAY")
+	row.state:SetWidth(14)
+	row.state:SetHeight(14)
+	row.state:SetPoint("BOTTOMRIGHT", row.icon, "BOTTOMRIGHT", 4, -3)
+	row.name = row:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+	row.name:SetPoint("TOPLEFT", 42, -5)
+	row.name:SetJustifyH("LEFT")
+	row.badge = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+	row.badge:SetPoint("LEFT", row.name, "RIGHT", 10, 0)
+	row.pill = row:CreateTexture(nil, "BORDER")
+	row.pill:SetTexture("Interface\\Buttons\\WHITE8X8")
+	row.pill:SetPoint("TOPLEFT", row.badge, "TOPLEFT", -4, 2)
+	row.pill:SetPoint("BOTTOMRIGHT", row.badge, "BOTTOMRIGHT", 4, -2)
+	row.line = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+	row.line:SetPoint("TOPLEFT", 42, -21)
+	row.line:SetWidth(180)
+	row.line:SetHeight(12)
+	row.line:SetJustifyH("LEFT")
+	row.line:SetTextColor(0.75, 0.75, 0.75)
+	row.catchup = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")
+	row.catchup:SetWidth(78)
+	row.catchup:SetHeight(20)
+	row.catchup:SetPoint("RIGHT", -6, 0)
+	row.catchup:SetScript("OnClick", function(self)
+		local name = self:GetParent().alt
+		if name and A.current then A.Ask(name, "catchup", A.current) end
+	end)
+	row.catchup:SetScript("OnEnter", function(self)
+		GameTooltip:SetOwner(self, "ANCHOR_TOP")
+		GameTooltip:SetText(T("CATCH_UP"), 1, 0.82, 0)
+		GameTooltip:AddLine(T("TIP_CATCH_UP"), 1, 1, 1, true)
+		GameTooltip:Show()
+	end)
+	row.catchup:SetScript("OnLeave", function() GameTooltip:Hide() end)
+	return row
+end
+
+local function Panel(name, width)
+	local f = CreateFrame("Frame", name, UIParent)
+	f:SetWidth(width)
+	f:SetPoint("CENTER", 220, 40)
+	f:SetBackdrop(BACKDROP)
+	f:SetBackdropColor(0.04, 0.04, 0.05, 0.96)
+	f:SetFrameStrata("DIALOG")
+	f:SetToplevel(true)
+	f:SetMovable(true)
+	f:EnableMouse(true)
+	f:SetClampedToScreen(true)
+	f:RegisterForDrag("LeftButton")
+	f:SetScript("OnDragStart", f.StartMoving)
+	f:SetScript("OnDragStop", function(self)
+		self:StopMovingOrSizing()
+		self.moved = true
+	end)
+	table.insert(UISpecialFrames, name)
+	f.title = f:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+	f.title:SetPoint("TOP", 0, -14)
+	local close = CreateFrame("Button", nil, f, "UIPanelCloseButton")
+	close:SetPoint("TOPRIGHT", -4, -4)
+	f.empty = f:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+	f.empty:SetWidth(width - 40)
+	f.empty:SetJustifyH("LEFT")
+	return f
+end
+
+function A.BuildQuests()
+	local f = Panel("SquidBotsLiteAltQuests", 340)
+	-- The quest: its name, the chain step and its level; arrows through the quests seen lately.
+	f.quest = f:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+	f.quest:SetPoint("TOP", 0, -38)
+	f.quest:SetWidth(250)
+	f.quest:SetTextColor(1, 0.82, 0)
+	f.sub = f:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+	f.sub:SetPoint("TOP", f.quest, "BOTTOM", 0, -4)
+	f.prev = CreateFrame("Button", nil, f)
+	f.prev:SetWidth(24)
+	f.prev:SetHeight(24)
+	f.prev:SetPoint("TOPLEFT", 16, -36)
+	f.prev:SetNormalTexture("Interface\\Buttons\\UI-SpellbookIcon-PrevPage-Up")
+	f.prev:SetPushedTexture("Interface\\Buttons\\UI-SpellbookIcon-PrevPage-Down")
+	f.prev:SetDisabledTexture("Interface\\Buttons\\UI-SpellbookIcon-PrevPage-Disabled")
+	f.prev:SetScript("OnClick", function() A.Step(-1) end)
+	f.next = CreateFrame("Button", nil, f)
+	f.next:SetWidth(24)
+	f.next:SetHeight(24)
+	f.next:SetPoint("TOPRIGHT", -16, -36)
+	f.next:SetNormalTexture("Interface\\Buttons\\UI-SpellbookIcon-NextPage-Up")
+	f.next:SetPushedTexture("Interface\\Buttons\\UI-SpellbookIcon-NextPage-Down")
+	f.next:SetDisabledTexture("Interface\\Buttons\\UI-SpellbookIcon-NextPage-Disabled")
+	f.next:SetScript("OnClick", function() A.Step(1) end)
+	UI.Rule(f, -74)
+	f.empty:SetPoint("TOPLEFT", 20, -QTOP - 8)
+	f.rows = {}
+	for i = 1, QROWS do f.rows[i] = A.QuestRow(f, i) end
+	local footer = f:CreateTexture(nil, "ARTWORK")
+	footer:SetTexture("Interface\\Buttons\\WHITE8X8")
+	footer:SetVertexColor(1, 0.82, 0, 0.18)
+	footer:SetHeight(1)
+	footer:SetPoint("BOTTOMLEFT", 16, 42)
+	footer:SetPoint("BOTTOMRIGHT", -16, 42)
+	-- Just me (accepts it, at a quest giver only) and Take for the team.
+	f.me = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
+	f.me:SetWidth(96)
+	f.me:SetHeight(22)
+	f.me:SetPoint("BOTTOMLEFT", 16, 14)
+	f.me:SetScript("OnClick", function()
+		if A.detail then A.chosen = { id = A.detail, at = GetTime() } AcceptQuest() end
+	end)
+	f.team = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
+	f.team:SetWidth(160)
+	f.team:SetHeight(22)
+	f.team:SetPoint("LEFT", f.me, "RIGHT", 6, 0)
+	f.team:SetScript("OnClick", function() A.TakeAll() end)
+	for _, def in ipairs({ { f.me, "JUST_ME", "TIP_JUST_ME" }, { f.team, "TAKE_TEAM", "TIP_TAKE_TEAM" } }) do
+		def[1]:SetScript("OnEnter", function(self)
+			GameTooltip:SetOwner(self, "ANCHOR_TOP")
+			GameTooltip:SetText(self:GetText() or T(def[2]), 1, 0.82, 0)
+			GameTooltip:AddLine(T(def[3]), 1, 1, 1, true)
+			GameTooltip:Show()
+		end)
+		def[1]:SetScript("OnLeave", function() GameTooltip:Hide() end)
+	end
+	f.refresh = UI.IconButton(f, 22, "Interface\\Buttons\\UI-RefreshButton", function() return T("QUESTS"), T("TIP_REFRESH_Q") end,
+		function() if A.current then A.AskQuest(A.current) end end)
+	f.refresh.icon:SetTexCoord(0, 1, 0, 1)
+	f.refresh:SetPoint("BOTTOMRIGHT", -18, 14)
+	f:SetScript("OnHide", function() A.manualQuests = nil end)
+	UI.FlattenAll(f)
+	f:Hide()
+	A.questPanel = f
+end
+
+-- The chain step and the level, from the player's log when the quest is there (3.3.5 gives no chain from an id).
+local function QuestSub(id)
+	local s = A.quests[id]
+	local level
+	for i = 1, GetNumQuestLogEntries() do
+		local link = GetQuestLink(i)
+		if link and tonumber(link:match("|Hquest:(%d+)")) == id then level = select(2, GetQuestLogTitle(i)) end
+	end
+	-- The longest missing list an alt reported gives the step: the quests before this one.
+	local before = 0
+	for _, state in pairs(s or {}) do
+		if state.state == "missing_prev" then
+			local n = 0
+			for _ in (state.detail or ""):gmatch("(%d+)") do n = n + 1 end
+			if n > before then before = n end
+		end
+	end
+	local parts = {}
+	if before > 0 then table.insert(parts, string.format(T("STEP"), before + 1)) end
+	if level and level > 0 then table.insert(parts, string.format(T("QLEVEL"), level)) end
+	return table.concat(parts, "  ·  ")
+end
+
+function A.RefreshQuests()
+	local f = A.questPanel
+	if not f or not f:IsShown() then return end
+	f.title:SetText("SquidBots Lite - " .. T("QUESTS"))
+	f.me:SetText(T("JUST_ME"))
+	f.team:SetText(A.detail and T("TAKE_TEAM") or T("TAKE_ALL"))
+	local alts, id = A.Online(), A.current
+	f.quest:SetText(id and A.Title(id) or "")
+	f.sub:SetText(id and QuestSub(id) or "")
+	local index
+	for i, recent in ipairs(A.recent) do if recent == id then index = i end end
+	if index and index > 1 then f.prev:Enable() else f.prev:Disable() end
+	if index and index < #A.recent then f.next:Enable() else f.next:Disable() end
+	if #A.recent > 1 then f.prev:Show() f.next:Show() else f.prev:Hide() f.next:Hide() end
+	f.empty:SetText(#alts == 0 and T("NO_ALTS") or (not id and T("NO_QUEST")) or "")
+	local shown, takers = 0, 0
+	for i, row in ipairs(f.rows) do
+		local name = id and alts[i]
+		if name then
+			shown = shown + 1
+			row.alt = name
+			row.name:SetText(UI.ClassName(name))
+			UI.ClassIcon(row.icon, name)
+			local s = A.quests[id] and A.quests[id][name]
+			local def = StateOf(s)
+			local key = def[1]
+			Pill(row, key, def[2])
+			row.state:SetTexture(def[3])
+			if s then
+				row.line:SetText(A.Reason(s))
+			else
+				local asked = A.asked[id] and A.asked[id][name]
+				row.line:SetText("|cff9d9d9d" .. ((asked and GetTime() - asked < 5) and T("ASKING") or T("NO_ANSWER")) .. "|r")
+			end
+			if s and s.state == "missing_prev" and s.catchable then
+				row.catchup:SetText(T("CATCH_UP"))
+				row.catchup:Show()
+			else
+				row.catchup:Hide()
+			end
+			if not s or s.state == "can_take" or (s.state == "missing_prev" and s.catchable) then takers = takers + 1 end
+			row:Show()
+		else
+			row.alt = nil
+			row:Hide()
+		end
+	end
+	if id and takers > 0 then f.team:Enable() else f.team:Disable() end
+	if A.detail then f.me:Show() else f.me:Hide() end
+	f:SetHeight(QTOP + math.max(1, shown) * QROW_H + 52)
+end
+
+function A.Step(delta)
+	for i, id in ipairs(A.recent) do
+		if id == A.current and A.recent[i + delta] then
+			A.current = A.recent[i + delta]
+			break
+		end
+	end
+	A.RefreshQuests()
+end
+
+-- On the right of the frame shown (quest, gossip, trainer), else next to My alts, else where the player left it.
+local ANCHORS = { "QuestFrame", "GossipFrame", "ClassTrainerFrame", "TrainerFrame" }
+function A.Place(f, manual)
+	if f.moved then return end
+	f:ClearAllPoints()
+	if not manual then
+		for _, name in ipairs(ANCHORS) do
+			local frame = _G[name]
+			if frame and frame:IsShown() then
+				f:SetPoint("TOPLEFT", frame, "TOPRIGHT", -30, -12)
+				return
+			end
+		end
+	end
+	local alts = _G.SquidBotsLiteAlts
+	if alts and alts:IsShown() then
+		f:SetPoint("TOPLEFT", alts, "TOPRIGHT", 4, 0)
+	else
+		f:SetPoint("CENTER", 220, 40)
+	end
+end
+
+function A.ShowQuests(manual)
+	if not A.questPanel then A.BuildQuests() end
+	local f = A.questPanel
+	if manual then A.manualQuests = true end
+	if not f:IsShown() then
+		A.Place(f, manual)
+		f:Show()
+	end
+	A.RefreshQuests()
+end
+
+function A.HideQuests()
+	if A.questPanel and A.questPanel:IsShown() and not A.manualQuests then A.questPanel:Hide() end
+end
+
+function A.Seen(id)
+	A.current = id
+	for i, recent in ipairs(A.recent) do
+		if recent == id then table.remove(A.recent, i) break end
+	end
+	table.insert(A.recent, id)
+	if #A.recent > 10 then table.remove(A.recent, 1) end
+end
+
+function A.Ask(name, command, id)
+	A.asked[id] = A.asked[id] or {}
+	A.asked[id][name] = GetTime()
+	Send(name, command .. " " .. id)
+end
+
+function A.AskQuest(id)
+	for _, name in ipairs(A.Online()) do A.Ask(name, "quest", id) end
+	A.RefreshQuests()
+end
+
+-- Every alt that can (or whose state is not known yet) is told "take"; at a quest giver, the player accepts it too.
+function A.TakeAll()
+	local id = A.current
+	if not id then return end
+	A.chosen = { id = id, at = GetTime() }
+	for _, name in ipairs(A.Online()) do
+		local s = A.quests[id] and A.quests[id][name]
+		if not s or s.state == "can_take" or (s.state == "missing_prev" and s.catchable) then A.Ask(name, "take", id) end
+	end
+	if A.detail == id then AcceptQuest() end
+end
+
+-- Accepted with the game's own button, in quiet mode: are the alts of the group taking it too? (2.9.3)
+StaticPopupDialogs.SQUIDBOTSLITE_QUEST_TAKE = {
+	text = "%s", button1 = YES, button2 = NO, button3 = "Always",
+	OnAccept = function() A.TakePending() end,
+	OnAlt = function()
+		SquidBotsLiteDB.questAsk = "always"
+		Print(T("QA_ALWAYS_SET"))
+		A.TakePending()
+	end,
+	OnCancel = function() A.pendingTake = nil end,
+	timeout = 30, whileDead = true, hideOnEscape = true,
+}
+
+function A.AfterAccept(id, index)
+	local title = id and A.titles[id]
+	-- The quest link: a 2.9.2 server only understands "take <link>", the id alone works from 2.9.3.
+	local link = index and GetQuestLink(index)
+	local linked = link and tonumber(link:match("|Hquest:(%d+)"))
+	if not id then id, title = linked, index and GetQuestLogTitle(index) end
+	if linked ~= id then link = nil end
+	if not id or SquidBotsLiteDB.questAsk == "off" then return end
+	-- "Just me" or "Take for the team" already answered; out of quiet mode the alts take it on their own.
+	if A.chosen and A.chosen.id == id and GetTime() - A.chosen.at < ACCEPT_WINDOW then return end
+	if not (A.hello and A.hello.silent) then return end
+	local alts = {}
+	for _, unit in ipairs(GroupUnits()) do
+		local name = UnitName(unit)
+		if IsAlt(name) and UnitIsConnected(unit) then table.insert(alts, name) end
+	end
+	if #alts == 0 then return end
+	A.pendingTake = { id = id, link = link, alts = alts }
+	if SquidBotsLiteDB.questAsk == "always" then A.TakePending() return end
+	local popup = StaticPopupDialogs.SQUIDBOTSLITE_QUEST_TAKE
+	popup.text, popup.button3 = T("QA_ASK"), T("QA_ALWAYS")
+	StaticPopup_Show("SQUIDBOTSLITE_QUEST_TAKE", title or QuestLink(id))
+end
+
+-- Their answers come back as one line once all have answered (or after 10 s).
+function A.TakePending()
+	local p = A.pendingTake
+	A.pendingTake = nil
+	if not p then return end
+	A.batch = { id = p.id, waiting = {}, taken = {}, other = {}, ends = GetTime() + 10 }
+	A.asked[p.id] = A.asked[p.id] or {}
+	for _, name in ipairs(p.alts) do
+		A.batch.waiting[name], A.asked[p.id][name] = true, GetTime()
+		Send(name, "take " .. (p.link or p.id))
+	end
+end
+
+function A.FlushBatch()
+	local b = A.batch
+	A.batch = nil
+	if not b then return end
+	local parts, silent = {}, {}
+	if #b.taken > 0 then table.insert(parts, string.format(T("QA_TAKEN"), table.concat(b.taken, ", "))) end
+	for _, text in ipairs(b.other) do table.insert(parts, text) end
+	for name in pairs(b.waiting) do table.insert(silent, UI.ClassName(name)) end
+	if #silent > 0 then table.insert(parts, string.format(T("QA_NONE"), table.concat(silent, ", "))) end
+	if #parts > 0 then Print(QuestLink(b.id) .. " : " .. table.concat(parts, " ; ")) end
+end
+
+function SquidBotsLite_QuestAsk(value)
+	value = string.lower(value or "")
+	SquidBotsLiteDB.questAsk = (value == "off" or value == "always") and value or nil
+	Print(T(value == "off" and "QA_OFF" or value == "always" and "QA_ALWAYS_SET" or "QA_ON"))
+end
+
+function SquidBotsLite_ShowAltQuests()
+	if A.questPanel and A.questPanel:IsShown() then A.questPanel:Hide() return end
+	-- The quest selected in the player's log, if any; else the last one seen.
+	local index = GetQuestLogSelection and GetQuestLogSelection()
+	local link = index and index > 0 and GetQuestLink(index)
+	local id = link and tonumber(link:match("|Hquest:(%d+)"))
+	if id then A.Seen(id) end
+	A.ShowQuests(true)
+	if A.current then A.AskQuest(A.current) end
+end
+
+-- ---------------------------------------------------------------------------
+-- Trainer: next to the trainer, a card per alt with what it can learn here
+-- ---------------------------------------------------------------------------
+local TCARDS, TLINES, TLINE_H, TTOP = 6, 8, 14, 66
+
+function A.TrainCard(f, i)
+	local card = CreateFrame("Frame", nil, f)
+	card:SetWidth(308)
+	UI.Card(card)
+	card.icon = card:CreateTexture(nil, "ARTWORK")
+	card.icon:SetWidth(28)
+	card.icon:SetHeight(28)
+	card.icon:SetPoint("TOPLEFT", 6, -5)
+	card.name = card:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+	card.name:SetPoint("TOPLEFT", 42, -5)
+	card.sum = card:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+	card.sum:SetPoint("TOPLEFT", 42, -21)
+	card.sum:SetWidth(170)
+	card.sum:SetJustifyH("LEFT")
+	card.learn = CreateFrame("Button", nil, card, "UIPanelButtonTemplate")
+	card.learn:SetWidth(92)
+	card.learn:SetHeight(20)
+	card.learn:SetPoint("TOPRIGHT", -6, -7)
+	card.learn:SetScript("OnClick", function(self)
+		local name = self:GetParent().alt
+		if name then
+			Send(name, "learn all")
+			self:Disable()
+		end
+	end)
+	card.learn:SetScript("OnEnter", function(self)
+		GameTooltip:SetOwner(self, "ANCHOR_TOP")
+		GameTooltip:SetText(T("LEARN_ALL"), 1, 0.82, 0)
+		GameTooltip:AddLine(T("TIP_LEARN_ALL"), 1, 1, 1, true)
+		GameTooltip:Show()
+	end)
+	card.learn:SetScript("OnLeave", function() GameTooltip:Hide() end)
+	card.lines = {}
+	for j = 1, TLINES do
+		local line = CreateFrame("Button", nil, card)
+		line:SetHeight(TLINE_H)
+		line:SetPoint("TOPLEFT", 42, -36 - (j - 1) * TLINE_H)
+		line:SetPoint("RIGHT", card, "RIGHT", -8, 0)
+		line:SetHighlightTexture("Interface\\Buttons\\WHITE8X8", "ADD")
+		line:GetHighlightTexture():SetVertexColor(1, 0.82, 0, 0.12)
+		line.text = line:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+		line.text:SetPoint("LEFT", 0, 0)
+		line.text:SetWidth(180)
+		line.text:SetJustifyH("LEFT")
+		line.cost = line:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+		line.cost:SetPoint("RIGHT", 0, 0)
+		line:SetScript("OnClick", function(self)
+			local name = card.alt
+			if name and self.spell then Send(name, "learn " .. self.spell) end
+		end)
+		line:SetScript("OnEnter", function(self)
+			GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+			if self.spell and GetSpellInfo(self.spell) then
+				pcall(GameTooltip.SetHyperlink, GameTooltip, "spell:" .. self.spell)
+			else
+				GameTooltip:SetText(self.text:GetText() or "")
+			end
+			GameTooltip:AddLine(T("TIP_LEARN_ONE"), 0.4, 0.8, 1)
+			GameTooltip:Show()
+		end)
+		line:SetScript("OnLeave", function() GameTooltip:Hide() end)
+		card.lines[j] = line
+	end
+	card.more = card:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+	card:Hide()
+	return card
+end
+
+function A.BuildTrainer()
+	local f = Panel("SquidBotsLiteAltTrainer", 340)
+	f.npc = f:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+	f.npc:SetPoint("TOP", 0, -38)
+	f.npc:SetTextColor(1, 0.82, 0)
+	UI.Rule(f, -58)
+	f.empty:SetPoint("TOPLEFT", 20, -TTOP - 4)
+	f.cards = {}
+	for i = 1, TCARDS do f.cards[i] = A.TrainCard(f, i) end
+	f.refresh = UI.IconButton(f, 22, "Interface\\Buttons\\UI-RefreshButton", function() return T("TRAINER"), T("TIP_REFRESH_T") end,
+		function() A.AskTrain() end)
+	f.refresh.icon:SetTexCoord(0, 1, 0, 1)
+	f.refresh:SetPoint("BOTTOMRIGHT", -18, 14)
+	f:SetScript("OnHide", function() A.manualTrainer = nil end)
+	UI.FlattenAll(f)
+	f:Hide()
+	A.trainPanel = f
+end
+
+function A.RefreshTrainer()
+	local f = A.trainPanel
+	if not f or not f:IsShown() then return end
+	f.title:SetText("SquidBots Lite - " .. T("TRAINER"))
+	f.npc:SetText(A.trainerName or (UnitName("npc")) or "")
+	local y, shown = TTOP, 0
+	local alts = A.Online()
+	for i, card in ipairs(f.cards) do
+		local name = alts[i]
+		local data = name and A.train[name]
+		if name then
+			shown = shown + 1
+			card.alt = name
+			card.name:SetText(UI.ClassName(name))
+			UI.ClassIcon(card.icon, name)
+			card.learn:SetText(T("LEARN_ALL"))
+			local n = 0
+			if not data then
+				card.sum:SetText("|cff9d9d9d" .. T("ASKING") .. "|r")
+				card.learn:Hide()
+			elseif data.err then
+				card.sum:SetText("|cffff9933" .. T("ERR_" .. data.err) .. "|r")
+				card.learn:Hide()
+			elseif data.count == 0 then
+				card.sum:SetText("|cff9d9d9d" .. T("TRAIN_NOTHING") .. "|r  " .. string.format(T("TRAIN_HAS"), Money(data.money)))
+				card.learn:Hide()
+			else
+				local total = Money(data.total)
+				if data.total > data.money then total = "|cffff4d4d" .. total .. "|r" end
+				card.sum:SetText(string.format(T("TRAIN_SUM"), data.count, total))
+				card.learn:Show()
+				card.learn:Enable()
+				for j, line in ipairs(card.lines) do
+					local entry = data.list[j]
+					if entry then
+						n = j
+						line.spell = entry.id
+						line.text:SetText(entry.name ~= "" and entry.name or (GetSpellInfo(entry.id)) or ("#" .. entry.id))
+						line.cost:SetText(Money(entry.cost))
+						line:Show()
+					end
+				end
+			end
+			for j = n + 1, TLINES do card.lines[j]:Hide() end
+			local h = 40 + n * TLINE_H
+			if data and #data.list > TLINES then
+				card.more:ClearAllPoints()
+				card.more:SetPoint("TOPLEFT", 42, -36 - n * TLINE_H)
+				card.more:SetText(string.format(T("TRAIN_MORE"), #data.list - TLINES))
+				card.more:Show()
+				h = h + TLINE_H
+			else
+				card.more:Hide()
+			end
+			if n > 0 then h = h + 4 end
+			card:SetHeight(h)
+			card:ClearAllPoints()
+			card:SetPoint("TOPLEFT", 16, -y)
+			card:Show()
+			y = y + h + 4
+		else
+			card.alt = nil
+			card:Hide()
+		end
+	end
+	f.empty:SetText(shown == 0 and T("NO_ALTS") or "")
+	f:SetHeight(y + (shown == 0 and 24 or 0) + 44)
+end
+
+function A.ShowTrainer()
+	if #A.Online() == 0 then return end
+	if not A.trainPanel then A.BuildTrainer() end
+	if not A.trainPanel:IsShown() then
+		A.Place(A.trainPanel)
+		A.trainPanel:Show()
+	end
+	A.RefreshTrainer()
+end
+
+function A.AskTrain()
+	A.trainAsk = nil
+	for _, name in ipairs(A.Online()) do Send(name, "train") end
+end
+
+-- ---------------------------------------------------------------------------
+-- The team bar: a portrait per logged-in alt (name, level, state) and the orders for all of them
+-- ---------------------------------------------------------------------------
+local PORTRAITS = 9
+
+local function WhisperAll(text)
+	for _, name in ipairs(A.Online()) do SquidBotsLite_QuietWhisper(text, name) end
+end
+
+function A.AltStatus(name)
+	local unit = UnitOf(name)
+	local member = A.members[name]
+	if (member and member.state == "dead") or (unit and UnitIsDeadOrGhost(unit)) then return T("ST_dead"), RED end
+	local mission = SquidBotsLite_MissionOf and SquidBotsLite_MissionOf(name)
+	if mission then return string.format(T("ST_mission"), mission.minutes or 0), ORANGE end
+	if member and member.state == "mission" then return T("BADGE_MISSION"), ORANGE end
+	local s = A.current and A.quests[A.current] and A.quests[A.current][name]
+	if s and s.state ~= "can_take" and s.state ~= "in_log" and s.state ~= "done" and A.TeamQuest(A.current) then
+		return T("ST_quest"), GOLD
+	end
+	if member and member.free == 0 then return T("ST_bags"), ORANGE end
+	if member and member.state == "far" then return T("ST_far"), GREY end
+	if member and member.state == "stay" then return T("ST_stay"), BLUE end
+	if not unit and not member then return T("ST_away"), GREY end
+	return T("ST_follow"), GREEN
+end
+
+-- A quest of the player's log: the team is expected to have it too.
+function A.TeamQuest(id)
+	for i = 1, GetNumQuestLogEntries() do
+		local link = GetQuestLink(i)
+		if link and tonumber(link:match("|Hquest:(%d+)")) == id then return true end
+	end
+	return false
+end
+
+function A.BuildTeam()
+	local f = CreateFrame("Frame", "SquidBotsLiteTeam", UIParent)
+	f:SetHeight(64)
+	f:SetBackdrop(UI.CARD)
+	f:SetBackdropColor(0.04, 0.04, 0.05, 0.9)
+	f:SetBackdropBorderColor(1, 0.82, 0, 0.35)
+	f:SetFrameStrata("MEDIUM")
+	f:SetMovable(true)
+	f:EnableMouse(true)
+	f:SetClampedToScreen(true)
+	f:RegisterForDrag("LeftButton")
+	f:SetScript("OnDragStart", f.StartMoving)
+	f:SetScript("OnDragStop", function(self)
+		self:StopMovingOrSizing()
+		local point, _, relative, x, y = self:GetPoint()
+		SquidBotsLiteDB.teamBar = { point, relative, x, y }
+	end)
+	local saved = SquidBotsLiteDB.teamBar
+	if saved then f:SetPoint(saved[1], UIParent, saved[2], saved[3], saved[4]) else f:SetPoint("TOP", 0, -150) end
+	f:SetScript("OnEnter", function(self)
+		GameTooltip:SetOwner(self, "ANCHOR_TOP")
+		GameTooltip:SetText(T("TEAM"), 1, 0.82, 0)
+		if A.ench and A.ench.name then GameTooltip:AddLine(string.format(T("ENCH_LINE"), UI.ClassName(A.ench.name)), 0.4, 0.8, 1) end
+		GameTooltip:AddLine(T("TIP_TEAM_DRAG"), 1, 1, 1, true)
+		GameTooltip:Show()
+	end)
+	f:SetScript("OnLeave", function() GameTooltip:Hide() end)
+	f.empty = f:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+	f.empty:SetPoint("LEFT", 12, 0)
+	f.portraits = {}
+	for i = 1, PORTRAITS do
+		local p = CreateFrame("Button", nil, f)
+		p:SetWidth(64)
+		p:SetHeight(56)
+		p:SetPoint("TOPLEFT", 6 + (i - 1) * 66, -4)
+		p.icon = p:CreateTexture(nil, "ARTWORK")
+		p.icon:SetWidth(26)
+		p.icon:SetHeight(26)
+		p.icon:SetPoint("TOP", 0, -1)
+		p.ench = p:CreateTexture(nil, "OVERLAY")
+		p.ench:SetWidth(12)
+		p.ench:SetHeight(12)
+		p.ench:SetPoint("TOPLEFT", p.icon, "TOPLEFT", -5, 4)
+		p.ench:SetTexture("Interface\\Icons\\Trade_Engraving")
+		p.ench:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+		p.ench:Hide()
+		p.level = p:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+		p.level:SetPoint("BOTTOMRIGHT", p.icon, "BOTTOMRIGHT", 6, -2)
+		p.level:SetFont(p.level:GetFont(), 9, "OUTLINE")
+		p.name = p:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+		p.name:SetPoint("TOP", p.icon, "BOTTOM", 0, -2)
+		p.name:SetWidth(62)
+		p.name:SetHeight(11)
+		p.state = p:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+		p.state:SetPoint("TOP", p.name, "BOTTOM", 0, -1)
+		p.state:SetWidth(62)
+		p.state:SetHeight(10)
+		p.state:SetFont(p.state:GetFont(), 9)
+		-- Its health, a thin bar under the icon (TEAM, else its unit in the group).
+		p.hp = CreateFrame("StatusBar", nil, p)
+		p.hp:SetWidth(26)
+		p.hp:SetHeight(2)
+		p.hp:SetPoint("TOP", p.icon, "BOTTOM", 0, 0)
+		p.hp:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
+		p.hp:SetStatusBarColor(0.3, 0.85, 0.3)
+		p.hp:SetMinMaxValues(0, 100)
+		p:SetHighlightTexture("Interface\\Buttons\\WHITE8X8", "ADD")
+		p:GetHighlightTexture():SetVertexColor(1, 0.82, 0, 0.08)
+		p:RegisterForDrag("LeftButton")
+		p:SetScript("OnDragStart", function() f:StartMoving() end)
+		p:SetScript("OnDragStop", function() f:GetScript("OnDragStop")(f) end)
+		p:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+		p:SetScript("OnClick", function(self, button)
+			if not self.alt then return end
+			if button == "RightButton" then
+				A.left[self.alt], A.members[self.alt] = GetTime(), nil
+				GameTooltip:Hide()
+				A.RefreshTeam()
+			elseif SquidBotsLite_OpenSheet then
+				SquidBotsLite_OpenSheet(self.alt)
+			end
+		end)
+		p:SetScript("OnEnter", function(self)
+			if not self.alt then return end
+			GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
+			GameTooltip:SetText(UI.ClassName(self.alt))
+			local text, color = A.AltStatus(self.alt)
+			GameTooltip:AddLine(text, color[1], color[2], color[3])
+			if A.ench and A.ench.name == self.alt then GameTooltip:AddLine(T("ENCH_TITLE"), 0.4, 0.8, 1) end
+			if not UnitOf(self.alt) then GameTooltip:AddLine(T("TIP_REMOVE"), 0.6, 0.6, 0.6) end
+			GameTooltip:Show()
+		end)
+		p:SetScript("OnLeave", function() GameTooltip:Hide() end)
+		f.portraits[i] = p
+	end
+	-- The orders, on the right: square icons as on the bar.
+	f.actions = {}
+	for _, def in ipairs({
+		{ "Interface\\Icons\\Spell_Shadow_Twilight", "T_SUMMON", "TIP_T_SUMMON", function() WhisperAll("summon") end },
+		{ "Interface\\Icons\\INV_Misc_Rune_01", "T_FOLLOW", "TIP_T_FOLLOW", function()
+			if SquidBotsLite_RecallAll then SquidBotsLite_RecallAll() end
+		end },
+		{ "Interface\\Icons\\INV_Pick_02", "T_MISSIONS", "TIP_T_MISSIONS", function()
+			if SquidBotsLite_ShowMissions then SquidBotsLite_ShowMissions() end
+		end },
+		{ "Interface\\Icons\\INV_Misc_Book_09", "T_DASHBOARD", "TIP_T_DASHBOARD", function()
+			if SquidBotsLite_ShowDashboard then SquidBotsLite_ShowDashboard() end
+		end },
+		{ "Interface\\Icons\\Trade_BlackSmithing", "T_REPAIR", "TIP_T_REPAIR", function()
+			-- At a vendor that does not repair, "repair" only brings a red "Cannot find any npc to repair at" from
+			-- every alt: it is not sent there, and that answer is hidden for a while after the click anyway.
+			if not (MerchantFrame and MerchantFrame:IsShown() and not CanMerchantRepair()) then WhisperAll("repair") end
+			A.repairUntil = GetTime() + 10
+			WhisperAll("s junk")
+		end },
+	}) do
+		local button = UI.IconButton(f, 24, def[1], function() return T(def[2]), T(def[3]) end, def[4])
+		table.insert(f.actions, button)
+	end
+	f.close = CreateFrame("Button", nil, f, "UIPanelCloseButton")
+	f.close:SetWidth(20)
+	f.close:SetHeight(20)
+	f.close:SetPoint("TOPRIGHT", 2, 2)
+	f.close:SetScript("OnClick", function()
+		SquidBotsLiteDB.teamHidden = true
+		f:Hide()
+	end)
+	f:Hide()
+	A.team = f
+end
+
+function A.RefreshTeam()
+	if not SquidBotsLiteDB or SquidBotsLiteDB.teamHidden then
+		if A.team then A.team:Hide() end
+		return
+	end
+	local alts = A.Online()
+	if #alts == 0 then
+		if A.team then A.team:Hide() end
+		return
+	end
+	if not A.team then A.BuildTeam() end
+	local f, n = A.team, 0
+	for i, p in ipairs(f.portraits) do
+		local name = alts[i]
+		if name then
+			n = i
+			p.alt = name
+			UI.ClassIcon(p.icon, name)
+			local unit = UnitOf(name)
+			local info = SquidBotsLiteDB.altInfo and SquidBotsLiteDB.altInfo[name]
+			local member = A.members[name]
+			local level = (member and member.level) or (unit and UnitLevel(unit)) or (info and info.level)
+			local hp = member and member.hp
+			if not hp and unit and UnitHealthMax(unit) > 0 then hp = math.floor(100 * UnitHealth(unit) / UnitHealthMax(unit)) end
+			p.hp:SetValue(hp or 0)
+			if hp then p.hp:Show() else p.hp:Hide() end
+			p.level:SetText(level and level > 0 and level or "")
+			p.name:SetText(UI.ClassName(name))
+			local text, color = A.AltStatus(name)
+			p.state:SetText(text)
+			p.state:SetTextColor(color[1], color[2], color[3])
+			if A.ench and A.ench.name == name then p.ench:Show() else p.ench:Hide() end
+			p:Show()
+		else
+			p.alt = nil
+			p:Hide()
+		end
+	end
+	local x = 6 + n * 66 + 6
+	for i, button in ipairs(f.actions) do
+		button:ClearAllPoints()
+		button:SetPoint("TOPLEFT", x + math.floor((i - 1) / 2) * 28, -6 - ((i - 1) % 2) * 28)
+	end
+	f.empty:SetText("")
+	f:SetWidth(x + math.ceil(#f.actions / 2) * 28 + 10)
+	f:Show()
+end
+
+function SquidBotsLite_ToggleTeam()
+	SquidBotsLiteDB.teamHidden = not SquidBotsLiteDB.teamHidden or nil
+	A.RefreshTeam()
+end
+
+-- ---------------------------------------------------------------------------
+-- Objective tracker: a dot per alt on each quest the player follows (green has it, red does not, grey away)
+-- ---------------------------------------------------------------------------
+-- The server's "Team" messages (objectives done, behind) are not in the contract yet: until then the dots say
+-- what the Q states tell (in its log or not), from the last answers.
+local DOT = { green = GREEN, orange = ORANGE, red = RED, grey = GREY }
+A.objectives = {}   -- [questId][alt] = "green" | "orange" | "red" | "grey", set by the Team messages when they come
+
+-- The player's own progress on a quest of the log: the sum of its objectives' counts.
+local function PlayerProgress(index)
+	local done = 0
+	for i = 1, GetNumQuestLeaderBoards(index) do
+		local text = GetQuestLogLeaderBoard(i, index)
+		local current = text and text:match("(%d+)%s*/%s*%d+")
+		done = done + (tonumber(current) or 0)
+	end
+	return done
+end
+
+-- Green up to date (or complete), orange behind the player, red without the quest; nil: nothing known.
+function A.DotOf(id, name, index)
+	local set = A.objectives[id] and A.objectives[id][name]
+	if set then return DOT[set] end
+	local o = A.obj[id] and A.obj[id][name]
+	if o then
+		if o.state == "complete" then return GREEN end
+		if o.state == "none" or o.state == "failed" then return RED end
+		if o.state == "done" then return nil end
+		if index and o.done < PlayerProgress(index) then return ORANGE end
+		return GREEN
+	end
+	local s = A.quests[id] and A.quests[id][name]
+	if not s then return nil end
+	if s.state == "in_log" then return s.detail == "complete" and GREEN or GREEN end
+	if s.state == "done" then return nil end
+	return RED
+end
+
+function A.WatchDots()
+	local buttons = _G.WATCHFRAME_LINKBUTTONS
+	if type(buttons) ~= "table" then return end
+	local alts = A.Online()
+	for _, button in pairs(buttons) do
+		button.sqbDots = button.sqbDots or {}
+		local link = button.type == "QUEST" and button.index and button:IsShown() and GetQuestLink(button.index)
+		local id = link and tonumber(link:match("|Hquest:(%d+)"))
+		local shown = 0
+		if id then
+			for _, name in ipairs(alts) do
+				local color = A.DotOf(id, name, button.index)
+				local member = A.members[name]
+				if color and (member and (member.state == "far" or member.state == "mission") or (not member and not UnitOf(name))) then
+					color = GREY
+				end
+				if color then
+					shown = shown + 1
+					local dot = button.sqbDots[shown]
+					if not dot then
+						dot = button:CreateTexture(nil, "OVERLAY")
+						dot:SetTexture("Interface\\Buttons\\WHITE8X8")
+						dot:SetWidth(5)
+						dot:SetHeight(5)
+						button.sqbDots[shown] = dot
+					end
+					dot:ClearAllPoints()
+					dot:SetPoint("TOPRIGHT", button, "TOPLEFT", -2 - (shown - 1) * 7, -4)
+					dot:SetVertexColor(color[1], color[2], color[3], 0.9)
+					dot:Show()
+				end
+			end
+		end
+		for i = shown + 1, #button.sqbDots do button.sqbDots[i]:Hide() end
+	end
+end
+
+-- ---------------------------------------------------------------------------
+-- My alts: two icons after its menus (Take for the team, the log) and the team bar's
+-- ---------------------------------------------------------------------------
+function SquidBotsLite_AltsButtons(frame, x)
+	UI = UI or SquidBotsLite_UI
+	local quests = UI.IconButton(frame, 22, "Interface\\GossipFrame\\AvailableQuestIcon",
+		function() return T("QUESTS"), T("TIP_QUESTS") end, function() SquidBotsLite_ShowAltQuests() end)
+	quests.icon:SetTexCoord(0, 1, 0, 1)
+	quests:SetPoint("TOPLEFT", x, -36)
+	local log = UI.IconButton(frame, 22, "Interface\\Icons\\INV_Misc_Note_01",
+		function() return T("LOG"), T("TIP_LOG") end, function() SquidBotsLite_ShowAltLog() end)
+	log:SetPoint("LEFT", quests, "RIGHT", 4, 0)
+	local team = UI.IconButton(frame, 22, "Interface\\Icons\\Achievement_GuildPerk_EverybodysFriend",
+		function() return T("TEAM"), T("TIP_TEAM") end, function() SquidBotsLite_ToggleTeam() end)
+	team.icon:SetTexture("Interface\\Icons\\INV_Misc_GroupNeedMore")
+	team:SetPoint("LEFT", log, "RIGHT", 4, 0)
+	local settings = UI.IconButton(frame, 22, "Interface\\Icons\\INV_Misc_Gear_01", function()
+		local line = T("TIP_SETTINGS")
+		if A.ench then
+			line = line .. "\n\n" .. string.format(T("ENCH_LINE"), A.ench.name and UI.ClassName(A.ench.name) or "-") ..
+				"\n" .. T(A.ench.mode == "bank" and "MODE_BANK" or "MODE_MAIL")
+		end
+		return T("SETTINGS"), line
+	end, function() A.SettingsMenu() end)
+	settings:SetPoint("LEFT", team, "RIGHT", 4, 0)
+	local accounts = UI.IconButton(frame, 22, "Interface\\Icons\\INV_Misc_GroupLooking",
+		function() return T("T_ACCOUNTS"), T("TIP_T_ACCOUNTS") end,
+		function() if SquidBotsLite_AccountsMenu then SquidBotsLite_AccountsMenu() end end)
+	accounts:SetPoint("LEFT", settings, "RIGHT", 4, 0)
+end
+
+-- The team settings: who disenchants for the team (an alt with Enchanting), and how the greens reach it.
+local function AskEnchanter(command)
+	local alts = A.Online()
+	if alts[1] then Send(alts[1], command) end
+end
+
+function A.SettingsMenu()
+	local ench = A.ench or {}
+	-- Each alt tells its own Enchanting in its ENCH answer: ask every one not heard yet, not only the first.
+	local waiting = false
+	for _, name in ipairs(A.Online()) do
+		if A.enchSkill[name] == nil then
+			Send(name, "enchanter")
+			waiting = true
+		end
+	end
+	if waiting then A.ench = nil end
+	local items = { { text = T("SETTINGS"), isTitle = true, notCheckable = true } }
+	if ench.enabled == false then
+		table.insert(items, { text = "|cff9d9d9d" .. T("ENCH_OFF") .. "|r", notCheckable = true, disabled = true })
+	end
+	table.insert(items, { text = T("ENCH_TITLE"), isTitle = true, notCheckable = true })
+	local any = false
+	for _, name in ipairs(A.Online()) do
+		local skill = A.enchSkill[name] or 0
+		if skill > 0 then
+			any = true
+			table.insert(items, { text = string.format(T("ENCH_SKILL"), UI.ClassName(name), skill), checked = ench.name == name,
+				func = function() AskEnchanter("enchanter set " .. name) end })
+		end
+	end
+	if not any then
+		table.insert(items, { text = "|cff9d9d9d" .. (A.ench and T("ENCH_NOBODY") or T("ENCH_WAIT")) .. "|r", notCheckable = true, disabled = true })
+	end
+	table.insert(items, { text = T("ENCH_NONE"), checked = A.ench ~= nil and not ench.name, func = function() AskEnchanter("enchanter clear") end })
+	table.insert(items, { text = T("ENCH_MODE"), isTitle = true, notCheckable = true })
+	table.insert(items, { text = T("MODE_MAIL"), checked = ench.mode ~= "bank", tooltipTitle = T("MODE_MAIL"), tooltipText = T("TIP_MODE_MAIL"),
+		tooltipOnButton = true, func = function() AskEnchanter("enchanter mode mail") end })
+	table.insert(items, { text = T("MODE_BANK"), checked = ench.mode == "bank", tooltipTitle = T("MODE_BANK"),
+		tooltipText = T("TIP_MODE_BANK") .. "\n" .. T("TIP_LIMIT_BANK"), tooltipOnButton = true,
+		func = function() AskEnchanter("enchanter mode bank") end })
+	-- The limits: each one a box, switched on the server; epics never.
+	local limits = ench.limits or 1
+	table.insert(items, { text = T("LIMITS"), isTitle = true, notCheckable = true })
+	for _, def in ipairs({ { "altgreens", 1 }, { "bankgreens", 2 }, { "blues", 4 }, { "wearable", 8 } }) do
+		local key, bit = def[1], def[2]
+		local on = math.floor(limits / bit) % 2 == 1
+		table.insert(items, { text = T("LIMIT_" .. key), checked = on, isNotRadio = true,
+			tooltipTitle = T("LIMIT_" .. key), tooltipText = T("TIP_LIMIT_" .. key), tooltipOnButton = true,
+			func = function() AskEnchanter("enchanter limit " .. key .. (on and " off" or " on")) end })
+	end
+	table.insert(items, { text = "|cff9d9d9d" .. T("LIMIT_EPICS") .. "|r", notCheckable = true, disabled = true })
+	A.menu = A.menu or CreateFrame("Frame", "SquidBotsLiteTeamSettings", UIParent, "UIDropDownMenuTemplate")
+	EasyMenu(items, A.menu, "cursor", 0, 0, "MENU")
+	if SquidBotsLite_WatchMenu then SquidBotsLite_WatchMenu() end
+end
+
+-- ---------------------------------------------------------------------------
+-- The alts' messages
+-- ---------------------------------------------------------------------------
+local Handle = {}
+A.Handle = Handle
+
+-- CoA Bots 2.9.4: an alt says when it logs in or out, so the bar and My alts change at once.
+function Handle.ONLINE(name)
+	A.left[name] = nil
+	if SquidBotsLite_AltOnline then SquidBotsLite_AltOnline(name, true) end
+	A.RefreshTeam()
+end
+
+function Handle.OFFLINE(name)
+	A.gone[name], A.members[name] = GetTime(), nil
+	if SquidBotsLite_AltOnline then SquidBotsLite_AltOnline(name, false) end
+	A.RefreshTeam()
+end
+
+function Handle.HELLO(name, f)
+	A.hello = { from = name, catchup = f[3] == "1", silent = f[4] == "1", sheet = f[5] == "1", at = GetTime() }
+	A.RefreshLog()
+end
+
+function Handle.ENCH(name, f)
+	A.ench = { name = (f[2] and f[2] ~= "" and f[2] ~= "-") and f[2] or nil, mode = f[3] == "bank" and "bank" or "mail",
+		enabled = f[5] ~= "0", limits = tonumber(f[6] or "") or 1, at = GetTime() }
+	A.enchSkill[name] = tonumber(f[4] or "") or 0
+	A.RefreshTeam()
+end
+
+function Handle.TEAM(name, f)
+	A.members[name] = { level = tonumber(f[2]), hp = tonumber(f[3]), state = f[4] or "follow", free = tonumber(f[5]),
+		zone = tonumber(f[6]), at = GetTime() }
+	A.RefreshTeam()
+end
+
+function Handle.OBJ(name, f)
+	local id = tonumber(f[2])
+	if not id then return end
+	local done, needed = 0, 0
+	for current, required in (f[4] or ""):gmatch("(%d+)/(%d+)") do
+		done, needed = done + tonumber(current), needed + tonumber(required)
+	end
+	A.obj[id] = A.obj[id] or {}
+	A.obj[id][name] = { state = f[3] or "none", done = done, needed = needed }
+	A.WatchDots()
+	A.RefreshTeam()
+end
+
+function Handle.Q(name, f)
+	local id = tonumber(f[2])
+	if not id then return end
+	local s = { state = f[3] or "other", detail = f[4] or "", catchable = f[5] == "1", at = GetTime() }
+	A.quests[id] = A.quests[id] or {}
+	A.quests[id][name] = s
+	local panel = A.questPanel
+	local open = panel and panel:IsShown()
+	-- At a quest giver (its list, or a quest of it): the panel shows the quests it offers.
+	local atGiver = (QuestFrame and QuestFrame:IsShown()) or (GossipFrame and GossipFrame:IsShown())
+	-- No GetQuestID on this client: the first Q after the quest opened is that quest (the server sends it then).
+	if A.detailPending and QuestFrame and QuestFrame:IsShown() then
+		A.detailPending = nil
+		A.detail = id
+		A.titles[id] = GetTitleText() or A.titles[id]
+		A.Seen(id)
+	end
+	if A.detail then
+		if id == A.detail and not open then A.ShowQuests() end
+	elseif atGiver or (open and A.manualQuests) then
+		if not A.current or not A.quests[A.current] or not open then A.Seen(id) else
+			local known = false
+			for _, recent in ipairs(A.recent) do if recent == id then known = true end end
+			if not known then table.insert(A.recent, id) end
+		end
+		if atGiver and not open then A.ShowQuests() end
+	elseif A.acceptedAt and GetTime() - A.acceptedAt < ACCEPT_WINDOW and s.state ~= "can_take"
+		and s.state ~= "in_log" and s.state ~= "done" then
+		-- Just accepted, the panel closed: the alts left out go to the log.
+		A.Log(string.format(T("Q_BLOCKED"), UI.ClassName(name), QuestLink(id), A.Reason(s)), true, 1, 0.6, 0.3)
+	end
+	A.RefreshQuests()
+	A.RefreshTeam()
+	A.WatchDots()
+end
+
+function Handle.QR(name, f)
+	local id, result, detail = tonumber(f[2]), f[3] or "", f[4] or ""
+	if not id then return end
+	local who, quest = UI.ClassName(name), QuestLink(id)
+	A.quests[id] = A.quests[id] or {}
+	-- Asked by the popup: the log keeps every line, the chat gets one line for all (A.FlushBatch).
+	local batch = A.batch and A.batch.id == id and A.batch.waiting[name] and A.batch
+	local chat = not batch
+	if batch then batch.waiting[name] = nil end
+	if result == "taken" then
+		A.quests[id][name] = { state = "in_log", detail = "incomplete", at = GetTime() }
+		A.Log(string.format(T("QR_taken"), who, quest), chat, 0.5, 1, 0.5)
+		if batch then table.insert(batch.taken, who) end
+	elseif result == "caught_up" then
+		A.Log(string.format(T("QR_caught_up"), who, quest, tonumber(detail) or 0), chat, 1, 0.82, 0)
+		if batch then table.insert(batch.taken, who) end
+	elseif result == "refused" then
+		local s = A.quests[id][name]
+		local reason = (s and s.state == detail) and A.Reason(s) or A.Reason({ state = detail, detail = "" })
+		A.Log(string.format(T("QR_refused"), who, quest, reason), chat, 1, 0.4, 0.3)
+		if batch then table.insert(batch.other, who .. " (" .. reason .. ")") end
+	elseif T("QR_" .. result) ~= "QR_" .. result then
+		local text = string.format(T("QR_" .. result), who, quest)
+		A.Log(text, chat, 1, 0.4, 0.3)
+		if batch then table.insert(batch.other, who .. " (" .. T("QA_" .. result) .. ")")
+		elseif UIErrorsFrame then UIErrorsFrame:AddMessage(text, 1, 0.4, 0.3) end
+	elseif batch then
+		table.insert(batch.other, who .. " (" .. result .. ")")
+	end
+	if batch and not next(batch.waiting) then A.FlushBatch() end
+	A.RefreshQuests()
+	A.WatchDots()
+end
+
+function Handle.T_BEGIN(name, f)
+	local npc = tonumber(f[2]) or 0
+	-- Another trainer: what the others could learn at the last one no longer holds.
+	if A.trainerNpc ~= npc then A.train = {} end
+	A.trainerNpc, A.trainerName = npc, (f[3] ~= "" and f[3]) or A.trainerName
+	A.building = A.building or {}
+	A.building[name] = { npc = npc, list = {} }
+end
+
+function Handle.T(name, f)
+	local b = A.building and A.building[name]
+	local id = tonumber(f[2])
+	if not b or not id then return end
+	table.insert(b.list, { id = id, cost = tonumber(f[3]) or 0, name = f[4] or "" })
+end
+
+function Handle.T_END(name, f)
+	local b = A.building and A.building[name] or { list = {} }
+	if A.building then A.building[name] = nil end
+	A.train[name] = { list = b.list, count = tonumber(f[2]) or #b.list, total = tonumber(f[3]) or 0, money = tonumber(f[4]) or 0,
+		at = GetTime() }
+	if A.trainerOpen or (GossipFrame and GossipFrame:IsShown()) or (A.trainPanel and A.trainPanel:IsShown()) then A.ShowTrainer() end
+	A.RefreshTrainer()
+end
+
+-- "train" / "learn" with no trainer found: said on its card instead of a list.
+function Handle.T_ERR(name, f)
+	local err = (f[2] and f[2] ~= "") and f[2] or "no_trainer"
+	if T("ERR_" .. err) == "ERR_" .. err then err = "no_trainer" end
+	if A.building then A.building[name] = nil end
+	A.train[name] = { err = err, list = {}, count = 0, total = 0, money = 0, at = GetTime() }
+	if not (A.trainPanel and A.trainPanel:IsShown()) then A.ShowTrainer() end
+	A.RefreshTrainer()
+end
+
+local function SpellName(name, id)
+	local data = A.train[name]
+	for _, entry in ipairs(data and data.list or {}) do
+		if entry.id == id and entry.name ~= "" then return entry.name end
+	end
+	return (GetSpellInfo(id)) or ("#" .. id)
+end
+
+function Handle.L(name, f)
+	local id, result = tonumber(f[2]), f[3] or ""
+	if not id then return end
+	local text = string.format(T("L_" .. result) ~= "L_" .. result and T("L_" .. result) or T("L_failed"), UI.ClassName(name),
+		"|cff71d5ff[" .. SpellName(name, id) .. "]|r")
+	if result == "ok" then A.Log(text, false, 0.5, 1, 0.5) else A.Log(text, true, 1, 0.4, 0.3) end
+end
+
+function Handle.L_END(name, f)
+	local learned = tonumber(f[2]) or 0
+	A.Log(string.format(T("L_END"), UI.ClassName(name), learned, Money(f[3])), learned > 0, 1, 0.82, 0)
+end
+
+-- ---------------------------------------------------------------------------
+-- Events
+-- ---------------------------------------------------------------------------
+ChatFrame_AddMessageEventFilter("CHAT_MSG_WHISPER", function(_, _, message, name)
+	if A.repairUntil and GetTime() <= A.repairUntil and message:find("^Cannot find any npc to repair") then
+		for _, alt in ipairs(A.Online()) do
+			if alt == name or alt == (name or ""):match("^[^-]+") then return true end
+		end
+	end
+end)
+
+ChatFrame_AddMessageEventFilter("CHAT_MSG_SYSTEM", function(_, _, message)
+	local name = message:match("^No player named '(.-)' is currently playing%.$")
+	if name and A.sent[name] and GetTime() - A.sent[name] < OFFLINE_WAIT then return true end
+end)
+
+local frame = CreateFrame("Frame")
+for _, event in ipairs({ "CHAT_MSG_ADDON", "CHAT_MSG_SYSTEM", "CHAT_MSG_WHISPER", "PLAYER_ENTERING_WORLD", "QUEST_DETAIL",
+	"QUEST_FINISHED", "QUEST_ACCEPTED", "QUEST_GREETING", "GOSSIP_SHOW", "GOSSIP_CLOSED", "TRAINER_SHOW", "TRAINER_CLOSED",
+	"PARTY_MEMBERS_CHANGED", "RAID_ROSTER_UPDATE", "UNIT_HEALTH", "QUEST_LOG_UPDATE" }) do
+	frame:RegisterEvent(event)
+end
+frame:SetScript("OnEvent", function(_, event, arg1, arg2, arg3, arg4)
+	UI = UI or SquidBotsLite_UI
+	if not SquidBotsLiteDB then return end
+	if event == "CHAT_MSG_ADDON" then
+		if arg1 ~= PREFIX or arg3 ~= "WHISPER" or not arg4 then return end
+		local f = Split(arg2 or "")
+		-- The Main Tank bar's replies come from any bot of the raid, not only from an alt (MainTank.lua); and a
+		-- line this file does not know, from someone not an alt, is not one of the team's.
+		if f[1] == "TK" or f[1] == "TS" then return end
+		-- Only the account's alts make the team. A random bot that knows the addon (the Main Tank bar said HELLO
+		-- or gave it an order) sends TEAM and the like too: its HELLO is answered, the rest is not ours.
+		if not IsAlt(arg4) then
+			if f[1] == "HELLO" then Handle.HELLO(arg4, f) end
+			return
+		end
+		A.seen[arg4], A.gone[arg4] = GetTime(), nil
+		local handler = Handle[f[1]]
+		if handler then handler(arg4, f) end
+	elseif event == "CHAT_MSG_SYSTEM" then
+		local added = arg1:match("^add: (.-) %- ok$") or arg1:match("^addaccount: (.-) %- ok$")
+		if added then
+			A.seen[added], A.gone[added], A.left[added] = GetTime(), nil, nil
+			A.RefreshTeam()
+		end
+		local gone = arg1:match("^No player named '(.-)' is currently playing%.$")
+		if gone and A.sent[gone] and GetTime() - A.sent[gone] < OFFLINE_WAIT then
+			A.gone[gone] = GetTime()
+			-- The handshake went to an alt gone meanwhile: another one soon.
+			if A.helloTo == gone then A.nextHello = GetTime() + 2 end
+			A.RefreshTeam()
+		end
+	elseif event == "CHAT_MSG_WHISPER" then
+		if IsAlt(arg2) then A.seen[arg2], A.gone[arg2] = GetTime(), nil end
+	elseif event == "PLAYER_ENTERING_WORLD" then
+		-- After the loading screen, once the group and the alts are back.
+		A.nextHello = math.max(A.nextHello, GetTime() + 5)
+		A.RefreshTeam()
+	elseif event == "QUEST_DETAIL" then
+		local id = GetQuestID and GetQuestID()
+		if id and id > 0 then
+			A.detail = id
+			A.titles[id] = GetTitleText() or A.titles[id]
+			A.Seen(id)
+			A.detailAt, A.questAsk = GetTime(), GetTime() + 1.5
+			if #A.Online() > 0 then A.ShowQuests() end
+		else
+			A.detailPending = true
+		end
+	elseif event == "QUEST_FINISHED" then
+		A.detail, A.questAsk, A.detailPending = nil, nil, nil
+		A.HideQuests()
+	elseif event == "QUEST_ACCEPTED" then
+		A.acceptedAt = GetTime()
+		A.AfterAccept(A.detail, arg1)
+		A.detail = nil
+	elseif event == "QUEST_GREETING" or event == "GOSSIP_SHOW" then
+		A.detail = nil
+		A.recent = {}
+		A.current = nil
+		if A.questPanel and A.questPanel:IsShown() then A.RefreshQuests() end
+	elseif event == "GOSSIP_CLOSED" then
+		if not (QuestFrame and QuestFrame:IsShown()) then A.HideQuests() end
+		if not A.trainerOpen and A.trainPanel and A.trainPanel:IsShown() and not A.manualTrainer then A.trainPanel:Hide() end
+	elseif event == "TRAINER_SHOW" then
+		A.trainerOpen, A.trainerOpenedAt = true, GetTime()
+		A.trainerName = UnitName("npc") or A.trainerName
+		A.ShowTrainer()
+		A.trainAsk = GetTime() + TRAIN_WAIT
+	elseif event == "TRAINER_CLOSED" then
+		A.trainerOpen, A.trainAsk = nil, nil
+		if A.trainPanel and A.trainPanel:IsShown() and not A.manualTrainer then A.trainPanel:Hide() end
+	elseif event == "QUEST_LOG_UPDATE" then
+		A.WatchDots()
+	elseif event == "UNIT_HEALTH" then
+		if arg1 and (arg1:find("^party%d") or arg1:find("^raid%d")) then A.RefreshTeam() end
+	else
+		-- An alt that joins the group opens the team bar again, even after the player closed it.
+		if event == "PARTY_MEMBERS_CHANGED" or event == "RAID_ROSTER_UPDATE" then
+			local count, now = 0, {}
+			for _, unit in ipairs(GroupUnits()) do
+				local name = UnitName(unit)
+				if IsAlt(name) then
+					count = count + 1
+					now[name], A.left[name] = true, nil
+				end
+			end
+			-- An alt removed from the group, or a group disbanded: its portrait goes instead of staying "Away".
+			for name in pairs(A.grouped) do
+				if not now[name] then A.left[name], A.members[name] = GetTime(), nil end
+			end
+			A.grouped = now
+			if count > (A.altsInGroup or 0) then SquidBotsLiteDB.teamHidden = nil end
+			A.altsInGroup = count
+		end
+		A.RefreshTeam()
+	end
+end)
+
+if hooksecurefunc and WatchFrame_Update then hooksecurefunc("WatchFrame_Update", function() A.WatchDots() end) end
+
+local elapsed, teamTick = 0, 0
+frame:SetScript("OnUpdate", function(_, delta)
+	elapsed = elapsed + delta
+	if elapsed < 1 then return end
+	elapsed = 0
+	if not SquidBotsLiteDB then return end
+	UI = UI or SquidBotsLite_UI
+	local now = GetTime()
+	-- The handshake: one alt is enough, the server marks the player for all of them.
+	if Mode() ~= "chat" and now >= A.nextHello then
+		local alts = A.Online()
+		if #alts > 0 then
+			A.helloTo, A.helloAt = alts[1], now
+			Send(alts[1], "HELLO\t" .. VERSION)
+			A.nextHello = now + HELLO_EVERY
+		else
+			A.nextHello = now + HELLO_RETRY
+		end
+	end
+	-- The server sends Q when the quest opens: ask only the alts that said nothing (an older server).
+	if A.questAsk and now >= A.questAsk then
+		A.questAsk = nil
+		local id = A.detail
+		for _, name in ipairs(id and A.Online() or {}) do
+			local s = A.quests[id] and A.quests[id][name]
+			if not s or s.at < (A.detailAt or 0) then A.Ask(name, "quest", id) end
+		end
+		A.RefreshQuests()
+	end
+	if A.batch and now >= A.batch.ends then A.FlushBatch() end
+	-- The trainer opened and an alt said nothing: ask it.
+	if A.trainAsk and now >= A.trainAsk then
+		A.trainAsk = nil
+		for _, name in ipairs(A.Online()) do
+			local data = A.train[name]
+			if not data or data.at < (A.trainerOpenedAt or 0) then Send(name, "train") end
+		end
+	end
+	teamTick = teamTick + 1
+	if teamTick >= 5 then
+		teamTick = 0
+		A.RefreshTeam()
+		A.RefreshLog()
+		if A.questPanel and A.questPanel:IsShown() then A.RefreshQuests() end
+	end
+end)

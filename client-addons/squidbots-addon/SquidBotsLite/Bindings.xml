@@ -1,0 +1,23 @@
+<Bindings>
+	<Binding name="SQUIDBOTSLITE_FOLLOW" header="SQUIDBOTSLITE">SquidBotsLite_Order("follow")</Binding>
+	<Binding name="SQUIDBOTSLITE_STAY">SquidBotsLite_Order("stay")</Binding>
+	<Binding name="SQUIDBOTSLITE_ATTACK">SquidBotsLite_Order("attack")</Binding>
+	<Binding name="SQUIDBOTSLITE_TANKPULL">SquidBotsLite_TankPull()</Binding>
+	<Binding name="SQUIDBOTSLITE_PASSIVE">SquidBotsLite_Order("passive")</Binding>
+	<Binding name="SQUIDBOTSLITE_PULL">SquidBotsLite_Order("pull")</Binding>
+	<Binding name="SQUIDBOTSLITE_DUNGEON">SquidBotsLite_Order("dungeon")</Binding>
+	<Binding name="SQUIDBOTSLITE_SUMMON">SquidBotsLite_Order("summon")</Binding>
+	<Binding name="SQUIDBOTSLITE_RECALLALL">if SquidBotsLite_RecallAll then SquidBotsLite_RecallAll() end</Binding>
+	<Binding name="SQUIDBOTSLITE_RELEASE">SquidBotsLite_Order("release")</Binding>
+	<Binding name="SQUIDBOTSLITE_ALTS">SquidBotsLite_Order("alts")</Binding>
+	<Binding name="SQUIDBOTSLITE_SPECS">SquidBotsLite_Specs()</Binding>
+	<Binding name="SQUIDBOTSLITE_MT_BAR" header="SQUIDBOTSLITE_MT">SquidBotsLite_ToggleMainTank()</Binding>
+	<Binding name="SQUIDBOTSLITE_MT_TARGET1">SquidBotsLite_MainTank("target", 1)</Binding>
+	<Binding name="SQUIDBOTSLITE_MT_TAUNT1">SquidBotsLite_MainTank("taunt", 1)</Binding>
+	<Binding name="SQUIDBOTSLITE_MT_SWAP1">SquidBotsLite_MainTank("swap", 1)</Binding>
+	<Binding name="SQUIDBOTSLITE_MT_HOLD1">SquidBotsLite_MainTank("hold", 1)</Binding>
+	<Binding name="SQUIDBOTSLITE_MT_TARGET2">SquidBotsLite_MainTank("target", 2)</Binding>
+	<Binding name="SQUIDBOTSLITE_MT_TAUNT2">SquidBotsLite_MainTank("taunt", 2)</Binding>
+	<Binding name="SQUIDBOTSLITE_MT_SWAP2">SquidBotsLite_MainTank("swap", 2)</Binding>
+	<Binding name="SQUIDBOTSLITE_MT_HOLD2">SquidBotsLite_MainTank("hold", 2)</Binding>
+</Bindings>

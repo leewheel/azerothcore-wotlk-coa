@@ -26,6 +26,7 @@
 #include "AllItemScript.h"
 #include "AllSpellScript.h"
 #include "AscensionChangelogCompat.h"
+#include "AscensionCompanionLoot.h"
 #include "AscensionAverageItemLevel.h"
 #include "AscensionCompatOpcodes.h"
 #include "AscensionCharacterSelection.h"
@@ -407,6 +408,17 @@ enum CompanionLoot : uint32
     SPELL_LOOT_TRANSFIGURATOR = 84419,
     SPELL_SKIN_PEELER = 92864
 };
+
+//By leewheel 2026年11月9日
+// 上面这套枚举与 AscensionCompanionLoot.h（机器人模块要用）里的常量必须是同一个值，
+// 编期对齐，任一边改了另一没跟就编不过，避免模块与核心各说各话。
+//End By leewheel
+static_assert(APPEARANCE_CATEGORY_COMPANION_LOOT == Ascension::CompanionLooting::LootAppearanceCategory);
+static_assert(APPEARANCE_CATEGORY_COMPANION_SKINNING == Ascension::CompanionLooting::SkinningAppearanceCategory);
+static_assert(APPEARANCE_LOOT_TRANSFIGURATOR == Ascension::CompanionLooting::LootTransfiguratorAppearance);
+static_assert(APPEARANCE_SKIN_PEELER == Ascension::CompanionLooting::SkinPeelerAppearance);
+static_assert(SPELL_LOOT_TRANSFIGURATOR == Ascension::CompanionLooting::LootTransfiguratorSpell);
+static_assert(SPELL_SKIN_PEELER == Ascension::CompanionLooting::SkinPeelerSpell);
 
 constexpr uint8 PYROMANCER_HEAT_PER_EMBER = 100;
 constexpr uint8 REAPER_SOUL_FRAGMENT_COST = 3;
@@ -6137,6 +6149,47 @@ public:
     return state && state->OwnedVanityItems.contains(itemId);
   }
 
+  //By leewheel 2026年11月9日
+  // 同伴拾取对外的只读查询（上游配套提交 7fc67d942）：外观是否启用、场上伙伴在这里会不会捡/剥、半径多大。
+  // 判定条件与 ProcessCompanionLoot 共用同一批辅助函数，核心原有行为不变，只是把结论导出去给机器人模块用。
+  // GetState 是私有的，所以出口开在类里，文件末尾的 Ascension::CompanionLooting 自由函数再转发一层。
+  //End By leewheel
+  bool HasActiveCompanionAppearance(Player const* player, bool skin) {
+    std::shared_ptr<PlayerCollectionState> state = GetState(player);
+    return state && HasActiveCompanionAppearanceIn(*state, skin);
+  }
+
+  bool CompanionLootsFor(Player const* player, bool skin) {
+    std::shared_ptr<PlayerCollectionState> state = GetState(player);
+    Map* map = player->FindMap();
+    if (!state || !map || CompanionLootRadius(player, skin) <= 0.0f)
+      return false;
+    Creature* companion = map->GetCreature(player->GetCritterGUID());
+    if (!companion || !companion->IsAlive() || companion->GetOwnerGUID() != player->GetGUID())
+      return false;
+    bool const appearance = HasActiveCompanionAppearanceIn(*state, skin);
+    if (skin)
+      return Ascension::CompanionLooting::SkinsWith(appearance);
+    return Ascension::CompanionLooting::LootsWith(appearance,
+        Ascension::CompanionLooting::IsSelfLootingCompanion(companion->GetEntry()), map->IsRaid());
+  }
+
+  static float CompanionLootRadius(Player const* player, bool skin) {
+    SpellInfo const* spell = sSpellMgr->GetSpellInfo(skin ? SPELL_SKIN_PEELER : SPELL_LOOT_TRANSFIGURATOR);
+    if (!spell || !spell->Effects[EFFECT_0].Amplitude)
+      return 0.0f;
+    float const radius = spell->Effects[EFFECT_0].CalcRadius(const_cast<Player*>(player));
+    if (!skin && IsGoblinSalvageFieldTesting(player))
+      return std::min(radius, GOBLIN_SALVAGE_FIELD_TESTING_LOOT_REACH);
+    return radius;
+  }
+
+  static bool HasActiveCompanionAppearanceIn(PlayerCollectionState const& state, bool skin) {
+    uint32 const category = skin ? APPEARANCE_CATEGORY_COMPANION_SKINNING : APPEARANCE_CATEGORY_COMPANION_LOOT;
+    uint32 const appearance = skin ? APPEARANCE_SKIN_PEELER : APPEARANCE_LOOT_TRANSFIGURATOR;
+    return state.ActiveAppearances[category] == appearance && state.CollectedAppearances.contains(appearance);
+  }
+
   bool LoadClientData() {
     _appearances.clear();
     _itemAppearances.clear();
@@ -6529,24 +6582,22 @@ public:
 
     void ProcessCompanionLoot(Player* player, uint32 diff, bool skin = false)
     {
-        constexpr uint32 CREATURE_LOOTBOT_3000 = 44022;
-        constexpr uint32 CREATURE_KLEPTOMANIC_DEMON = 79026;
-        constexpr std::array<uint32, 2> LOOT_COMPANIONS = { CREATURE_LOOTBOT_3000, CREATURE_KLEPTOMANIC_DEMON };
-        uint32 const category = skin ? APPEARANCE_CATEGORY_COMPANION_SKINNING : APPEARANCE_CATEGORY_COMPANION_LOOT;
-        uint32 const appearance = skin ? APPEARANCE_SKIN_PEELER : APPEARANCE_LOOT_TRANSFIGURATOR;
         auto state = GetState(player);
         if (!state)
             return;
 
-        bool const hasAppearance = state->ActiveAppearances[category] == appearance &&
-            state->CollectedAppearances.contains(appearance);
+        //By leewheel 2026年11月9日
+        // 外观判定与「哪个生物自己会捡」都改成共用函数（上游配套提交 7fc67d942），
+        // 机器人模块问的就是这两件事，抽出去以后核心与模块不会各写一份、日后走偏。行为不变。
+        //End By leewheel
+        bool const hasAppearance = HasActiveCompanionAppearanceIn(*state, skin);
 
         bool isLootbot = false;
         if (!skin && !hasAppearance)
         {
             Creature* c = player->GetMap()->GetCreature(player->GetCritterGUID());
             isLootbot = c && c->IsAlive() && c->GetOwnerGUID() == player->GetGUID() &&
-                        std::find(LOOT_COMPANIONS.begin(), LOOT_COMPANIONS.end(), c->GetEntry()) != LOOT_COMPANIONS.end() &&
+                        Ascension::CompanionLooting::IsSelfLootingCompanion(c->GetEntry()) &&
                         !player->GetMap()->IsRaid();
         }
 
@@ -11371,6 +11422,40 @@ AscensionVanityOwnership::TestOverride::~TestOverride()
 bool AscensionVanityOwnership::OwnsItem(Player const* player, uint32 itemId)
 {
     return AscensionCollectionService::Instance().OwnsVanityItem(player, itemId);
+}
+
+//By leewheel 2026年11月9日
+// 同伴拾取对外的查询接口（上游配套提交 7fc67d942）。机器人模块 mod-playerbots 2.9.5 的「拾取宠物」在用，
+// 头文件是 AscensionCompanionLoot.h。全部走 AscensionCollectionService，玩家为空一律当「不会」。
+//End By leewheel
+bool Ascension::CompanionLooting::HasLootAppearance(Player const* player)
+{
+    return player && AscensionCollectionService::Instance().HasActiveCompanionAppearance(player, false);
+}
+
+bool Ascension::CompanionLooting::HasSkinningAppearance(Player const* player)
+{
+    return player && AscensionCollectionService::Instance().HasActiveCompanionAppearance(player, true);
+}
+
+bool Ascension::CompanionLooting::CompanionLoots(Player const* player)
+{
+    return player && AscensionCollectionService::Instance().CompanionLootsFor(player, false);
+}
+
+bool Ascension::CompanionLooting::CompanionSkins(Player const* player)
+{
+    return player && AscensionCollectionService::Instance().CompanionLootsFor(player, true);
+}
+
+float Ascension::CompanionLooting::LootRadius(Player const* player)
+{
+    return player ? AscensionCollectionService::CompanionLootRadius(player, false) : 0.0f;
+}
+
+float Ascension::CompanionLooting::SkinningRadius(Player const* player)
+{
+    return player ? AscensionCollectionService::CompanionLootRadius(player, true) : 0.0f;
 }
 
 bool AscensionCosmeticPetTokens::AvailableOnRealm(uint32 itemId)

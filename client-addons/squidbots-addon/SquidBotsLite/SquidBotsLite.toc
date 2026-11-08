@@ -1,0 +1,18 @@
+## Interface: 30300
+## Title: SquidBots Lite
+## Notes: 机器人指令细条：队伍框架上的职责标记、随机副本机器人应征弹窗、主坦克栏 —— CoA 机器人
+## Notes-frFR: Une barre fine d'ordres aux bots, rôles sur les cadres de groupe, offres lfg bot en notifications - CoA Bots
+## Notes-zhCN: 机器人指令细条：队伍框架上的职责标记、随机副本机器人应征弹窗、主坦克栏 —— CoA 机器人
+## Notes-zhTW: 機器人指令細條：隊伍框架上的職責標記、隨機副本機器人應徵彈窗、主坦克欄 —— CoA 機器人
+## Version: 2.9.5
+## Author: CoA Bots team
+## X-License: GPL-2.0
+## X-Website: https://github.com/Zyth45/mod-playerbots
+## SavedVariables: SquidBotsLiteDB
+## SavedVariablesPerCharacter: SquidBotsLiteCharDB
+SquidBotsLite.lua
+Manager.lua
+Missions.lua
+Alts.lua
+Dashboard.lua
+MainTank.lua
