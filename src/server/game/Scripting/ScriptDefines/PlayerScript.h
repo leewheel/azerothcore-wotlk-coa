@@ -264,6 +264,7 @@ enum PlayerHook
     PLAYERHOOK_ON_PETITION_OFFERED, // mod-coa-playerbots: bot guild-invite auto-accept //By leewheel 2026年10月27日
     PLAYERHOOK_CAN_LFG_TELEPORT,
     PLAYERHOOK_ON_HOLDS_TANK_OR_HEALER_ROLE,
+    PLAYERHOOK_ON_SAVE_INVENTORY,
     PLAYERHOOK_END
 };
 
@@ -456,6 +457,7 @@ public:
 
     // Called when a player is about to be saved.
     virtual void OnPlayerSave(Player* /*player*/) { }
+    virtual void OnPlayerSaveInventory(Player* /*player*/, CharacterDatabaseTransaction /*trans*/) { }
 
     virtual void OnPlayerNormalizeActionButtonSpell(Player* /*player*/, uint32& /*action*/, bool /*loading*/) { }
 
