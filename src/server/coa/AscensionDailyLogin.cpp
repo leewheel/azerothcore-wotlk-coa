@@ -1,4 +1,8 @@
 /* Copyright (C) 2016+ AzerothCore, GNU AGPL v3. */
+//By leewheel 2026年11月8日
+// 每日登录奖励汉化：邮件标题「每日登录奖励」与正文、客户端 Toast 通知标题与说明。
+// ToastNotificationSystem 的 "Item" 是分类协议串，保持英文。
+//End By leewheel
 #include "AscensionClientLua.h"
 #include "AsyncCallbackProcessor.h"
 #include "DatabaseEnv.h"
@@ -71,8 +75,8 @@ frame:SetScript("OnUpdate", function(self, delta)
     local reward = rewards[index]
     local name, _, quality, _, _, _, _, _, _, icon = GetItemInfo(reward[1])
     if not icon then return end
-    ToastNotificationSystem:EnqueueGenericNotification("Item", "Daily Login Reward", name,
-        reward[2], icon, quality, nil, "Your reward has been sent by mail.")
+    ToastNotificationSystem:EnqueueGenericNotification("Item", "每日登录奖励", name,
+        reward[2], icon, quality, nil, "你的奖励已通过邮件寄出。")
     index = index + 1
     if index > #rewards then self:SetScript("OnUpdate", nil) end
 end)
@@ -101,8 +105,8 @@ end)
         claim->SetData(4, previousClaim);
         transaction->Append(claim);
 
-        auto mail = std::shared_ptr<MailDraft>(new MailDraft("Daily Login Reward",
-            "Thank you for playing Conquest of Azeroth! Your daily rewards are enclosed."), [](MailDraft* draft)
+        auto mail = std::shared_ptr<MailDraft>(new MailDraft("每日登录奖励",
+            "感谢你游玩《艾泽拉斯的征服》！你的每日奖励已随信附上。"), [](MailDraft* draft)
         {
             draft->DiscardItems();
             delete draft;

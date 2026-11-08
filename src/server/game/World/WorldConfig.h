@@ -569,6 +569,11 @@ enum ServerConfigs
 
     CONFIG_CAIS_ENABLED,
 
+    //By leewheel 2026年11月8日
+    // 禁止玩家使用需要 GM 权限的命令（升级、加钱、加装备等）。玩家权限命令不受影响。
+    //End By leewheel
+    CONFIG_DISABLE_GM_COMMAND,
+
     MAX_NUM_SERVER_CONFIGS
 };
 

@@ -284,7 +284,7 @@ bool GrantNewestCache(Player* player, Item* item)
     uint32 cacheItemId = NewestReleasedCache(item->GetEntry(), CurrentConfig());
     if (!cacheItemId)
     {
-        ChatHandler(player->GetSession()).SendSysMessage("No Prestigious Cache is available yet.");
+        ChatHandler(player->GetSession()).SendSysMessage("目前还没有可用的尊贵宝箱。");
         return true;
     }
 
@@ -304,7 +304,7 @@ bool OpenPrestigiousCache(Player* player, Item* item)
         if (!ClassicStage(cacheItemId) &&
             std::find(TbcLadder.begin(), TbcLadder.end(), cacheItemId) == TbcLadder.end())
             return false;
-        ChatHandler(player->GetSession()).SendSysMessage("This Prestigious Cache has no configured rewards.");
+        ChatHandler(player->GetSession()).SendSysMessage("该尊贵宝箱未配置任何奖励。");
         return true;
     }
 
@@ -312,14 +312,14 @@ bool OpenPrestigiousCache(Player* player, Item* item)
 
     if (player->GetLevel() < uint32(sWorld->getIntConfig(CONFIG_MAX_PLAYER_LEVEL)))
     {
-        ChatHandler(player->GetSession()).SendSysMessage("Requires max level to open.");
+        ChatHandler(player->GetSession()).SendSysMessage("需要满级才能开启。");
         return true;
     }
 
     CacheConfig const config = CurrentConfig();
     if (!IsCacheReleased(cacheItemId, config))
     {
-        ChatHandler(player->GetSession()).SendSysMessage("This Prestigious Cache is not released yet.");
+        ChatHandler(player->GetSession()).SendSysMessage("该尊贵宝箱尚未解锁。");
         return true;
     }
 
@@ -327,7 +327,7 @@ bool OpenPrestigiousCache(Player* player, Item* item)
     if (!PickReward(player, *pool, reward))
     {
         ChatHandler(player->GetSession()).SendSysMessage(
-            "The cache holds nothing this character can use.");
+            "宝箱中没有该角色可用的物品。");
         return true;
     }
 

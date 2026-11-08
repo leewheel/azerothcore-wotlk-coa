@@ -665,6 +665,16 @@ class spell_ascension_bloodmage_sanguine_rupture : public SpellScript
     }
 };
 
+//By leewheel 2026年11月8日
+// 血之气息吸取（807300）造成的伤害会经客户端自定义法术链（954153 → 954157）再次触发血之气息本体，
+// 形成 807300 -> 954153 -> 807300 的同线程嵌套递归：引擎在 32 层强制中断并写 ERROR 日志
+// （CastSpell: ... refused, a trigger loop），同时产生数十次多余的重复吸取。
+// 原 Check 只排除了 info->Id == SPELL_BLOOD_SCENT_LEECH 这一种来源，挡不住链上其余法术。
+// 这里用线程局部深度标记把整棵嵌套子树挡掉，只认最外层的一次触发，
+// 与「吸取自身造成的伤害不再触发吸血」的原意保持一致。
+static thread_local uint32 BloodScentLeechDepth = 0;
+//End By leewheel
+
 class aura_ascension_bloodmage_blood_scent : public AuraScript
 {
     PrepareAuraScript(aura_ascension_bloodmage_blood_scent);
@@ -673,6 +683,10 @@ class aura_ascension_bloodmage_blood_scent : public AuraScript
 
     bool Check(ProcEventInfo& event)
     {
+        //By leewheel 2026年11月8日：吸取链路内部不再重复触发，切断 807300 <-> 954153 自触发递归
+        if (BloodScentLeechDepth)
+            return false;
+
         SpellInfo const* info = event.GetSpellInfo();
         return IsBloodmageDamageProc(GetTarget(), GetCaster(), event) &&
             BloodScentTarget(GetTarget(), event.GetActionTarget()) &&
@@ -682,9 +696,16 @@ class aura_ascension_bloodmage_blood_scent : public AuraScript
     void Proc(AuraEffect const* effect, ProcEventInfo& event)
     {
         PreventDefaultAction();
+        if (BloodScentLeechDepth)
+            return;
         if (int32 amount = BloodmageProcShare(effect, event))
+        {
+            //By leewheel 2026年11月8日：整棵吸取嵌套子树内屏蔽血之气息自身的再次触发
+            ++BloodScentLeechDepth;
             GetTarget()->CastCustomSpell(SPELL_BLOOD_SCENT_LEECH, SPELLVALUE_BASE_POINT0, amount,
                 event.GetActionTarget(), TRIGGERED_FULL_MASK);
+            --BloodScentLeechDepth;
+        }
     }
 
     void Register() override

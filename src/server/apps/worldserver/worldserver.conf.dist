@@ -5176,3 +5176,19 @@ Cluster.IsCrossrealm=0
 # Conflicting notes or more than 50 friend accounts require administrator reconciliation.
 # Ignore lists remain character-specific. Restart required; default disabled.
 Social.AccountWideFriends = 0
+
+###################################################################################################
+#                                                                                                 #
+# GM COMMAND RESTRICTION                                                                          #
+#                                                                                                 #
+###################################################################################################
+
+# DisableGm.Command
+#    说明: 是否禁止玩家使用「需要 GM 权限」的命令（升级、加钱、加装备、传送、刷怪等）。
+#          只禁止 GM 权限及以上的命令，SEC_PLAYER 的玩家权限命令不受任何影响；
+#          服务器控制台会话不受影响。需要临时使用 GM 命令时，先把本项设为 0，
+#          再用 .reload config 立即生效（无需重启）。
+#    默认: 1 - (禁止，玩家无法使用任何 GM 权限命令)
+#          0 - (允许，按账号的 GM 等级权限正常判定)
+DisableGm.Command = 1
+

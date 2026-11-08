@@ -807,4 +807,10 @@ void WorldConfig::BuildConfigCache()
     SetConfigValue<uint32>(CONFIG_ACHIEVEMENT_REALM_FIRST_KILL_WINDOW, "Achievement.RealmFirstKillWindow", 60);
     SetConfigValue<bool>(CONFIG_ACHIEVEMENT_REALM_FIRST_RACE_LIMIT_ONE_PER_CHARACTER, "Achievement.RealmFirstRaceLimitOnePerCharacter", true);
     SetConfigValue<bool>(CONFIG_ACHIEVEMENT_REALM_FIRST_BLOCK_BOTS, "Achievement.RealmFirstBlockBots", true);
+
+    //By leewheel 2026年11月8日
+    // DisableGm.Command：1 = 禁止玩家（非控制台会话）使用一切需要 GM 权限的命令
+    // （升级、加钱、加装备、传送等）；0 = 放行。控制台不受影响，玩家权限命令永不受影响。
+    //End By leewheel
+    SetConfigValue<bool>(CONFIG_DISABLE_GM_COMMAND, "DisableGm.Command", true, ConfigValueCache::Reloadable::Yes);
 }

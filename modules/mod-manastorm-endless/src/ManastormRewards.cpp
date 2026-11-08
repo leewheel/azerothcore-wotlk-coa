@@ -1082,7 +1082,7 @@ bool ManastormRewards::PrepareCoATokenReward(ObjectGuid::LowType characterGuid, 
 {
     if (!LoadCoATokenState(characterGuid, state))
     {
-        error = "Unable to read CoA Manastorm token allowance.";
+        error = "无法读取 CoA 法力风暴代币额度。";
         return false;
     }
     bool const first = IsCoAFirstClear(state, run.GetMode(), run.IsEndgame(), run.GetDepth());
@@ -1144,7 +1144,7 @@ bool ManastormRewards::AwardCoAGreedyReward(Player* player, ManastormRun const& 
     ManastormCoATokenState state;
     if (!LoadCoATokenState(guid, state))
     {
-        error = "Unable to read your Manastorm token allowance.";
+        error = "无法读取你的法力风暴代币额度。";
         return false;
     }
     auto transaction = CharacterDatabase.BeginTransaction();
@@ -1156,7 +1156,7 @@ bool ManastormRewards::AwardCoAGreedyReward(Player* player, ManastormRun const& 
     AppendCoAAllowance(guid, CoAEncounterTokens(1, quality), transaction, state, quantity);
     std::vector<std::shared_ptr<ManastormRewardPublication>> publications;
     if (quantity && !PrepareItemDelivery(guid, {{ManastormCoALoot::TokenItem, quantity}}, transaction,
-        publications, error, "Manastorm: Greedy Demon rewards"))
+        publications, error, "法力风暴：贪婪恶魔奖励"))
         return false;
     uint32 const previousGold = player->GetMoney();
     if (!player->ModifyMoney(int32(gold)))
@@ -1165,11 +1165,11 @@ bool ManastormRewards::AwardCoAGreedyReward(Player* player, ManastormRun const& 
     if (!CharacterDatabase.AsyncCommitTransaction(transaction).m_future.get())
     {
         player->SetMoney(previousGold);
-        error = "Greedy Demon reward claim failed or was already claimed.";
+        error = "贪婪恶魔奖励领取失败，或已被领取。";
         return false;
     }
     PublishCommitted(publications);
-    player->SendSystemMessage(Acore::StringFormat("Greedy Demon: +{} Bazaar Tokens.", quantity));
+    player->SendSystemMessage(Acore::StringFormat("贪婪恶魔：+{} 枚集市代币。", quantity));
     return true;
 }
 
@@ -2343,7 +2343,7 @@ void ManastormRewards::PublishCommitted(
         if (player && publication->HasCoATokens)
         {
             player->SendSystemMessage(Acore::StringFormat(
-                "Manastorm Bazaar Tokens: +{}. {}/{} earned in your personal window; {} remaining. Reset: {}.",
+                "法力风暴集市代币：+{}。你的个人窗口内已获得 {}/{}；剩余 {}。重置时间：{}。",
                 publication->CoATokens, publication->CoAWindow.Earned, ManastormModuleConfig::CoATokenCap(),
                 ManastormCoALoot::Remaining(publication->CoAWindow.Earned, ManastormModuleConfig::CoATokenCap()),
                 Acore::Time::TimeToTimestampStr(Seconds(publication->CoAWindow.End))).c_str());

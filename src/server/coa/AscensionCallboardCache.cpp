@@ -286,7 +286,7 @@ bool OpenCallboardCache(Player* player, Item* item)
     if (!PickReward(player, *pool, uint32(AscensionAverageItemLevel::Equipped(player)), reward))
     {
         ChatHandler(player->GetSession()).SendSysMessage(
-            "The cache holds nothing this character can use.");
+            "宝箱中没有该角色可用的物品。");
         return true;
     }
 

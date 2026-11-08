@@ -26,6 +26,7 @@
 #include "ScriptMgr.h"
 #include "StringFormat.h"
 #include "Tokenize.h"
+#include "World.h"
 #include "WorldSession.h"
 
 using ChatSubCommandMap = std::map<std::string_view, Acore::Impl::ChatCommands::ChatCommandNode, StringCompareLessI_T>;
@@ -272,6 +273,17 @@ namespace Acore::Impl::ChatCommands
     };
 }
 
+//By leewheel 2026年11月8日
+// DisableGm.Command 的判定：命令自身声明的权限高于 SEC_PLAYER，或使用 RBAC 权限位（>= 200），
+// 即为「需要 GM 权限的命令」。SEC_PLAYER 的玩家命令永远不在此列。
+static bool IsGmCommandPermission(uint32 requiredLevel)
+{
+    if (requiredLevel >= rbac::RBAC_PERM_COMMAND_RBAC)
+        return true;
+    return requiredLevel > SEC_PLAYER;
+}
+//End By leewheel
+
 /*static*/ bool Acore::Impl::ChatCommands::ChatCommandNode::TryExecuteCommand(ChatHandler& handler, std::string_view cmdStr)
 {
     ChatCommandNode const* cmd = nullptr;
@@ -322,6 +334,17 @@ namespace Acore::Impl::ChatCommands
 
         oldTail = newTail;
     }
+
+    //By leewheel 2026年11月8日
+    // DisableGm.Command：默认 1，禁止玩家（非控制台会话）使用一切需要 GM 权限的命令。
+    // 只拦 GM 权限及以上的命令，SEC_PLAYER 的玩家权限命令照常放行；控制台永不受影响。
+    if (cmd && !handler.IsConsole() && sWorld->getBoolConfig(CONFIG_DISABLE_GM_COMMAND)
+        && IsGmCommandPermission(cmd->_permission.RequiredLevel))
+    {
+        handler.SendSysMessage("该命令需要 GM 权限，服务器已通过 DisableGm.Command 禁止玩家使用。");
+        return true;
+    }
+    //End By leewheel
 
     if (!sScriptMgr->OnTryExecuteCommand(handler, cmdStr))
         return true;

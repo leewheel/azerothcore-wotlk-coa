@@ -5250,7 +5250,7 @@ bool ManastormMgr::PrepareStage(
 
         if (!PrepareStageMemberTransfer(member, run))
         {
-            error = "A dead Manastorm member could not be revived before stage transfer.";
+            error = "阶段转换前无法复活已阵亡的法力风暴成员。";
             return false;
         }
         member->CombatStopWithPets(
@@ -5409,7 +5409,7 @@ bool ManastormMgr::TransferMemberToCurrentStage(
 
     if (!PrepareStageMemberTransfer(player, run))
     {
-        error = "The dead Manastorm member could not be revived before stage transfer.";
+        error = "阶段转换前无法复活已阵亡的法力风暴成员。";
         return false;
     }
     player->CombatStopWithPets(
@@ -9892,7 +9892,7 @@ bool ManastormMgr::LeaveRunMember(ManastormRun& run, Player* player, bool return
     error.clear();
     if (!player || GetRunFor(player) != &run || run.GetMembers().size() < 2)
     {
-        error = "The player is not part of a shared Manastorm run.";
+        error = "该玩家不在共享的法力风暴冒险中。";
         return false;
     }
     ObjectGuid::LowType const guid = player->GetGUID().GetCounter();
@@ -9900,7 +9900,7 @@ bool ManastormMgr::LeaveRunMember(ManastormRun& run, Player* player, bool return
     if (returnToSavedLocation &&
         (!savedReturn || !player->IsInWorld() || player->IsBeingTeleported()))
     {
-        error = "The player is not ready to leave Manastorm.";
+        error = "该玩家尚未准备好离开法力风暴。";
         return false;
     }
 
@@ -9916,7 +9916,7 @@ bool ManastormMgr::LeaveRunMember(ManastormRun& run, Player* player, bool return
         player->ResurrectPlayer(1.0f, false);
         if (!player->IsAlive())
         {
-            error = "The player could not be revived to leave Manastorm.";
+            error = "无法复活该玩家以离开法力风暴。";
             return false;
         }
         player->SpawnCorpseBones();
@@ -9974,7 +9974,7 @@ bool ManastormMgr::LeaveRunMember(ManastormRun& run, Player* player, bool return
                 player->CastSpell(player, companionSpell, true);
             if (run.GetState() == ManastormRunState::Active)
                 ManastormAffixEngine::Instance().ApplyActivePlayerAffixes(player, run);
-            error = "Returning from Manastorm failed. You are still a member of the run.";
+            error = "从法力风暴返回失败，你仍是本次冒险的成员。";
             return false;
         }
     }
@@ -10012,7 +10012,7 @@ bool ManastormMgr::LeaveRunMember(ManastormRun& run, Player* player, bool return
     SendClientState(player, nullptr);
     SendClientProgression(player);
     BroadcastClientState(run);
-    player->SendSystemMessage("Manastorm: you left the run. The remaining members can continue.");
+    player->SendSystemMessage("法力风暴：你已离开本次冒险，其余成员可以继续。");
     return true;
 }
 

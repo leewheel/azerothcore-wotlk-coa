@@ -162,7 +162,7 @@ uint32 AscensionBazaarTokenCap::Claim(Player* player, uint32 count)
 
     if (notify)
         ChatHandler(player->GetSession()).PSendSysMessage(
-            "You have reached the limit of {} Bazaar Tokens per hour. You can earn Bazaar Tokens again in {} min.",
+            "你已达到每小时 {} 枚集市代币的上限。{} 分钟后可以再次获得集市代币。",
             cap, std::max<uint32>(1, minutesLeft));
 
     if (allowed || notify)
@@ -193,7 +193,7 @@ uint32 AscensionBazaarTokenCap::Give(Player* player, uint32 count)
     {
         CharacterDatabaseTransaction trans = CharacterDatabase.BeginTransaction();
         item->SaveToDB(trans);
-        MailDraft("Bazaar Tokens", "Your bags were full, so your Bazaar Tokens were sent by mail.")
+        MailDraft("集市代币", "你的背包已满，因此集市代币改由邮件寄送。")
             .AddItem(item)
             .SendMailTo(trans, MailReceiver(player), MailSender(MAIL_CREATURE, TIRAXIS));
         CharacterDatabase.CommitTransaction(trans);

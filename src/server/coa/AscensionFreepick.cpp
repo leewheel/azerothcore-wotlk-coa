@@ -403,7 +403,7 @@ bool SwitchSpecialization(Player* player, std::uint32_t index, std::string& erro
     if (!HasFreepickBuild(player) || index >= AscensionWildcard::SPECIALIZATION_COUNT ||
         !player->HasSpell(AscensionWildcard::SPECIALIZATION_SWAP_SPELLS[index]))
     {
-        error = "That specialization slot is not unlocked.";
+        error = "该专精槽位尚未解锁。";
         return false;
     }
     std::uint32_t const previous = ActiveSpecialization(player);

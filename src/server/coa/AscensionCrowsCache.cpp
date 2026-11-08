@@ -445,7 +445,7 @@ bool Open(Player* player, Item* cache)
     if (rewards.size() < RewardCount)
     {
         ChatHandler(player->GetSession()).SendSysMessage(
-            "This Crow's Cache cannot be opened yet: no Heroic Bloodforged rewards are released.");
+            "鸦巢暂时无法开启：尚无已解锁的英雄难度血铸奖励。");
         return false;
     }
     rewards.insert(rewards.end(), materials.begin(), materials.end());
@@ -500,7 +500,7 @@ bool Open(Player* player, Item* cache)
     UpdateCarrier(player);
     AscensionBazaarTokenCap::Give(player, bazaarTokens);
     ChatHandler(player->GetSession()).SendSysMessage(
-        "Crow's Cache opened: three Heroic Bloodforged items, one of them from the newest released tier, High-Risk materials, Marks of War and Bazaar Tokens.");
+        "鸦巢已开启：三件英雄难度血铸装备（其中一件来自最新解锁的档次）、高风险材料、战争印记与集市代币。");
     return true;
 }
 
@@ -548,6 +548,12 @@ bool Begin(uint32 seconds, Position const& point)
         { return value == seconds; }))
         BroadcastAnnouncement(Acore::StringFormat(
             "鸦巢将在 {} 秒后于 {} 降临！", seconds, LocationName(found->second)).c_str());
+
+    //By leewheel 2026年11月8日
+    // 原实现落到函数末尾没有返回值（C4715，返回值未定义），而调用方都用 if (!Begin(...)) 判失败，
+    // 会让"已成功降临"被当成失败上报。补上成功返回。
+    return true;
+    //End By leewheel
 }
 
 void UpdateEvents()
@@ -776,7 +782,7 @@ public:
             return true;
         if (!Eligible(player))
         {
-            ChatHandler(player->GetSession()).SendSysMessage("Only living level-60 High-Risk players can claim Crow's Cache.");
+            ChatHandler(player->GetSession()).SendSysMessage("只有存活且处于高风险模式的 60 级玩家才能领取鸦巢。");
             return true;
         }
         if (object->GetEntry() == DropEntry)
@@ -887,7 +893,7 @@ public:
             std::lock_guard lock(mutex);
             if (Carries(player))
             {
-                ChatHandler(session).SendSysMessage("Open your Crow's Cache before using the bank.");
+                ChatHandler(session).SendSysMessage("使用银行前请先开启你携带的鸦巢。");
                 return false;
             }
         }
