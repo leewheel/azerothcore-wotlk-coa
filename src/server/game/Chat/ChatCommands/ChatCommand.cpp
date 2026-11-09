@@ -341,7 +341,12 @@ static bool IsGmCommandPermission(uint32 requiredLevel)
     if (cmd && !handler.IsConsole() && sWorld->getBoolConfig(CONFIG_DISABLE_GM_COMMAND)
         && IsGmCommandPermission(cmd->_permission.RequiredLevel))
     {
-        handler.SendSysMessage("该命令需要 GM 权限，服务器已通过禁止玩家使用GM命令，请享受魔兽世界的精彩过程！");
+        //By leewheel 2026年11月9日
+        // 这里必须是纯静态文本，绝不能出现 %s / %u / {} 之类的占位符：
+        // 一旦用可变参数格式化并且传错类型（例如把 std::string 直接塞进去），
+        // printf 会把指针的低字节当字符串打印，玩家就会看到「!@」「#」「%^」这类乱码。
+        handler.SendSysMessage("该命令需要 GM 权限，服务器已禁止玩家使用 GM 命令，请享受魔兽世界的精彩过程！");
+        //End By leewheel
         return true;
     }
     //End By leewheel
