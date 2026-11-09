@@ -296,7 +296,10 @@ void AddSC_boss_jindo()
     //By leewheel 2026年11月1日 上游 rev_20261025_92 已把 14987 改为 NullCreatureAI + 法术脚本
     //（spell_jindo_coa_healing_stream），经典 npc_healing_ward 无 DB 引用，注销以消 Errors.log 告警
     //RegisterZulGurubCreatureAI(npc_healing_ward);
-    RegisterZulGurubCreatureAI(npc_shade_of_jindo);
+    //By leewheel 2026年11月9日 经典脚本死注册注销：14986 Shade of Jin'do 的 ScriptName 已是
+    //npc_shade_of_jindo_coa（COA 版接管），经典 npc_shade_of_jindo 无任何 DB 引用，
+    //每启动都会在 Errors.log 打一条 "Script named 'npc_shade_of_jindo' is not assigned in the database"。
+    //RegisterZulGurubCreatureAI(npc_shade_of_jindo);
     RegisterSpellScript(spell_random_aggro);
     RegisterSpellScript(spell_delusions_of_jindo);
 }

@@ -324,8 +324,8 @@ void World::SetInitialWorldSettings()
 
     //By leewheel 2026年11月8日
     // 启动时打印 GM 命令限制开关，便于确认 DisableGm.Command 生效情况
-    LOG_INFO("server.loading", "GM 命令限制 DisableGm.Command = {}（1 = 玩家不可使用需要 GM 权限的命令，0 = 放行）",
-        getBoolConfig(CONFIG_DISABLE_GM_COMMAND) ? 1 : 0);
+    //LOG_INFO("server.loading", "GM 命令限制 DisableGm.Command = {}（1 = 玩家不可使用需要 GM 权限的命令，0 = 放行）",
+    //    getBoolConfig(CONFIG_DISABLE_GM_COMMAND) ? 1 : 0);
     //End By leewheel
 
     ///- Initialize Allowed Security Level

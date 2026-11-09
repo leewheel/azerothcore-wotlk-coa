@@ -224,10 +224,11 @@ class aura_ascension_barbarian_volley : public AuraScript
 };
 
 //By leewheel 2026年11月9日
-// Spite（281250）的后跳：该法术第 2 个效果（Effect[1]）才是 SPELL_EFFECT_LEAP_BACK，
-// Effect[0] 是空效果。原实现把钩子挂在 EFFECT_0 上，钩子永不触发，
-// 退化为引擎默认实现——默认实现给 JumpTo 第三参传 true（向前跳），且竖直速度取 damage，
-// 与“向后跳”的语义相反，玩家还会被反作弊记为异常位移。改挂 EFFECT_1。
+// Spite（281250）的后跳，实测客户端 Spell.dbc：Effect[0] = 138 = SPELL_EFFECT_LEAP_BACK
+// （MiscValue[0] = 250 → 水平 25 码，BasePoints[0] = 74 → 竖直 7.5 码，TargetA[0] = 1 施法者自己）；
+// Effect[1] = 6 是 APPLY_AURA，AuraName 23 = PERIODIC_TRIGGER_SPELL，周期触发 281251，与后跳无关。
+// 所以钩子必须挂在 EFFECT_0。（曾误改到 EFFECT_1，编期不报错，但启动时核心校验会打出
+// 「Effect EFFECT_1 did not match dbc effect data」并且钩子根本不执行，后跳反而彻底失效。）
 //End By leewheel
 class spell_ascension_hero_spite_leap_back : public SpellScript
 {
@@ -256,7 +257,7 @@ class spell_ascension_hero_spite_leap_back : public SpellScript
     void Register() override
     {
         OnEffectLaunchTarget += SpellEffectFn(spell_ascension_hero_spite_leap_back::Launch,
-            EFFECT_1, SPELL_EFFECT_LEAP_BACK);
+            EFFECT_0, SPELL_EFFECT_LEAP_BACK);
     }
 };
 }

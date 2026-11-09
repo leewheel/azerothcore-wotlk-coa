@@ -341,7 +341,7 @@ static bool IsGmCommandPermission(uint32 requiredLevel)
     if (cmd && !handler.IsConsole() && sWorld->getBoolConfig(CONFIG_DISABLE_GM_COMMAND)
         && IsGmCommandPermission(cmd->_permission.RequiredLevel))
     {
-        handler.SendSysMessage("该命令需要 GM 权限，服务器已通过 DisableGm.Command 禁止玩家使用。");
+        handler.SendSysMessage("该命令需要 GM 权限，服务器已通过禁止玩家使用GM命令，请享受魔兽世界的精彩过程！");
         return true;
     }
     //End By leewheel
