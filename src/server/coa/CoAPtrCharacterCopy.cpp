@@ -1,38 +1,56 @@
 /* Copyright (C) 2016+ AzerothCore, GNU AGPL v3. */
-//By leewheel 2026年11月8日
-// 角色复制（.ptr list / .ptr copy）玩家可见文本全量汉化：功能未启用/未配置提示、
-// 失败原因、角色列表与冷却提示、复制成功与改名提示。协议串（.ptr copy 命令）保持英文。
+//By leewheel 2026年11月10日
+// 角色复制（.ptr list / .ptr copy）玩家可见文本全量汉化：
+// 未启用/未发起服务器提示、排队与冷却提示、失败原因、角色列表状态、完成与改名通知。
+// 协议串（.ptr / .ptr list / .ptr copy <name>）保持英文，不做本地化。
 //End By leewheel
 #include "CoAPtrCharacterCopy.h"
 #include "AccountMgr.h"
+#include "AsyncCallbackProcessor.h"
 #include "Chat.h"
 #include "ChatCommand.h"
 #include "CommandScript.h"
 #include "Config.h"
 #include "DatabaseEnv.h"
 #include "GameTime.h"
+#include "Log.h"
+#include "ObjectAccessor.h"
 #include "ObjectMgr.h"
+#include "Player.h"
 #include "PlayerDump.h"
+#include "QueryCallback.h"
+#include "Realm.h"
+#include "ScriptMgr.h"
 #include "StringFormat.h"
 #include "World.h"
 #include "WorldSession.h"
-#include <algorithm>
 #include <atomic>
-#include <cctype>
+#include <mutex>
 #include <optional>
+#include <unordered_map>
 
 using namespace Acore::ChatCommands;
 
 namespace
 {
+enum class RequestState : uint8
+{
+    Pending = 0,
+    Copied = 1,
+    Failed = 2,
+};
+
+constexpr uint32 PollIntervalMs = 5000;
+constexpr uint32 SaveTimeoutSeconds = 60;
+
 std::atomic<bool> testOverrideActive = false;
+std::mutex savingLock;
+std::unordered_map<uint32, uint32> savingSince;
 
 struct Settings
 {
-    bool enabled = false;
-    bool requireSourceOffline = true;
-    std::string sourceSchema;
-    std::string sourceRealm;
+    uint32 targetRealm = 0;
+    bool receive = false;
     uint32 cooldownSeconds = 0;
 };
 
@@ -40,13 +58,16 @@ struct SourceCharacter
 {
     uint32 guid = 0;
     std::string name;
-    bool online = false;
 };
 
-struct CopyRecord
+struct PendingCopy
 {
-    uint32 targetGuid = 0;
-    uint32 copiedAt = 0;
+    uint32 id = 0;
+    uint32 account = 0;
+    uint32 sourceRealm = 0;
+    uint32 sourceGuid = 0;
+    std::string sourceName;
+    std::string dump;
 };
 
 uint32 Now()
@@ -54,99 +75,243 @@ uint32 Now()
     return uint32(GameTime::GetGameTime().count());
 }
 
-std::string CurrentSchema()
-{
-    QueryResult result = CharacterDatabase.Query("SELECT DATABASE()");
-    return result ? result->Fetch()[0].Get<std::string>() : std::string();
-}
-
-bool IsPlainSchemaName(std::string const& name)
-{
-    return !name.empty() && std::all_of(name.begin(), name.end(), [](unsigned char c)
-    {
-        return std::isalnum(c) || c == '_' || c == '$';
-    });
-}
-
 Settings LoadSettings()
 {
-    Settings settings;
-    settings.sourceRealm = sConfigMgr->GetOption<std::string>("CoA.PtrCopy.SourceRealmName", "Rexxar");
     if (testOverrideActive)
-    {
-        settings.enabled = true;
-        settings.requireSourceOffline = false;
-        settings.sourceSchema = CurrentSchema();
-        return settings;
-    }
+        return Settings{ realm.Id.Realm, true, 0 };
 
-    settings.enabled = sConfigMgr->GetOption<bool>("CoA.PtrCopy.Enable", false);
-    settings.sourceSchema = sConfigMgr->GetOption<std::string>("CoA.PtrCopy.SourceDatabase", "");
-    settings.cooldownSeconds = sConfigMgr->GetOption<uint32>("CoA.PtrCopy.CooldownSeconds", 3600);
-    return settings;
+    return Settings{
+        sConfigMgr->GetOption<uint32>("CoA.PtrCopy.TargetRealmID", 0),
+        sConfigMgr->GetOption<bool>("CoA.PtrCopy.Receive", false),
+        sConfigMgr->GetOption<uint32>("CoA.PtrCopy.CooldownSeconds", 3600) };
 }
 
-std::optional<SourceCharacter> FindSource(Settings const& settings, uint32 accountId, std::string name)
+std::string RealmName(uint32 realmId)
+{
+    if (QueryResult result = LoginDatabase.Query("SELECT name FROM realmlist WHERE id = {}", realmId))
+        return result->Fetch()[0].Get<std::string>();
+    return Acore::StringFormat("服务器 {}", realmId);
+}
+
+bool RejectNotSource(ChatHandler* handler, Settings const& settings)
+{
+    if (settings.targetRealm)
+        return false;
+
+    //By leewheel 2026年11月10日
+    // 玩家可见提示全量汉化；.ptr copy 是协议串，保持英文原样
+    handler->SendErrorMessage(settings.receive
+        ? "复制到本服的操作需要在角色原所在服务器发起：请登录那台服务器，使用 .ptr copy <角色名> 复制。"
+        : "本服务器未启用角色复制功能。", false);
+    //End By leewheel
+    return true;
+}
+
+std::optional<SourceCharacter> FindOwnCharacter(uint32 accountId, std::string name)
 {
     CharacterDatabase.EscapeString(name);
     QueryResult result = CharacterDatabase.Query(
-        "SELECT guid, name, online FROM `{}`.characters WHERE account = {} AND name = '{}'",
-        settings.sourceSchema, accountId, name);
+        "SELECT guid, name FROM characters WHERE account = {} AND name = '{}'", accountId, name);
     if (!result)
         return std::nullopt;
 
     Field* fields = result->Fetch();
-    return SourceCharacter{ fields[0].Get<uint32>(), fields[1].Get<std::string>(), fields[2].Get<uint8>() != 0 };
+    return SourceCharacter{ fields[0].Get<uint32>(), fields[1].Get<std::string>() };
 }
 
-std::optional<CopyRecord> FindRecord(uint32 sourceGuid)
+std::optional<std::string> QueueRefusal(Settings const& settings, SourceCharacter const& source,
+    std::string const& targetName)
 {
-    QueryResult result = CharacterDatabase.Query(
-        "SELECT target_guid, copied_at FROM coa_ptr_character_copy WHERE source_guid = {}", sourceGuid);
-    if (!result)
+    uint32 const thisRealm = realm.Id.Realm;
+    if (LoginDatabase.Query("SELECT 1 FROM coa_ptr_copy_request WHERE source_realm = {} AND source_guid = {} "
+        "AND state = {}", thisRealm, source.guid, uint8(RequestState::Pending)))
+        return Acore::StringFormat("{} 的复制已经在送往 {} 的途中。", source.name, targetName);
+
+    QueryResult lastCopy = LoginDatabase.Query("SELECT MAX(requested_at) FROM coa_ptr_copy_request "
+        "WHERE source_realm = {} AND source_guid = {} AND target_realm = {} AND state = {}", thisRealm, source.guid,
+        settings.targetRealm, uint8(RequestState::Copied));
+    if (!lastCopy || lastCopy->Fetch()[0].IsNull())
         return std::nullopt;
 
-    Field* fields = result->Fetch();
-    return CopyRecord{ fields[0].Get<uint32>(), fields[1].Get<uint32>() };
+    uint32 const readyAt = lastCopy->Fetch()[0].Get<uint32>() + settings.cooldownSeconds;
+    uint32 const now = Now();
+    if (now < readyAt)
+        return Acore::StringFormat("距离下次复制 {} 还需 {} 分钟。", source.name, (readyAt - now + 59) / 60);
+    return std::nullopt;
 }
 
-std::optional<std::string> LiveCopyName(uint32 targetGuid, uint32 accountId)
-{
-    QueryResult result = CharacterDatabase.Query(
-        "SELECT name FROM characters WHERE guid = {} AND account = {}", targetGuid, accountId);
-    if (!result)
-        return std::nullopt;
-    return result->Fetch()[0].Get<std::string>();
-}
-
-bool RejectUnavailable(ChatHandler* handler, Settings const& settings)
-{
-    if (!settings.enabled)
-    {
-        handler->SendErrorMessage("本服务器未启用角色复制功能。", false);
-        return true;
-    }
-
-    if (!IsPlainSchemaName(settings.sourceSchema))
-    {
-        handler->SendErrorMessage("本服务器尚未配置角色复制功能。", false);
-        return true;
-    }
-
-    return false;
-}
-
-std::string CopyFailureText(DumpReturn result)
+std::string DumpFailureText(DumpReturn result)
 {
     switch (result)
     {
         case DUMP_TOO_MANY_CHARS:
-            return "你的账号在本服务器已无空余角色位。";
+            return "你的账号在那台服务器上没有空余角色位。";
         case DUMP_CHARACTER_DELETED:
             return "该角色已被删除。";
         default:
-            return "角色复制失败，未做任何改动。";
+            return "复制内容无法载入，那台服务器未做任何改动。";
     }
+}
+
+bool BeginSaving(uint32 sourceGuid)
+{
+    std::lock_guard<std::mutex> lock(savingLock);
+    uint32 const now = Now();
+    auto const [entry, inserted] = savingSince.try_emplace(sourceGuid, now);
+    if (!inserted && now - entry->second < SaveTimeoutSeconds)
+        return false;
+    entry->second = now;
+    return true;
+}
+
+void FinishSaving(uint32 sourceGuid)
+{
+    std::lock_guard<std::mutex> lock(savingLock);
+    savingSince.erase(sourceGuid);
+}
+
+bool QueueCopy(ChatHandler& chat, uint32 accountId, uint32 targetRealm, SourceCharacter const& source,
+    std::string const& targetName)
+{
+    std::string dump;
+    DumpReturn const result = PlayerDumpWriter().WriteDumpToString(dump, source.guid);
+    if (result != DUMP_SUCCESS)
+    {
+        chat.SendErrorMessage(Acore::StringFormat("{} 无法复制：{}", source.name,
+            result == DUMP_CHARACTER_DELETED ? "该角色已被删除。" : "该角色数据读取失败。"),
+            false);
+        return false;
+    }
+
+    std::string name = source.name;
+    LoginDatabase.EscapeString(name);
+    LoginDatabase.EscapeString(dump);
+    LoginDatabase.DirectExecute("INSERT INTO coa_ptr_copy_request (account, source_realm, source_guid, source_name, "
+        "target_realm, dump, requested_at, state) VALUES ({}, {}, {}, '{}', {}, '{}', {}, {})", accountId,
+        realm.Id.Realm, source.guid, name, targetRealm, dump, Now(), uint8(RequestState::Pending));
+    chat.PSendSysMessage("{} 正在送往 {}，复制完成时会在这里通知你。", source.name,
+        targetName);
+    return true;
+}
+
+std::optional<std::string> LiveCopyName(PendingCopy const& copy)
+{
+    QueryResult copies = LoginDatabase.Query("SELECT copy_guid FROM coa_ptr_copy_request WHERE target_realm = {} "
+        "AND source_realm = {} AND source_guid = {} AND account = {} AND state = {}", realm.Id.Realm,
+        copy.sourceRealm, copy.sourceGuid, copy.account, uint8(RequestState::Copied));
+    if (!copies)
+        return std::nullopt;
+
+    do
+    {
+        if (QueryResult live = CharacterDatabase.Query("SELECT name FROM characters WHERE guid = {} AND account = {}",
+            copies->Fetch()[0].Get<uint32>(), copy.account))
+            return live->Fetch()[0].Get<std::string>();
+    } while (copies->NextRow());
+    return std::nullopt;
+}
+
+void Complete(uint32 id, RequestState state, std::string result, uint32 copyGuid = 0, std::string copyName = {})
+{
+    LoginDatabase.EscapeString(result);
+    LoginDatabase.EscapeString(copyName);
+    LoginDatabase.DirectExecute("UPDATE coa_ptr_copy_request SET state = {}, result = '{}', copy_guid = {}, "
+        "copy_name = '{}', completed_at = {}, dump = NULL WHERE id = {}", uint8(state), result, copyGuid, copyName,
+        Now(), id);
+}
+
+void LoadCopy(PendingCopy const& copy)
+{
+    if (std::optional<std::string> liveName = LiveCopyName(copy))
+    {
+        Complete(copy.id, RequestState::Failed, Acore::StringFormat(
+            "它已经以 {} 的身份存在于那台服务器。如需重新复制，请先删除那个角色。", *liveName));
+        return;
+    }
+
+    if (AccountMgr::GetCharactersCount(copy.account) >= sWorld->getIntConfig(CONFIG_CHARACTERS_PER_REALM))
+    {
+        Complete(copy.id, RequestState::Failed, DumpFailureText(DUMP_TOO_MANY_CHARS));
+        return;
+    }
+
+    PlayerDumpReader::LoadOptions loadOptions;
+    loadOptions.DirectCommit = true;
+    loadOptions.PlayerMailFromCopy = true;
+    PlayerDumpReader reader(loadOptions);
+    DumpReturn const result = reader.LoadDumpFromString(copy.dump, copy.account, copy.sourceName, 0);
+    if (result != DUMP_SUCCESS)
+    {
+        LOG_ERROR("misc", "PTR copy request {} of {} (realm {}, guid {}) failed to load: {}", copy.id,
+            copy.sourceName, copy.sourceRealm, copy.sourceGuid, uint32(result));
+        Complete(copy.id, RequestState::Failed, DumpFailureText(result));
+        return;
+    }
+
+    Complete(copy.id, RequestState::Copied, {}, reader.GetLoadedGuid(), reader.GetLoadedName());
+}
+
+std::string OldestPendingCopyQuery()
+{
+    return Acore::StringFormat("SELECT id, account, source_realm, source_guid, source_name, dump "
+        "FROM coa_ptr_copy_request WHERE target_realm = {} AND state = {} ORDER BY id LIMIT 1", realm.Id.Realm,
+        uint8(RequestState::Pending));
+}
+
+void LoadOldestPendingCopy(QueryResult pending)
+{
+    if (!pending)
+        return;
+
+    Field* fields = pending->Fetch();
+    LoadCopy(PendingCopy{ fields[0].Get<uint32>(), fields[1].Get<uint32>(), fields[2].Get<uint32>(),
+        fields[3].Get<uint32>(), fields[4].Get<std::string>(), fields[5].Get<std::string>() });
+}
+
+std::string FinishedCopiesQuery()
+{
+    return Acore::StringFormat("SELECT id, account, source_name, target_realm, state, result, copy_name "
+        "FROM coa_ptr_copy_request WHERE source_realm = {} AND notified = 0 AND state <> {}", realm.Id.Realm,
+        uint8(RequestState::Pending));
+}
+
+std::unordered_map<uint32, Player*> OnlinePlayersByAccount()
+{
+    std::unordered_map<uint32, Player*> players;
+    for (auto const& [guid, player] : ObjectAccessor::GetPlayers())
+        if (player->IsInWorld())
+            players.emplace(player->GetSession()->GetAccountId(), player);
+    return players;
+}
+
+void NotifyFinishedCopies(QueryResult finished)
+{
+    if (!finished)
+        return;
+
+    std::unordered_map<uint32, Player*> const online = OnlinePlayersByAccount();
+    do
+    {
+        Field* fields = finished->Fetch();
+        auto const player = online.find(fields[1].Get<uint32>());
+        if (player == online.end())
+            continue;
+
+        std::string const sourceName = fields[2].Get<std::string>();
+        std::string const targetName = RealmName(fields[3].Get<uint32>());
+        ChatHandler chat(player->second->GetSession());
+        if (RequestState(fields[4].Get<uint8>()) == RequestState::Copied)
+        {
+            chat.PSendSysMessage("{} 已复制到 {}，登录那台服务器即可游玩。", sourceName, targetName);
+            if (fields[6].Get<std::string>() != sourceName)
+                chat.PSendSysMessage("该名字在 {} 已被占用，你将在登录时重新选择名字。", targetName);
+        }
+        else
+            chat.PSendSysMessage("{} 未能复制到 {}：{}", sourceName, targetName, fields[5].Get<std::string>());
+
+        LoginDatabase.DirectExecute("UPDATE coa_ptr_copy_request SET notified = 1 WHERE id = {}",
+            fields[0].Get<uint32>());
+    } while (finished->NextRow());
 }
 }
 
@@ -185,32 +350,50 @@ public:
     static bool HandleList(ChatHandler* handler)
     {
         Settings const settings = LoadSettings();
-        if (RejectUnavailable(handler, settings))
+        if (RejectNotSource(handler, settings))
             return false;
 
         uint32 const accountId = handler->GetSession()->GetAccountId();
-        QueryResult result = CharacterDatabase.Query(
-            "SELECT s.name, s.level, t.name FROM `{}`.characters s "
-            "LEFT JOIN coa_ptr_character_copy c ON c.source_guid = s.guid "
-            "LEFT JOIN characters t ON t.guid = c.target_guid AND t.account = {} "
-            "WHERE s.account = {} ORDER BY s.name",
-            settings.sourceSchema, accountId, accountId);
-        if (!result)
+        QueryResult characters = CharacterDatabase.Query(
+            "SELECT guid, name, level FROM characters WHERE account = {} ORDER BY name", accountId);
+        if (!characters)
         {
-            handler->PSendSysMessage("你在 {} 上没有角色。", settings.sourceRealm);
+            handler->SendSysMessage("你在本服务器上没有角色。");
             return true;
         }
 
-        handler->PSendSysMessage("你在 {} 上的角色：", settings.sourceRealm);
+        std::unordered_map<uint32, std::string> statusByGuid;
+        if (QueryResult requests = LoginDatabase.Query("SELECT source_guid, state, copy_name FROM coa_ptr_copy_request "
+            "WHERE account = {} AND source_realm = {} AND target_realm = {} ORDER BY id", accountId, realm.Id.Realm,
+            settings.targetRealm))
+        {
+            do
+            {
+                Field* fields = requests->Fetch();
+                switch (RequestState(fields[1].Get<uint8>()))
+                {
+                    case RequestState::Pending:
+                        statusByGuid[fields[0].Get<uint32>()] = "复制进行中";
+                        break;
+                    case RequestState::Copied:
+                        statusByGuid[fields[0].Get<uint32>()] = Acore::StringFormat("已复制为 {}",
+                            fields[2].Get<std::string>());
+                        break;
+                    default:
+                        statusByGuid[fields[0].Get<uint32>()] = "上次复制失败";
+                        break;
+                }
+            } while (requests->NextRow());
+        }
+
+        handler->PSendSysMessage("你在本服的角色（可复制到 {}）：", RealmName(settings.targetRealm));
         do
         {
-            Field* fields = result->Fetch();
-            std::string const copy = fields[2].IsNull()
-                ? std::string("未复制")
-                : Acore::StringFormat("已复制为 {}", fields[2].Get<std::string>());
-            handler->PSendSysMessage("  {}（等级 {}）：{}", fields[0].Get<std::string>(), fields[1].Get<uint8>(),
-                copy);
-        } while (result->NextRow());
+            Field* fields = characters->Fetch();
+            auto const status = statusByGuid.find(fields[0].Get<uint32>());
+            handler->PSendSysMessage("  {}（等级 {}）：{}", fields[1].Get<std::string>(), fields[2].Get<uint8>(),
+                status == statusByGuid.end() ? std::string("未复制") : status->second);
+        } while (characters->NextRow());
         handler->SendSysMessage("使用 .ptr copy <角色名> 复制其中一个角色。");
         return true;
     }
@@ -218,77 +401,98 @@ public:
     static bool HandleCopy(ChatHandler* handler, std::string name)
     {
         Settings const settings = LoadSettings();
-        if (RejectUnavailable(handler, settings))
+        if (RejectNotSource(handler, settings))
             return false;
 
-        uint32 const accountId = handler->GetSession()->GetAccountId();
+        WorldSession* session = handler->GetSession();
+        uint32 const accountId = session->GetAccountId();
         std::optional<SourceCharacter> source;
         if (normalizePlayerName(name))
-            source = FindSource(settings, accountId, name);
+            source = FindOwnCharacter(accountId, name);
         if (!source)
         {
-            handler->SendErrorMessage(Acore::StringFormat("你的账号在 {} 上没有名为 {} 的角色。", settings.sourceRealm,
+            handler->SendErrorMessage(Acore::StringFormat("你的账号在本服务器上没有名为 {} 的角色。",
                 name), false);
             return false;
         }
 
-        if (settings.requireSourceOffline && source->online)
+        std::string const targetName = RealmName(settings.targetRealm);
+        if (std::optional<std::string> refusal = QueueRefusal(settings, *source, targetName))
         {
-            handler->SendErrorMessage(Acore::StringFormat("请先将 {} 从 {} 下线，再复制它。", source->name,
-                settings.sourceRealm), false);
+            handler->SendErrorMessage(*refusal, false);
             return false;
         }
 
-        uint32 const now = Now();
-        if (std::optional<CopyRecord> record = FindRecord(source->guid))
+        Player* player = session->GetPlayer();
+        if (!player || player->GetGUID().GetCounter() != source->guid)
+            return QueueCopy(*handler, accountId, settings.targetRealm, *source, targetName);
+
+        if (!BeginSaving(source->guid))
         {
-            if (std::optional<std::string> copyName = LiveCopyName(record->targetGuid, accountId))
+            handler->SendErrorMessage(Acore::StringFormat("{} 的复制已经在送往 {} 的途中。", source->name,
+                targetName), false);
+            return false;
+        }
+
+        CharacterDatabaseTransaction trans = CharacterDatabase.BeginTransaction();
+        player->SaveToDB(trans, false, false);
+        session->AddTransactionCallback(CharacterDatabase.AsyncCommitTransaction(trans)).AfterComplete(
+            [session, accountId, targetRealm = settings.targetRealm, source = *source, targetName](bool saved)
             {
-                handler->SendErrorMessage(Acore::StringFormat(
-                    "{} 已复制到本服为 {}。如需重新复制，请先删除该角色。", source->name,
-                    *copyName), false);
-                return false;
-            }
-
-            uint32 const readyAt = record->copiedAt + settings.cooldownSeconds;
-            if (now < readyAt)
-            {
-                handler->SendErrorMessage(Acore::StringFormat("你可以在 {} 分钟后再次复制 {}。", (readyAt - now + 59) / 60,
-                    source->name), false);
-                return false;
-            }
-        }
-
-        if (AccountMgr::GetCharactersCount(accountId) >= sWorld->getIntConfig(CONFIG_CHARACTERS_PER_REALM))
-        {
-            handler->SendErrorMessage(CopyFailureText(DUMP_TOO_MANY_CHARS), false);
-            return false;
-        }
-
-        std::string dump;
-        DumpReturn result = PlayerDumpWriter(settings.sourceSchema).WriteDumpToString(dump, source->guid);
-        PlayerDumpReader::LoadOptions loadOptions;
-        loadOptions.DirectCommit = true;
-        loadOptions.PlayerMailFromCopy = true;
-        PlayerDumpReader reader(loadOptions);
-        if (result == DUMP_SUCCESS)
-            result = reader.LoadDumpFromString(dump, accountId, source->name, 0);
-        if (result != DUMP_SUCCESS)
-        {
-            handler->SendErrorMessage(CopyFailureText(result), false);
-            return false;
-        }
-
-        CharacterDatabase.DirectExecute(
-            "REPLACE INTO coa_ptr_character_copy (source_guid, account, target_guid, copied_at) "
-            "VALUES ({}, {}, {}, {})", source->guid, accountId, reader.GetLoadedGuid(), now);
-
-        handler->PSendSysMessage("{} 已从 {} 复制完成。请登出到角色选择界面即可游玩。",
-            source->name, settings.sourceRealm);
-        if (reader.GetLoadedName() != source->name)
-            handler->SendSysMessage("该名字在本服已被占用，你将在登录时重新选择名字。");
+                FinishSaving(source.guid);
+                ChatHandler chat(session);
+                if (saved)
+                    QueueCopy(chat, accountId, targetRealm, source, targetName);
+                else
+                    chat.SendErrorMessage(Acore::StringFormat("{} 保存失败，因此没有复制。",
+                        source.name), false);
+            });
+        handler->PSendSysMessage("正在保存 {}，准备复制到 {}。", source->name, targetName);
         return true;
     }
+};
+
+class CoAPtrCharacterCopyWorld final : public WorldScript
+{
+public:
+    CoAPtrCharacterCopyWorld() : WorldScript("CoAPtrCharacterCopyWorld", { WORLDHOOK_ON_UPDATE }) { }
+
+    void OnUpdate(uint32 diff) override
+    {
+        _queries.ProcessReadyCallbacks();
+        _sinceLastPoll += diff;
+        if (_sinceLastPoll < PollIntervalMs)
+            return;
+        _sinceLastPoll = 0;
+
+        Settings const settings = LoadSettings();
+        if (settings.receive && !_loadingCopy)
+        {
+            _loadingCopy = true;
+            _queries.AddCallback(LoginDatabase.AsyncQuery(OldestPendingCopyQuery()).WithCallback(
+                [this](QueryResult pending)
+                {
+                    LoadOldestPendingCopy(std::move(pending));
+                    _loadingCopy = false;
+                }));
+        }
+        if (settings.targetRealm && !_notifying)
+        {
+            _notifying = true;
+            _queries.AddCallback(LoginDatabase.AsyncQuery(FinishedCopiesQuery()).WithCallback(
+                [this](QueryResult finished)
+                {
+                    NotifyFinishedCopies(std::move(finished));
+                    _notifying = false;
+                }));
+        }
+    }
+
+private:
+    QueryCallbackProcessor _queries;
+    uint32 _sinceLastPoll = 0;
+    bool _loadingCopy = false;
+    bool _notifying = false;
 };
 
 void AddSC_CoAPtrCharacterCopy()
@@ -322,4 +526,5 @@ void AddSC_CoAPtrCharacterCopy()
     PlayerDump::RegisterItemTable("coa_character_looted_item", "itemGuid", "guid");
 
     new CoAPtrCharacterCopyCommands();
+    new CoAPtrCharacterCopyWorld();
 }
