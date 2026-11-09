@@ -78,14 +78,14 @@ ON DUPLICATE KEY UPDATE `name` = VALUES(`name`), `castBarCaption` = VALUES(`cast
 -- 4) 苍白海岸任务进度文本（交任务窗口）
 INSERT INTO `quest_request_items_locale` (`ID`, `locale`, `CompletionText`, `VerifiedBuild`) VALUES
 (175034, 'zhCN', '毛皮到手了吗？', 12340),
-(175323, 'zhCN', '心脏带来了吗？斯凯达尔那地方，除了该死的乌鸦，最不缺的就是狐狸。', 12340),
+(175323, 'zhCN', '心脏带来了吗？斯卡迪尔德那地方，除了该死的乌鸦，最不缺的就是狐狸。', 12340),
 (175324, 'zhCN', '外面情况如何？东西都齐了吗？', 12340),
 (175327, 'zhCN', '你找到她了吗？', 12340)
 ON DUPLICATE KEY UPDATE `CompletionText` = VALUES(`CompletionText`), `VerifiedBuild` = VALUES(`VerifiedBuild`);
 
 -- 5) 「悬赏一颗头颅」交任务文本
 INSERT INTO `quest_offer_reward_locale` (`ID`, `locale`, `RewardText`, `VerifiedBuild`) VALUES
-(175038, 'zhCN', '你杀了他。该死，你真的杀了他。我甚至不确定单打独斗我能不能赢他。$B$B但约定就是约定，我们说好把赏金平分的。$B$B拿着吧。你已经挣得了提前领取自己那一份的权利。看我这副样子，光赶到灰空恐怕就得几天。', 12340)
+(175038, 'zhCN', '你杀了他。该死，你真的杀了他。我甚至不确定单打独斗我能不能赢他。$B$B但约定就是约定，我们说好把赏金平分的。$B$B拿着吧。你已经挣得了提前领取自己那一份的权利。看我这副样子，光赶到灰天恐怕就得几天。', 12340)
 ON DUPLICATE KEY UPDATE `RewardText` = VALUES(`RewardText`), `VerifiedBuild` = VALUES(`VerifiedBuild`);
 
 -- 6) 物品套装备注名本地化兜底
