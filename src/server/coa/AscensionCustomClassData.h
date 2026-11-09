@@ -13,7 +13,7 @@ struct ClassSpell
     std::uint32_t SpellId;
 };
 
-inline constexpr std::array<ClassSpell, 850> ClassSpells =
+inline constexpr std::array<ClassSpell, 860> ClassSpells =
 {{
     {12, 1, 81},
     {12, 1, 107},
@@ -172,6 +172,24 @@ inline constexpr std::array<ClassSpell, 850> ClassSpells =
     {15, 58, 681442},
     {15, 60, 523510},
     {15, 60, 680303},
+    // By leewheel 2026-11-09 猎巫人(Witch Hunter)核心技能包回归自动成长表：
+    //   这批条目原本被划进 LegacyGeneratedClassSpells（只清理、从不授予），导致玩家和机器人
+    //   都学不到（实弹：4 级猎巫人机器人 0 条职业技能，只会白字近战，组队玩家反馈"不会远程攻击"）。
+    //   依据：世界库 ascension_custom_class_spell 的等级、AscensionSpellProgressionData.h 里
+    //   800165 Witchbane 的升阶表（Ranks 假定基础技已学）、AscensionWitchHunterAbilities.cpp
+    //   的完整实现、以及 SkillLineAbility.dbc 无种族归属（授予门放行）。
+    //   服务端 Spell.dbc 已整体移植客户端完整版（239067 条，2026-11-09 老大指示），802010/805903 一并移入。
+    {15, 1, 500082},              // Coiling Shot：48 码远程射击（自动重复）
+    {15, 2, 500085},              // Vault：跳跃
+    {15, 4, 802010},              // Saber Slash：军刀斩（近战连击；客户端 DBC 已有该条目）
+    {15, 8, 805903},              // Repeater：连弩机制（客户端 DBC 已有该条目）
+    {15, 1, 800165},              // Witchbane：远程诅咒弹（Ranks 表升阶基础）
+    {15, 1, 800665},              // Dual Crossbows：双持弩被动
+    {15, 4, 802002},              // Blazing Blade
+    {15, 1, 804280},              // Hit Rating (Alpha)：命中被动
+    {15, 1, 804404},              // Expert Killer
+    {15, 1, 804657},              // Repeater Passive：连弩被动（系数表在用）
+    // End By leewheel 2026-11-09
     {16, 1, 81},
     {16, 1, 107},
     {16, 1, 5019},
@@ -867,7 +885,7 @@ inline constexpr std::array<ClassSpell, 850> ClassSpells =
     {32, 60, 561265},
 }};
 
-inline constexpr std::array<ClassSpell, 270> LegacyGeneratedClassSpells =
+inline constexpr std::array<ClassSpell, 260> LegacyGeneratedClassSpells =
 {{
     {12, 1, 15590},
     {12, 2, 500915},
@@ -897,18 +915,8 @@ inline constexpr std::array<ClassSpell, 270> LegacyGeneratedClassSpells =
     {14, 1, 801901},
     {14, 1, 804280},
     {14, 1, 804334},
-    {15, 1, 500082},
-    {15, 2, 500085},
-    {15, 1, 800165},
-    {15, 1, 800665},
-    {15, 4, 802002},
-    {15, 0, 802010},
     {15, 20, 802281},
-    {15, 1, 804280},
-    {15, 1, 804404},
-    {15, 0, 804657},
     {15, 35, 804667},
-    {15, 0, 805903},
     {16, 1, 5009},
     {16, 8, 500038},
     {16, 0, 500922},
@@ -1141,14 +1149,12 @@ inline constexpr std::array<ClassSpell, 270> LegacyGeneratedClassSpells =
     {32, 31, 805726},
 }};
 
-inline constexpr std::array<ClassSpell, 50> ObsoleteClassSpells =
+inline constexpr std::array<ClassSpell, 47> ObsoleteClassSpells =
 {{
     {13, 0, 500017},
     {13, 0, 801682},
     {13, 0, 801684},
-    {15, 0, 802010},
-    {15, 0, 804657},
-    {15, 0, 805903},
+    // By leewheel 2026-11-09 802010/804657/805903 随服务端 Spell.dbc 移植客户端完整版而回归授予表，移出废弃表
     {16, 0, 500922},
     {18, 0, 500155},
     {18, 0, 500344},
