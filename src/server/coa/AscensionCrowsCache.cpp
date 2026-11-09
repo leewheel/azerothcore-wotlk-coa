@@ -552,6 +552,7 @@ bool Begin(uint32 seconds, Position const& point)
     //By leewheel 2026年11月8日
     // 原实现落到函数末尾没有返回值（C4715，返回值未定义），而调用方都用 if (!Begin(...)) 判失败，
     // 会让"已成功降临"被当成失败上报。补上成功返回。
+    // 上游 02cce3b552（#11689）后来补的是同一处 return true，本仓已先行修复，合并时保留本地汉化文案。
     return true;
     //End By leewheel
 }
