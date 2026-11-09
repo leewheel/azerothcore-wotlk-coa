@@ -489,12 +489,12 @@ namespace
             std::vector<CoAPlayerTicket::Ticket const*> const tickets = TicketDesk.Live();
             if (tickets.empty())
             {
-                handler->SendSysMessage("No player tickets.");
+                handler->SendSysMessage("没有玩家工单。");
                 return true;
             }
             for (CoAPlayerTicket::Ticket const* ticket : tickets)
-                handler->PSendSysMessage("#{} [{}] {} - {}{}, {} messages{}", ticket->Id, StatusOf(*ticket),
-                    ticket->Title, ticket->Creator, OnlineCreator(*ticket) ? " (online)" : "",
+                handler->PSendSysMessage("#{} [{}] {} - {}{}，共 {} 条消息{}", ticket->Id, StatusOf(*ticket),
+                    ticket->Title, ticket->Creator, OnlineCreator(*ticket) ? "（在线）" : "",
                     ticket->Messages.size(), AssignmentOf(*ticket));
             return true;
         }
@@ -506,12 +506,12 @@ namespace
             if (!ticket)
                 return Missing(handler, target);
             handler->PSendSysMessage("#{} {} [{}]", ticket->Id, ticket->Title, StatusOf(*ticket));
-            handler->PSendSysMessage("From {} (account {}), affects {}, {} priority, category {}{}", ticket->Creator,
+            handler->PSendSysMessage("来自 {}（账号 {}），影响角色 {}，优先级 {}，分类 {}{}", ticket->Creator,
                 ticket->Account, ticket->AffectedCharacter, NameOf(PriorityNames, ticket->Priority),
                 NameOf(CategoryNames, ticket->Category), AssignmentOf(*ticket));
             for (CoAPlayerTicket::Message const& message : ticket->Messages)
-                handler->PSendSysMessage("{} {}{}: {}", Acore::Time::TimeToTimestampStr(Seconds(message.Time)),
-                    message.Sender, message.GameMasterOnly ? " (GM note)" : "", message.Text);
+                handler->PSendSysMessage("{} {}{}：{}", Acore::Time::TimeToTimestampStr(Seconds(message.Time)),
+                    message.Sender, message.GameMasterOnly ? "（GM 备注）" : "", message.Text);
             return true;
         }
 
@@ -533,7 +533,7 @@ namespace
                 return Missing(handler, target);
             if (!TicketDesk.Close(ticket->Id, uint32(GameTime::GetGameTime().count())))
             {
-                handler->SendErrorMessage("Player ticket #{} is already closed.", ticket->Id);
+                handler->SendErrorMessage("玩家工单 #{} 已经关闭。", ticket->Id);
                 return false;
             }
             Publish(*ticket);
@@ -550,8 +550,8 @@ namespace
                 return Missing(handler, target);
             TicketDesk.Assign(ticket->Id, name.value_or(""));
             Publish(*ticket);
-            handler->PSendSysMessage("Player ticket #{} is {}.", ticket->Id,
-                name ? "assigned to " + *name : "unassigned");
+            handler->PSendSysMessage("玩家工单 #{} 状态：{}。", ticket->Id,
+                name ? "已指派给 " + *name : "未指派");
             return true;
         }
 
@@ -569,7 +569,7 @@ namespace
 
         static bool Missing(ChatHandler* handler, std::string const& target)
         {
-            handler->SendErrorMessage("No open player ticket matches {}.", target);
+            handler->SendErrorMessage("没有与 {} 匹配的未关闭玩家工单。", target);
             return false;
         }
 
@@ -583,7 +583,7 @@ namespace
             if (!TicketDesk.Reply(ticket->Id, GameMasterName(handler), text, gameMasterOnly,
                 uint32(GameTime::GetGameTime().count())))
             {
-                handler->SendErrorMessage("Player ticket #{} is closed, full, or the text is empty or too long.",
+                handler->SendErrorMessage("玩家工单 #{} 已关闭、已满，或内容为空／过长。",
                     ticket->Id);
                 return false;
             }

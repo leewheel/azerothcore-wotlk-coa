@@ -201,7 +201,7 @@ public:
             magic = type->starts_with("ma") || type->starts_with("s");
             if (!physical && !magic)
             {
-                handler->SendErrorMessage("Type: physical or magic.");
+                handler->SendErrorMessage("类型请填 physical（物理）或 magic（法术）。");
                 return false;
             }
         }
@@ -243,14 +243,14 @@ private:
     {
         if (!Enabled)
         {
-            handler->SendErrorMessage("Dungeon test tuning is switched off (CoA.DungeonTuning.Enable).");
+            handler->SendErrorMessage("地下城测试调参已关闭（配置项 CoA.DungeonTuning.Enable）。");
             return nullptr;
         }
         Player* player = handler->GetPlayer();
         Map* map = player ? player->GetMap() : nullptr;
         if (!map || !map->IsNonRaidDungeon())
         {
-            handler->SendErrorMessage("Only inside a 5-man dungeon.");
+            handler->SendErrorMessage("只能在 5 人地下城内使用。");
             return nullptr;
         }
         return map;

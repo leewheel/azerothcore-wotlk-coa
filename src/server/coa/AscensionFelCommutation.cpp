@@ -695,7 +695,7 @@ public:
         WorldPacket data(PatchGlobalStringsOpcode, 18 + key.size() + value.size());
         data << uint32(id) << uint32(0x1 | 0x2) << uint32(0) << uint32(0) << key << value;
         player->SendDirectMessage(&data);
-        handler->PSendSysMessage("Sent SMSG 0x0676 row {}: {} = \"{}\". Check with /run print({})", id, key, value, key);
+        handler->PSendSysMessage("已发送 SMSG 0x0676 行 {}：{} = \"{}\"。可用 /run print({}) 核对", id, key, value, key);
         return true;
     }
 
@@ -735,7 +735,7 @@ public:
         WorldPacket data(WindowOpcode, 2 * sizeof(uint8));
         data << uint8(windowId) << uint8(visible.value_or(1) != 0 ? 1 : 0);
         player->SendDirectMessage(&data);
-        handler->PSendSysMessage("Sent SMSG 0x0906 window {} visible {}.", windowId, visible.value_or(1) != 0 ? 1 : 0);
+        handler->PSendSysMessage("已发送 SMSG 0x0906 窗口 {}，可见 {}。", windowId, visible.value_or(1) != 0 ? 1 : 0);
         return true;
     }
 };

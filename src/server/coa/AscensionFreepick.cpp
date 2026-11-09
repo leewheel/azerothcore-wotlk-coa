@@ -625,7 +625,7 @@ public:
         std::string error;
         if (!GmSetEntry(player, entryId, learn, error))
         {
-            handler->SendErrorMessage("Entry {}: {}", entryId, error);
+            handler->SendErrorMessage("条目 {}：{}", entryId, error);
             return false;
         }
         handler->PSendSysMessage("{} entry {} for {}.", learn ? "Learned" : "Unlearned", entryId, player->GetName());

@@ -260,7 +260,7 @@ void SendItemLevel(Player* player, Item const* item)
         return false;
 
     player->SendEquipError(EQUIP_ERR_NONE, item, nullptr);
-    ChatHandler(player->GetSession()).SendSysMessage("Soulbound items cannot be stored in the Realm Bank.");
+    ChatHandler(player->GetSession()).SendSysMessage("灵魂绑定的物品不能存入国度银行。");
     return true;
 }
 
@@ -1269,12 +1269,12 @@ public:
         if (!AscensionPersonalBank::AddTab(player, kind))
         {
             ChatHandler(player->GetSession())
-                .PSendSysMessage("Your {} already owns every tab.", which);
+                .PSendSysMessage("你的{}已经拥有全部栏位。", which);
             return true;
         }
 
         ChatHandler(player->GetSession())
-            .PSendSysMessage("A new tab has been unlocked in your {}.", which);
+            .PSendSysMessage("你的{}已解锁一个新栏位。", which);
 
         uint32 count = 1;
         player->DestroyItemCount(item, count, true);

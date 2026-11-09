@@ -325,7 +325,7 @@ public:
 
         if (!bf)
         {
-            handler->SendErrorMessage("Battlefield {} not found.", battleId);
+            handler->SendErrorMessage("找不到战场 {}。", battleId);
             return false;
         }
 

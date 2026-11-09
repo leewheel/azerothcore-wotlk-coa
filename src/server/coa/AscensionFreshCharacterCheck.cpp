@@ -622,8 +622,8 @@ bool HandleAscensionFreshCharacterCheck(ChatHandler* handler) try
         sWorld->getIntConfig(CONFIG_START_PLAYER_LEVEL) != 1 || sWorld->getBoolConfig(CONFIG_ALWAYS_MAXSKILL) ||
         !ReservedIdsAreAbsent())
     {
-        handler->SendSysMessage("Fresh Create check refused: require zero game sessions/players, start level 1, "
-            "AlwaysMaxSkillForLevel 0, and positively absent reserved account/GUIDs.");
+        handler->SendSysMessage("新建角色检查已拒绝执行：要求没有任何游戏会话／在线玩家、起始等级为 1、"
+            "AlwaysMaxSkillForLevel 为 0，且预留账号／GUID 确实不存在。");
         return false;
     }
 
@@ -634,7 +634,7 @@ bool HandleAscensionFreshCharacterCheck(ChatHandler* handler) try
     std::filesystem::path directory = base / ("fresh-create-" + std::to_string(GameTime::GetGameTime().count()));
     if (!std::filesystem::create_directory(directory))
     {
-        handler->SendSysMessage("Fresh Create check refused: output directory already exists; never overwrite a previous result.");
+        handler->SendSysMessage("新建角色检查已拒绝执行：输出目录已存在，绝不能覆盖上一次的结果。");
         return false;
     }
     std::ofstream output(directory / "actual.json", std::ios::out);
@@ -720,13 +720,13 @@ bool HandleAscensionFreshCharacterCheck(ChatHandler* handler) try
            << ",\"reserved_ids_absent_after\":" << absentAfter << ",\"player_counters_clean\":" << cleanCount << "}\n";
     output.flush();
     bool const reportWritten = bool(output);
-    handler->PSendSysMessage("Fresh Create probe: {} created, {} blocked/failed, {} mismatched. Report: {}. Full DB preservation check is still required.",
+    handler->PSendSysMessage("新建角色探测：成功 {} 个，被阻止／失败 {} 个，不一致 {} 个。报告：{}。仍须完成完整的数据库保全校验。",
         created, blocked, mismatched, (directory / "actual.json").string());
     return reportWritten && absentAfter && cleanCount && blocked == 0 && mismatched == 0 && created == 21;
 }
 catch (std::exception const& error)
 {
     if (handler)
-        handler->PSendSysMessage("Fresh Create probe failed with an exception: {}. Do not treat a partial report as success.", error.what());
+        handler->PSendSysMessage("新建角色探测因异常失败：{}。不要把不完整的报告当成成功。", error.what());
     return false;
 }

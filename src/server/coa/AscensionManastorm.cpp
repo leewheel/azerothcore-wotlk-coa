@@ -573,7 +573,7 @@ namespace
             auto itr = runs.find(player->GetGUID());
             if (itr == runs.end() || !enabled.load())
             {
-                ChatHandler(player->GetSession()).SendSysMessage("Manastorm is not available on this server.");
+                ChatHandler(player->GetSession()).SendSysMessage("本服务器未开放法力风暴。");
                 return true;
             }
             Run& run = itr->second;
@@ -674,8 +674,8 @@ namespace
                 if (failed)
                 {
                     run.encounter->phase = Phase::Failed;
-                    ChatHandler(player->GetSession()).SendSysMessage("Manastorm could not save every party reward. "
-                        "Successfully saved rewards remain in the mail; return from your saved checkpoint.");
+                    ChatHandler(player->GetSession()).SendSysMessage("法力风暴未能保存全部队伍奖励。"
+                        "已成功保存的奖励会留在邮箱中；请从已保存的检查点返回。");
                     FailRun(player, run);
                     return;
                 }
@@ -798,7 +798,7 @@ namespace
             {
                 run.encounter->treasure.Clear();
                 run.encounter->bonusCaches += 2;
-                ChatHandler(player->GetSession()).SendSysMessage("Treasure Keeper defeated: two additional caches secured.");
+                ChatHandler(player->GetSession()).SendSysMessage("宝库守护者已被击败：额外获得两个宝箱。");
             }
             else if (run.encounter->guards.erase(unit->GetGUID()))
             {
@@ -948,7 +948,7 @@ namespace
         {
             if (!player->HasItemCount(currency, price))
             {
-                ChatHandler(player->GetSession()).SendSysMessage("You do not have enough Manastorm currency.");
+                ChatHandler(player->GetSession()).SendSysMessage("你的法力风暴货币不足。");
                 return;
             }
             ItemPosCountVec positions;
@@ -1346,7 +1346,7 @@ namespace
                         party.push_back(member);
             if (party.size() != (group ? group->GetMembersCount() : 1))
             {
-                ChatHandler(player->GetSession()).SendSysMessage("Gather your party within 100 yards before entering.");
+                ChatHandler(player->GetSession()).SendSysMessage("进入前请让所有队员集结在 100 码范围内。");
                 SendResult(player, EnterResult, "ENTER_MANASTORM_BAD_GROUP_SIZE");
                 return;
             }
@@ -1428,12 +1428,12 @@ namespace
             if (present != run.encounter->members.size())
             {
                 run.encounter->portalArmed.clear();
-                ChatHandler(player->GetSession()).SendSysMessage("Wait for every party member before continuing.");
+                ChatHandler(player->GetSession()).SendSysMessage("请等待所有队员到齐后再继续。");
                 return;
             }
             if (run.encounter->mode < 4 && maxLevel >= std::max(60u, sWorld->getIntConfig(CONFIG_MAX_PLAYER_LEVEL)))
             {
-                ChatHandler(player->GetSession()).SendSysMessage("Maximum level reached! Your rewards are saved. Enter again to begin endgame Manastorm.");
+                ChatHandler(player->GetSession()).SendSysMessage("已达最高等级！你的奖励已保存，再次进入即可开始终局法力风暴。");
                 Exit(player, run);
                 return;
             }

@@ -1040,8 +1040,8 @@ public:
             debugCaches.emplace_back(data.mapid, go->GetGUID());
             ++spawned;
         }
-        handler->PSendSysMessage("Hidden Caches{}: {} already up, {} respawned, {} extra spawned for {} min "
-            "(.hiddencache despawn removes them).", scope ? "" : " in this zone", alreadyUp, respawned, spawned,
+        handler->PSendSysMessage("隐秘宝库{}：已存在 {} 个，重新刷新 {} 个，额外生成 {} 个，持续 {} 分钟"
+            "（.hiddencache despawn 可清除）。", scope ? "" : "（本区域内）", alreadyUp, respawned, spawned,
             DebugCacheSeconds / 60);
         return true;
     }
@@ -1057,15 +1057,15 @@ public:
                     ++removed;
                 }
         debugCaches.clear();
-        handler->PSendSysMessage("Removed {} debug Hidden Caches.", removed);
+        handler->PSendSysMessage("已移除 {} 个调试用隐秘宝库。", removed);
         return true;
     }
 
     static bool HandleStageStatus(ChatHandler* handler)
     {
         uint32 const stageOverride = uint32(sWorldState->getWorldState(WorldStateHighRiskStageOverride));
-        handler->PSendSysMessage("High-Risk stage {}. Config {}, override {}.", highRiskStage.load(),
-            configuredHighRiskStage.load(), stageOverride ? std::to_string(stageOverride - 1) : std::string("none"));
+        handler->PSendSysMessage("高风险阶段 {}。配置值 {}，覆盖值 {}。", highRiskStage.load(),
+            configuredHighRiskStage.load(), stageOverride ? std::to_string(stageOverride - 1) : std::string("无"));
         return true;
     }
 
@@ -1073,12 +1073,12 @@ public:
     {
         if (stage < 1 || stage > RaidRelease::AllReleased)
         {
-            handler->PSendSysMessage("High-Risk stage must be 1-{}.", RaidRelease::AllReleased);
+            handler->PSendSysMessage("高风险阶段必须在 1-{} 之间。", RaidRelease::AllReleased);
             return false;
         }
         sWorldState->setWorldState(WorldStateHighRiskStageOverride, stage + 1);
         highRiskStage = stage;
-        handler->PSendSysMessage("High-Risk stage set to {}.", stage);
+        handler->PSendSysMessage("高风险阶段已设为 {}。", stage);
         return true;
     }
 
@@ -1086,7 +1086,7 @@ public:
     {
         sWorldState->setWorldState(WorldStateHighRiskStageOverride, 0);
         highRiskStage = configuredHighRiskStage.load();
-        handler->PSendSysMessage("High-Risk stage override cleared; now {}.", highRiskStage.load());
+        handler->PSendSysMessage("高风险阶段覆盖值已清除，当前为 {}。", highRiskStage.load());
         return true;
     }
 };

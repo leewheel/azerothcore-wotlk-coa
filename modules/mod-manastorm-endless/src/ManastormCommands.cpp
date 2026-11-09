@@ -379,7 +379,7 @@ public:
 
         if (!player)
         {
-            handler->SendErrorMessage("Manastorm: this command requires an in-game player.");
+            handler->SendErrorMessage("法力风暴：该命令需要在游戏内的玩家执行。");
             return false;
         }
 
@@ -389,7 +389,7 @@ public:
 
         if (!run)
         {
-            handler->PSendSysMessage("Manastorm: {}", error);
+            handler->PSendSysMessage("法力风暴：{}", error);
             return true;
         }
 
@@ -564,7 +564,7 @@ public:
 
         if (!player)
         {
-            handler->SendErrorMessage("Manastorm: this command requires an in-game player.");
+            handler->SendErrorMessage("法力风暴：该命令需要在游戏内的玩家执行。");
             return false;
         }
 
@@ -590,18 +590,18 @@ public:
 
         if (!player)
         {
-            handler->SendErrorMessage("Manastorm: this command requires an in-game player.");
+            handler->SendErrorMessage("法力风暴：该命令需要在游戏内的玩家执行。");
             return false;
         }
 
         std::string error;
         if (!ManastormMgr::Instance().StopRun(player, error))
         {
-            handler->PSendSysMessage("Manastorm: {}", error);
+            handler->PSendSysMessage("法力风暴：{}", error);
             return true;
         }
 
-        handler->SendSysMessage("Manastorm: run stopped.");
+        handler->SendSysMessage("法力风暴：本轮已停止。");
         return true;
     }
 

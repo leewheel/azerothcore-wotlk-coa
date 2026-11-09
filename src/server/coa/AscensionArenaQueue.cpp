@@ -183,7 +183,7 @@ namespace
         std::string name = player->GetName() + " " + bracket.Suffix;
         if (sArenaTeamMgr->GetArenaTeamByName(name))
         {
-            ChatHandler(player->GetSession()).PSendSysMessage("The arena team name {} is already taken.", name);
+            ChatHandler(player->GetSession()).PSendSysMessage("竞技场队伍名 {} 已被占用。", name);
             return nullptr;
         }
 
@@ -227,7 +227,7 @@ namespace
 
         if (sArenaSeasonMgr->GetSeasonState() == ARENA_SEASON_STATE_DISABLED)
         {
-            ChatHandler(player->GetSession()).SendSysMessage("Rated arenas are closed until the next season starts.");
+            ChatHandler(player->GetSession()).SendSysMessage("本赛季开赛前，评级竞技场暂不开放。");
             return;
         }
 
@@ -397,7 +397,7 @@ namespace
 
         if (sArenaSeasonMgr->GetSeasonState() == ARENA_SEASON_STATE_DISABLED)
         {
-            ChatHandler(leader->GetSession()).SendSysMessage("Rated arenas are closed until the next season starts.");
+            ChatHandler(leader->GetSession()).SendSysMessage("本赛季开赛前，评级竞技场暂不开放。");
             return;
         }
 

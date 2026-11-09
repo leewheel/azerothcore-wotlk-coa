@@ -1397,7 +1397,7 @@ public:
         std::lock_guard lock(Mutex);
         if (!Enabled || !GM(handler->GetPlayer()))
         {
-            handler->SendSysMessage("XP hotspots are disabled or Game Master permission is required.");
+            handler->SendSysMessage("经验热区未开启，或需要游戏管理员权限。");
             return true;
         }
         TextReply = true;
@@ -1407,7 +1407,7 @@ public:
         }
         catch (std::exception const&)
         {
-            handler->SendSysMessage("Invalid hotspot command.");
+            handler->SendSysMessage("热区命令无效。");
         }
         TextReply = false;
         return true;

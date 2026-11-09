@@ -253,7 +253,7 @@ Optional<uint32> ResolveZone(ChatHandler* handler, Optional<uint32> zoneId)
     if (Player* player = handler->GetPlayer())
         return player->GetZoneId();
 
-    handler->SendErrorMessage("Name a zone id from the console.");
+    handler->SendErrorMessage("请在控制台指定区域编号。");
     return std::nullopt;
 }
 }
@@ -370,7 +370,7 @@ public:
         std::shared_ptr<ZoneBonuses const> const zones = Active();
         if (zones->empty())
         {
-            handler->SendSysMessage("No test zones: every zone gives normal rewards.");
+            handler->SendSysMessage("没有测试区域：所有区域都按正常奖励发放。");
             return true;
         }
 
@@ -480,7 +480,7 @@ public:
     static bool HandleReload(ChatHandler* handler)
     {
         LoadZones();
-        handler->PSendSysMessage("Reloaded {} test zones.", Active()->size());
+        handler->PSendSysMessage("已重新载入 {} 个测试区域。", Active()->size());
         return true;
     }
 };

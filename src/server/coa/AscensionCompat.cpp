@@ -1088,7 +1088,7 @@ public:
     if (learned)
     {
       ChatHandler(player->GetSession())
-          .PSendSysMessage("Restored {} Ascension class abilities.", learned);
+          .PSendSysMessage("已恢复 {} 项晋升职业能力。", learned);
       LOG_INFO("coa",
                "Restored {} progression spells for {} (class {}, level {})",
                learned, player->GetName(), uint32(player->getClass()),
@@ -1594,7 +1594,7 @@ public:
     if (restored)
     {
       ChatHandler(player->GetSession())
-          .PSendSysMessage("Restored {} custom-class starter items.",
+          .PSendSysMessage("已恢复 {} 件自定义职业初始装备。",
                            restored);
       LOG_INFO("coa",
                "Restored {} starter items for {} (class {})", restored,
@@ -3747,12 +3747,12 @@ public:
         if (!player)
             return;
 
-        handler->PSendSysMessage("Ascension resource status for class {}:",
+        handler->PSendSysMessage("职业 {} 的晋升资源状态：",
             uint32(player->getClass()));
 
         if (player->getClass() == CLASS_REAPER)
         {
-            handler->PSendSysMessage("Runic Power: {}/{}",
+            handler->PSendSysMessage("符文能量：{}/{}",
                 player->GetPower(POWER_RUNIC_POWER) / 10,
                 player->GetMaxPower(POWER_RUNIC_POWER) / 10);
         }
@@ -6430,8 +6430,7 @@ public:
     if (!_clientDataLoaded)
     {
       ChatHandler(player->GetSession())
-          .SendSysMessage("Ascension collection data is unavailable; transmog "
-                          "and vanity are disabled.");
+          .SendSysMessage("晋升收藏数据不可用，幻化与外观功能已关闭。");
       return;
     }
 
@@ -7128,7 +7127,7 @@ public:
     if (IsWithheldVanityItem(itemId))
     {
       ChatHandler(player->GetSession())
-          .SendSysMessage("Mystic Enchanting altars are not available on this realm.");
+          .SendSysMessage("本服务器未开放秘法附魔祭坛。");
       return;
     }
 
@@ -7152,7 +7151,7 @@ public:
         AscensionCollectibles::SigilVanityItems.end(), itemId) &&
         !state->OwnedVanityItems.contains(itemId))
     {
-        ChatHandler(player->GetSession()).SendSysMessage("That sigil companion is not unlocked on this account.");
+        ChatHandler(player->GetSession()).SendSysMessage("该符印伙伴尚未在本账号解锁。");
         return;
     }
 
@@ -7192,15 +7191,13 @@ public:
       if (player->HasSpell(learnedSpell))
         sScriptMgr->OnPlayerCoAProgress(player, CoAProgressEvent::VanityDelivered, itemId);
       ChatHandler(player->GetSession())
-          .PSendSysMessage("Learned vanity spell {} because item {} has no "
-                           "local server template.",
+          .PSendSysMessage("已学会外观法术 {}，因为物品 {} 没有本地服务器模板。",
                            learnedSpell, itemId);
       return;
     }
 
     ChatHandler(player->GetSession())
-        .PSendSysMessage("Vanity item {} exists in the Ascension client but "
-                         "has no AzerothCore item template yet.",
+        .PSendSysMessage("外观物品 {} 在晋升客户端中存在，但本地还没有对应的物品模板。",
                          itemId);
   }
 
@@ -7756,7 +7753,7 @@ private:
     state->AppearanceAddTimer = 0;
     SendOutfitCollection(player, *state);
     ChatHandler(player->GetSession())
-        .PSendSysMessage("Unlocked all {} local wardrobe appearances.", total);
+        .PSendSysMessage("已解锁全部 {} 件本地衣橱外观。", total);
 
     LOG_INFO("coa",
              "Completed full wardrobe sync for {}: {} appearances",
@@ -8270,14 +8267,14 @@ private:
         if (vanityItr == _vanityItems.end() || IsWithheldVanityItem(itemId) ||
             !IsVanityItemOffered(player, vanityItr->second))
         {
-            handler.SendSysMessage("That item is not sold on this realm.");
+            handler.SendSysMessage("本服务器不出售该物品。");
             return;
         }
 
         uint32 const cost = vanityItr->second.BazaarTokenCost;
         if (!cost)
         {
-            handler.SendSysMessage("That item cannot be bought with Bazaar Tokens.");
+            handler.SendSysMessage("该物品不能用集市代币购买。");
             return;
         }
 
@@ -8292,13 +8289,13 @@ private:
         bool const unlockAll = ascensionCompatConfig.GetConfigValue<bool>(AscensionCompatConfig::UNLOCK_ALL_VANITY);
         if (state->OwnedVanityItems.contains(itemId) || (unlockAll && !sigil && !IsBankVanityItem(itemId)))
         {
-            handler.SendSysMessage("You already own this item.");
+            handler.SendSysMessage("你已经拥有该物品。");
             return;
         }
 
         if (!player->HasItemCount(VANITY_BAZAAR_TOKEN_ITEM, cost))
         {
-            handler.SendSysMessage("You do not have enough Bazaar Tokens.");
+            handler.SendSysMessage("你的集市代币不足。");
             return;
         }
 
@@ -8317,13 +8314,13 @@ private:
         ChatHandler handler(player->GetSession());
         if (!sObjectMgr->GetItemTemplate(itemId))
         {
-            handler.PSendSysMessage("Vanity item {} has no AzerothCore item template yet.", itemId);
+            handler.PSendSysMessage("外观物品 {} 还没有对应的物品模板。", itemId);
             return;
         }
 
         if (!player->HasItemCount(VANITY_BAZAAR_TOKEN_ITEM, cost))
         {
-            handler.SendSysMessage("You do not have enough Bazaar Tokens.");
+            handler.SendSysMessage("你的集市代币不足。");
             return;
         }
 
@@ -8958,8 +8955,8 @@ bool HandlePersonalBankActivate(Player* player, WorldPacket const& packet)
     if (!OwnsPlacedBank(player, itr->second.Kind))
     {
         ChatHandler(player->GetSession())
-            .PSendSysMessage("You do not own a {} bank.",
-                             itr->second.Kind == PERSONAL_BANK_REALM ? "Realm" : "Personal");
+            .PSendSysMessage("你还没有{}银行。",
+                             itr->second.Kind == PERSONAL_BANK_REALM ? "国度" : "个人");
         LOG_INFO("coa",
                  "{} touched a {} bank placed by {} (vault {}) without owning one",
                  player->GetName(),
@@ -9380,7 +9377,7 @@ public:
 
     if (!player || !player->IsConnected())
     {
-      handler->SendSysMessage("That player must be online for this command.");
+      handler->SendSysMessage("该玩家必须在线才能执行此命令。");
       return true;
     }
 
@@ -9388,15 +9385,13 @@ public:
     if (!AscensionCollectionService::Instance().GrantFullVanityCollection(target))
     {
       handler->PSendSysMessage(
-          "Could not grant the vanity collection to {}: their Ascension "
-          "collection state isn't loaded (bot, or collection data failed to "
-          "load).",
+          "无法把外观收藏授予 {}：其晋升收藏数据尚未载入（可能是机器人，或收藏数据载入失败）。",
           player->GetName());
       return true;
     }
 
     handler->PSendSysMessage(
-        "Granted the full Ascension vanity collection to {}.",
+        "已把完整的晋升外观收藏授予 {}。",
         player->GetName());
     if (handler->GetPlayer() != target)
       ChatHandler(target->GetSession())
@@ -9412,7 +9407,7 @@ public:
 
     if (!player || !player->IsConnected())
     {
-      handler->SendSysMessage("That player must be online for this command.");
+      handler->SendSysMessage("该玩家必须在线才能执行此命令。");
       return true;
     }
 
@@ -9420,15 +9415,13 @@ public:
     if (!AscensionCollectionService::Instance().GrantFullAppearanceCollection(target))
     {
       handler->PSendSysMessage(
-          "Could not grant the transmog collection to {}: their Ascension "
-          "collection state isn't loaded (bot, or collection data failed to "
-          "load).",
+          "无法把幻化收藏授予 {}：其晋升收藏数据尚未载入（可能是机器人，或收藏数据载入失败）。",
           player->GetName());
       return true;
     }
 
     handler->PSendSysMessage(
-        "Granted the full Ascension transmog collection to {}.",
+        "已把完整的晋升幻化收藏授予 {}。",
         player->GetName());
     if (handler->GetPlayer() != target)
       ChatHandler(target->GetSession())
@@ -9445,7 +9438,7 @@ public:
 
     if (!player || !player->IsConnected())
     {
-      handler->SendSysMessage("That player must be online for this command.");
+      handler->SendSysMessage("该玩家必须在线才能执行此命令。");
       return true;
     }
 
@@ -9453,16 +9446,14 @@ public:
     if (!AscensionCollectionService::Instance().GrantMysticAltarVanityItems(target))
     {
       handler->PSendSysMessage(
-          "Could not grant the Mystic Altar vanity items to {}: their "
-          "Ascension collection state isn't loaded (bot, or collection data "
-          "failed to load).",
+          "无法把秘法祭坛外观物品授予 {}：其晋升收藏数据尚未载入"
+          "（可能是机器人，或收藏数据载入失败）。",
           player->GetName());
       return true;
     }
 
     handler->PSendSysMessage(
-        "Granted the Mystic Altar vanity items to {} (account-wide "
-        "ownership; this realm may not offer altars to use them on).",
+        "已把秘法祭坛外观物品授予 {}（账号级共享；本服务器可能不提供可用的祭坛）。",
         player->GetName());
     if (handler->GetPlayer() != target)
       ChatHandler(target->GetSession())
@@ -9481,10 +9472,10 @@ public:
     float const feetZ = player->GetPositionZ();
     Map *map = player->GetMap();
 
-    handler->PSendSysMessage("feet {:.2f} on map {} at {:.2f} {:.2f}", feetZ,
+    handler->PSendSysMessage("脚下高度 {:.2f}，地图 {}，坐标 {:.2f} {:.2f}", feetZ,
                              player->GetMapId(), player->GetPositionX(),
                              player->GetPositionY());
-    handler->PSendSysMessage("spot {:.2f} {:.2f} (2 yards {:.2f} rad ahead)", x,
+    handler->PSendSysMessage("位置 {:.2f} {:.2f}（前方 2 码，角度 {:.2f} 弧度）", x,
                              y, player->GetOrientation());
     for (float start : {feetZ + 0.3f, feetZ + 2.5f, feetZ + 10.0f}) {
       handler->PSendSysMessage(
@@ -9524,8 +9515,7 @@ public:
 
     if ((hour && *hour > 23) || (minute && *minute > 59))
     {
-      handler->SendSysMessage("Give an hour from 0 to 23 and an optional minute from 0 to 59, or no "
-                              "arguments to follow the server clock again.");
+      handler->SendSysMessage("小时请填 0 到 23，分钟可选填 0 到 59；不填参数则重新跟随服务器时钟。");
       return true;
     }
 
@@ -9538,7 +9528,7 @@ public:
     player->SendDirectMessage(&data);
 
     std::tm const clock = Acore::Time::TimeBreakdown(shown);
-    handler->PSendSysMessage("Your client's clock now reads {:02}:{:02}.", clock.tm_hour, clock.tm_min);
+    handler->PSendSysMessage("你的客户端时间现在显示为 {:02}:{:02}。", clock.tm_hour, clock.tm_min);
     return true;
   }
 
@@ -9552,7 +9542,7 @@ public:
     bool repaired =
         AscensionClassService::Instance().RepairStarterKit(player, true);
     if (!repaired)
-      handler->SendSysMessage("Your custom-class starter kit is complete.");
+      handler->SendSysMessage("你的自定义职业初始装备已补齐。");
     return true;
   }
 
@@ -9569,7 +9559,7 @@ public:
 
     player->RestoreAllSpellCharges();
     player->SendAllSpellChargeStates();
-    handler->SendSysMessage("All spell-charge pools reset to full.");
+    handler->SendSysMessage("所有法术充能池已重置为满。");
     return true;
   }
 
@@ -9581,13 +9571,13 @@ public:
 
     player->SendAllSpellChargeStates();
     SendAscensionRunemasterEchoesCooldown(player);
-    handler->SendSysMessage("Spell-charge state resent to the client.");
+    handler->SendSysMessage("法术充能状态已重新发送给客户端。");
     return true;
   }
 
   static bool HandleLocalReloadPresetsCommand(ChatHandler* handler) {
     sAscensionPresets->LoadFromDB();
-    handler->PSendSysMessage("Reloaded %u creature display presets into cache.", uint32(sAscensionPresets->GetPresetCount()));
+    handler->PSendSysMessage("已重新载入 %u 个生物外观预设到缓存。", uint32(sAscensionPresets->GetPresetCount()));
     return true;
   }
 
@@ -9616,7 +9606,7 @@ public:
 
     if (!preset)
     {
-      handler->PSendSysMessage("No creature display preset found for entry %u.", entry);
+      handler->PSendSysMessage("条目 %u 没有找到生物外观预设。", entry);
       return false;
     }
 
@@ -9640,7 +9630,7 @@ public:
       response << uint32(item);
 
     target->SendMessageToSet(&response, true);
-    handler->PSendSysMessage("Morphed into creature display preset for entry %u (display %u, %s).",
+    handler->PSendSysMessage("已变形为条目 %u 的生物外观预设（外观 %u，%s）。",
         entry, preset->display_id, preset->gender == 1 ? "Female" : "Male");
     return true;
   }
@@ -9683,7 +9673,7 @@ public:
       target->DeMorph();
     }
 
-    handler->PSendSysMessage("Demorphed creature display preset.");
+    handler->PSendSysMessage("已取消生物外观预设变形。");
     return true;
   }
 };
@@ -9809,7 +9799,7 @@ public:
                     [player](uint32 spell) { return player->HasSpell(spell); }))
                 return true;
             result = EQUIP_ERR_CANT_DO_RIGHT_NOW;
-            ChatHandler(player->GetSession()).SendSysMessage("That specialization slot is already unlocked.");
+            ChatHandler(player->GetSession()).SendSysMessage("该专精栏位已经解锁。");
             return false;
         }
 
@@ -9820,7 +9810,7 @@ public:
         if (!player->HasSpell(learned) || std::find(spells.begin(), spells.end(), learned) == spells.end())
             return true;
         result = EQUIP_ERR_CANT_DO_RIGHT_NOW;
-        ChatHandler(player->GetSession()).SendSysMessage("That specialization slot is already unlocked.");
+        ChatHandler(player->GetSession()).SendSysMessage("该专精栏位已经解锁。");
         return false;
     }
 
@@ -11282,7 +11272,7 @@ public:
             return true;
 
         if (!AscensionClassService::Instance().SynchronizeProgression(player, true))
-            ChatHandler(player->GetSession()).SendSysMessage("Your available class abilities are already up to date.");
+            ChatHandler(player->GetSession()).SendSysMessage("你的可用职业能力已是最新。");
         return true;
     }
 };

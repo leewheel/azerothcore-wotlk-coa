@@ -241,7 +241,7 @@ public:
 
     static bool HandleStatusCommand(ChatHandler* handler)
     {
-        handler->SendSysMessage("Portable gadgets - item -> spell (lifetime) -> world object:");
+        handler->SendSysMessage("便携装置 — 物品 -> 法术（存在时间）-> 世界物体：");
         for (PortableGadget const& gadget : PortableGadgets)
             handler->SendSysMessage(StatusLine(gadget));
         return true;

@@ -928,15 +928,15 @@ public:
         std::lock_guard lock(mutex);
         if (!enabled)
         {
-            handler->SendSysMessage("Crow's Cache is disabled or has no valid reward pool.");
+            handler->SendSysMessage("乌鸦宝库已关闭，或没有有效的奖励池。");
             return false;
         }
         if (!Begin(std::clamp<uint32>(seconds.value_or(warning), 1, 3600), location))
         {
-            handler->SendSysMessage("Crow's Cache needs Mythic Dungeons (stage 2) and at least three released Heroic Bloodforged rewards.");
+            handler->SendSysMessage("乌鸦宝库需要开启史诗地下城（第 2 阶段），并至少已放出三份英雄血铸奖励。");
             return false;
         }
-        handler->SendSysMessage("Crow's Cache warning started. Use .crows visit to reach it.");
+        handler->SendSysMessage("乌鸦宝库的预警已开始，使用 .crows visit 可前往。");
         return true;
     }
     static bool StartSilithus(ChatHandler* handler, Optional<uint32> seconds)
@@ -946,10 +946,10 @@ public:
             return false;
         if (!Begin(std::clamp<uint32>(seconds.value_or(warning), 1, 3600), silithus))
         {
-            handler->SendSysMessage("Crow's Cache needs Mythic Dungeons (stage 2) and at least three released Heroic Bloodforged rewards.");
+            handler->SendSysMessage("乌鸦宝库需要开启史诗地下城（第 2 阶段），并至少已放出三份英雄血铸奖励。");
             return false;
         }
-        handler->SendSysMessage("Silithus Crow's Cache warning started. Use .crows visit to reach it.");
+        handler->SendSysMessage("希利苏斯乌鸦宝库的预警已开始，使用 .crows visit 可前往。");
         return true;
     }
     static bool StartNeedles(ChatHandler* handler, Optional<uint32> seconds)
@@ -959,10 +959,10 @@ public:
             return false;
         if (!Begin(std::clamp<uint32>(seconds.value_or(warning), 1, 3600), needles))
         {
-            handler->SendSysMessage("Crow's Cache needs Mythic Dungeons (stage 2) and at least three released Heroic Bloodforged rewards.");
+            handler->SendSysMessage("乌鸦宝库需要开启史诗地下城（第 2 阶段），并至少已放出三份英雄血铸奖励。");
             return false;
         }
-        handler->SendSysMessage("Crow's Cache warning started. Use .crows visit to reach it.");
+        handler->SendSysMessage("乌鸦宝库的预警已开始，使用 .crows visit 可前往。");
         return true;
     }
     static bool StartBarrens(ChatHandler* handler, Optional<uint32> seconds)
@@ -972,10 +972,10 @@ public:
             return false;
         if (!Begin(std::clamp<uint32>(seconds.value_or(warning), 1, 3600), barrens))
         {
-            handler->SendSysMessage("Crow's Cache needs Mythic Dungeons (stage 2) and at least three released Heroic Bloodforged rewards.");
+            handler->SendSysMessage("乌鸦宝库需要开启史诗地下城（第 2 阶段），并至少已放出三份英雄血铸奖励。");
             return false;
         }
-        handler->SendSysMessage("Crow's Cache warning started. Use .crows visit to reach it.");
+        handler->SendSysMessage("乌鸦宝库的预警已开始，使用 .crows visit 可前往。");
         return true;
     }
     static bool Here(ChatHandler* handler, Optional<uint32> seconds)
@@ -988,10 +988,10 @@ public:
         std::lock_guard lock(mutex);
         if (!Begin(std::clamp<uint32>(seconds.value_or(warning), 1, 3600), *player))
         {
-            handler->SendSysMessage("Crow's Cache needs Mythic Dungeons (stage 2) and at least three released Heroic Bloodforged rewards.");
+            handler->SendSysMessage("乌鸦宝库需要开启史诗地下城（第 2 阶段），并至少已放出三份英雄血铸奖励。");
             return false;
         }
-        handler->SendSysMessage("Crow's Cache warning started at your current position.");
+        handler->SendSysMessage("乌鸦宝库的预警已在你当前位置开始。");
         return true;
     }
     static bool Visit(ChatHandler* handler)
@@ -1013,24 +1013,24 @@ public:
             return false;
         nextStart = Now() + std::clamp<uint32>(seconds.value_or(interval), 1, 31536000);
         SaveSchedule();
-        handler->SendSysMessage("The next automatic Crow's Cache appearance has been scheduled.");
+        handler->SendSysMessage("已排定下一次乌鸦宝库的自动出现时间。");
         return true;
     }
     static bool Cancel(ChatHandler* handler)
     {
         std::lock_guard lock(mutex);
         RemoveUnclaimed();
-        handler->SendSysMessage("Unclaimed Crow's Cache test events cancelled. Carried and dropped caches are preserved.");
+        handler->SendSysMessage("已取消尚未被领取的乌鸦宝库测试事件；已被携带或掉落的宝库会保留。");
         return true;
     }
     static bool Status(ChatHandler* handler)
     {
         std::lock_guard lock(mutex);
-        handler->PSendSysMessage("Crow's Cache: enabled={}, newest tier pool={}, released pool={}, active events={}, next automatic chest in {} seconds.",
+        handler->PSendSysMessage("乌鸦宝库：已启用={}，最新档位奖励池={}，已放出奖励池={}，进行中的事件={}，下一个自动宝箱在 {} 秒后。",
             enabled, Bloodforged::NewestReleasedHeroicGear().size(), Bloodforged::ReleasedHeroicGear().size(), events.size(),
             nextStart > Now() ? nextStart - Now() : 0);
         for (auto const& [id, event] : events)
-            handler->PSendSysMessage("Event {}: phase={}, carrier={}, map={}, position=({}, {}, {}).",
+            handler->PSendSysMessage("事件 {}：阶段={}，携带者={}，地图={}，坐标=({}, {}, {})。",
                 id, unsigned(event.phase), event.carrier, event.map, event.position.GetPositionX(),
                 event.position.GetPositionY(), event.position.GetPositionZ());
         return true;

@@ -31,7 +31,7 @@ Player* FindLabPlayer(ChatHandler* handler, std::string name)
 {
     if (!enabled)
     {
-        handler->SendErrorMessage("probe relay disabled", false);
+        handler->SendErrorMessage("探测中继未启用", false);
         return nullptr;
     }
     std::string const requested = name;
@@ -116,14 +116,14 @@ public:
         std::optional<std::string> message = RequestMessage(req, line);
         if (!message)
         {
-            handler->SendErrorMessage("not a read-only probe request", false);
+            handler->SendErrorMessage("不是只读探测请求", false);
             return false;
         }
         book.Arm(player->GetGUID().GetRawValue(), req, getMSTime());
         WorldPacket packet;
         ChatHandler::BuildChatPacket(packet, CHAT_MSG_WHISPER, LANG_ADDON, player, player, *message);
         player->SendDirectMessage(&packet);
-        handler->PSendSysMessage("sent {}", req);
+        handler->PSendSysMessage("已发送 {}", req);
         return true;
     }
 
@@ -135,12 +135,12 @@ public:
             return false;
         ReplyStatus status = book.Status(player->GetGUID().GetRawValue(), req, getMSTime());
         if (status.state == ReplyState::Complete)
-            handler->PSendSysMessage("complete {}",
+            handler->PSendSysMessage("已完成 {}",
                 Acore::Encoding::Base64::Encode(std::vector<uint8>(status.body.begin(), status.body.end())));
         else if (status.state == ReplyState::Pending)
-            handler->PSendSysMessage("pending {}/{}", status.received, status.total);
+            handler->PSendSysMessage("进行中 {}/{}", status.received, status.total);
         else
-            handler->SendSysMessage("unknown");
+            handler->SendSysMessage("未知");
         return true;
     }
 };
