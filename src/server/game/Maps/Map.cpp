@@ -1054,12 +1054,20 @@ void Map::MoveAllDynamicObjectsInMoveList()
 
 bool Map::UnloadGrid(MapGridType& grid)
 {
-    _mapGridManager.UnloadGrid(grid.GetX(), grid.GetY());
+    //By leewheel 2026年11月10日 修复关机崩溃：_mapGridManager.UnloadGrid() 会把 _mapGrid[x][y] 置空，
+    //  grid 对象随之销毁；下面再用 grid.GetX()/GetY() 属于访问已释放内存（use-after-free）。
+    //  这一行是 DEBUG 日志，平时不输出所以不显形，一旦打开 Logger.maps=5 排查问题，
+    //  关机 UnloadAll 卸载全部格时必崩 0xC0000005。坐标必须在卸载前取出。
+    uint16 const gridX = grid.GetX();
+    uint16 const gridY = grid.GetY();
+
+    _mapGridManager.UnloadGrid(gridX, gridY);
 
     ASSERT(i_objectsToRemove.empty());
-    LOG_DEBUG("maps", "Unloading grid[{}, {}] for map {} finished", grid.GetX(), grid.GetY(), GetId());
+    LOG_DEBUG("maps", "Unloading grid[{}, {}] for map {} finished", gridX, gridY, GetId());
     return true;
 }
+//End By leewheel
 
 void Map::RemoveAllPlayers()
 {

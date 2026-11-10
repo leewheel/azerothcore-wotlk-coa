@@ -108,18 +108,35 @@ namespace MMAP
 
         dtTileRef tileRef = 0;
 
+        //By leewheel 2026年11月10日 幂等保护：同一个网格瓦片被重复请求加载时（并发进出同一格、
+        //  或上一次 addTile 后瓦片尚未卸载），detour 会因该网格坐标已被占用而返回 DT_ALREADY_OCCUPIED，
+        //  核心随即打印 "Could not load ... into navmesh" 错误，误导玩家以为是数据损坏。
+        //  这里先用瓦片自带的网格坐标查一次，已加载就直接视为成功，避免误报与重复占用。
+        dtMeshHeader const* tileHeader = reinterpret_cast<dtMeshHeader const*>(data);
+        if (navMesh->getTileAt(tileHeader->x, tileHeader->y, tileHeader->layer))
+        {
+            dtFree(data);
+            LOG_DEBUG("maps", "MMAP:loadMap: Tile {:03}[{:02},{:02}] layer {} already loaded, skipped", mapId,
+                      tileHeader->x, tileHeader->y, tileHeader->layer);
+            return true;
+        }
+
         // memory allocated for data is now managed by detour, and will be deallocated when the tile is removed
-        if (dtStatusSucceed(navMesh->addTile(data, fileHeader.size, DT_TILE_FREE_DATA, 0, &tileRef)))
+        dtStatus addStatus = navMesh->addTile(data, fileHeader.size, DT_TILE_FREE_DATA, 0, &tileRef);
+        if (dtStatusSucceed(addStatus))
         {
             dtMeshHeader* header = (dtMeshHeader*)data;
             LOG_DEBUG("maps", "MMAP:loadMap: Loaded mmtile {:03}[{:02},{:02}] into {:03}[{:02},{:02}]", mapId, x, y, mapId, header->x, header->y);
             return true;
         }
 
-        LOG_ERROR("maps", "MMAP:loadMap: Could not load {:03}{:02}{:02}.mmtile into navmesh", mapId, x, y);
+        //By leewheel 2026年11月10日 失败时打印 detour 状态位，便于判断是内存、版本还是占用问题
+        LOG_ERROR("maps", "MMAP:loadMap: Could not load {:03}{:02}{:02}.mmtile into navmesh (dtStatus {:#010x}, tileGrid [{:02},{:02}] layer {}, bytes {})",
+                  mapId, x, y, uint32(addStatus), tileHeader->x, tileHeader->y, tileHeader->layer, fileHeader.size);
         dtFree(data);
         return false;
     }
+    //End By leewheel
 
     ManagedNavMeshQuery MMapMgr::CreateNavMeshQuery(dtNavMesh* navMesh)
     {
