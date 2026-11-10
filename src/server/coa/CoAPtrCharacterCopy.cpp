@@ -1,8 +1,10 @@
 /* Copyright (C) 2016+ AzerothCore, GNU AGPL v3. */
-//By leewheel 2026年11月10日
-// 角色复制（.ptr list / .ptr copy）玩家可见文本全量汉化：
-// 未启用/未发起服务器提示、排队与冷却提示、失败原因、角色列表状态、完成与改名通知。
-// 协议串（.ptr / .ptr list / .ptr copy <name>）保持英文，不做本地化。
+//By leewheel 2026年11月11日
+// 角色复制（.ptr list / .ptr copy）玩家可见文本全量汉化（上游 #11899 重写后重新贴上）：
+// 未启用/未发起服务器提示、排队与冷却提示、失败原因、中断恢复提示、
+// 角色列表状态、完成与改名通知。
+// 协议串（.ptr / .ptr list / .ptr copy <name>）保持英文，不做本地化；
+// 占位符一律沿用原大括号形式，数量与原文逐条一致。
 //End By leewheel
 #include "CoAPtrCharacterCopy.h"
 #include "AccountMgr.h"
@@ -38,12 +40,14 @@ enum class RequestState : uint8
     Pending = 0,
     Copied = 1,
     Failed = 2,
+    Loading = 3,
 };
 
 constexpr uint32 PollIntervalMs = 5000;
 constexpr uint32 SaveTimeoutSeconds = 60;
 
 std::atomic<bool> testOverrideActive = false;
+std::atomic<PtrCharacterCopy::Interruption> testInterruption = PtrCharacterCopy::Interruption::None;
 std::mutex savingLock;
 std::unordered_map<uint32, uint32> savingSince;
 
@@ -68,6 +72,14 @@ struct PendingCopy
     uint32 sourceGuid = 0;
     std::string sourceName;
     std::string dump;
+};
+
+struct InterruptedLoad
+{
+    uint32 id = 0;
+    uint32 account = 0;
+    uint32 copyGuid = 0;
+    std::string sourceName;
 };
 
 uint32 Now()
@@ -98,12 +110,9 @@ bool RejectNotSource(ChatHandler* handler, Settings const& settings)
     if (settings.targetRealm)
         return false;
 
-    //By leewheel 2026年11月10日
-    // 玩家可见提示全量汉化；.ptr copy 是协议串，保持英文原样
     handler->SendErrorMessage(settings.receive
         ? "复制到本服的操作需要在角色原所在服务器发起：请登录那台服务器，使用 .ptr copy <角色名> 复制。"
         : "本服务器未启用角色复制功能。", false);
-    //End By leewheel
     return true;
 }
 
@@ -124,7 +133,7 @@ std::optional<std::string> QueueRefusal(Settings const& settings, SourceCharacte
 {
     uint32 const thisRealm = realm.Id.Realm;
     if (LoginDatabase.Query("SELECT 1 FROM coa_ptr_copy_request WHERE source_realm = {} AND source_guid = {} "
-        "AND state = {}", thisRealm, source.guid, uint8(RequestState::Pending)))
+        "AND state IN ({}, {})", thisRealm, source.guid, uint8(RequestState::Pending), uint8(RequestState::Loading)))
         return Acore::StringFormat("{} 的复制已经在送往 {} 的途中。", source.name, targetName);
 
     QueryResult lastCopy = LoginDatabase.Query("SELECT MAX(requested_at) FROM coa_ptr_copy_request "
@@ -220,8 +229,51 @@ void Complete(uint32 id, RequestState state, std::string result, uint32 copyGuid
         Now(), id);
 }
 
+bool Claim(uint32 id, uint32 copyGuid)
+{
+    LoginDatabase.DirectExecute("UPDATE coa_ptr_copy_request SET state = {}, copy_guid = {} "
+        "WHERE id = {} AND state = {}", uint8(RequestState::Loading), copyGuid, id, uint8(RequestState::Pending));
+    return LoginDatabase.Query("SELECT 1 FROM coa_ptr_copy_request WHERE id = {} AND state = {} AND copy_guid = {}",
+        id, uint8(RequestState::Loading), copyGuid) != nullptr;
+}
+
+bool TakeTestInterruption(PtrCharacterCopy::Interruption point)
+{
+    PtrCharacterCopy::Interruption expected = point;
+    return testInterruption.compare_exchange_strong(expected, PtrCharacterCopy::Interruption::None);
+}
+
+void RecoverInterruptedLoad(InterruptedLoad const& load)
+{
+    if (QueryResult copy = CharacterDatabase.Query("SELECT name FROM characters WHERE guid = {} AND account = {}",
+        load.copyGuid, load.account))
+    {
+        std::string const copyName = copy->Fetch()[0].Get<std::string>();
+        LOG_WARN("misc", "PTR copy request {} of {} was interrupted after {} (guid {}) was created; reporting it",
+            load.id, load.sourceName, copyName, load.copyGuid);
+        Complete(load.id, RequestState::Copied, {}, load.copyGuid, copyName);
+        return;
+    }
+
+    LOG_WARN("misc", "PTR copy request {} of {} was interrupted before its character was created", load.id,
+        load.sourceName);
+    Complete(load.id, RequestState::Failed,
+        "复制尚未载入时服务器就已停止。那台服务器未做任何改动，你可以重新复制。");
+}
+
 void LoadCopy(PendingCopy const& copy)
 {
+    uint32 const copyGuid = sObjectMgr->GetGenerator<HighGuid::Player>().GetNextAfterMaxUsed();
+    if (!Claim(copy.id, copyGuid))
+    {
+        LOG_ERROR("misc", "PTR copy request {} of {} (realm {}, guid {}) could not be claimed and is not loaded",
+            copy.id, copy.sourceName, copy.sourceRealm, copy.sourceGuid);
+        return;
+    }
+
+    if (TakeTestInterruption(PtrCharacterCopy::Interruption::BeforeLoad))
+        return;
+
     if (std::optional<std::string> liveName = LiveCopyName(copy))
     {
         Complete(copy.id, RequestState::Failed, Acore::StringFormat(
@@ -248,22 +300,32 @@ void LoadCopy(PendingCopy const& copy)
         return;
     }
 
+    if (TakeTestInterruption(PtrCharacterCopy::Interruption::AfterLoad))
+        return;
+
     Complete(copy.id, RequestState::Copied, {}, reader.GetLoadedGuid(), reader.GetLoadedName());
 }
 
-std::string OldestPendingCopyQuery()
+std::string NextCopyRequestQuery()
 {
-    return Acore::StringFormat("SELECT id, account, source_realm, source_guid, source_name, dump "
-        "FROM coa_ptr_copy_request WHERE target_realm = {} AND state = {} ORDER BY id LIMIT 1", realm.Id.Realm,
-        uint8(RequestState::Pending));
+    return Acore::StringFormat("SELECT id, account, source_realm, source_guid, source_name, dump, state, copy_guid "
+        "FROM coa_ptr_copy_request WHERE target_realm = {} AND state IN ({}, {}) ORDER BY state, id LIMIT 1",
+        realm.Id.Realm, uint8(RequestState::Pending), uint8(RequestState::Loading));
 }
 
-void LoadOldestPendingCopy(QueryResult pending)
+void ProcessNextCopyRequest(QueryResult request)
 {
-    if (!pending)
+    if (!request)
         return;
 
-    Field* fields = pending->Fetch();
+    Field* fields = request->Fetch();
+    if (RequestState(fields[6].Get<uint8>()) == RequestState::Loading)
+    {
+        RecoverInterruptedLoad(InterruptedLoad{ fields[0].Get<uint32>(), fields[1].Get<uint32>(),
+            fields[7].Get<uint32>(), fields[4].Get<std::string>() });
+        return;
+    }
+
     LoadCopy(PendingCopy{ fields[0].Get<uint32>(), fields[1].Get<uint32>(), fields[2].Get<uint32>(),
         fields[3].Get<uint32>(), fields[4].Get<std::string>(), fields[5].Get<std::string>() });
 }
@@ -271,8 +333,8 @@ void LoadOldestPendingCopy(QueryResult pending)
 std::string FinishedCopiesQuery()
 {
     return Acore::StringFormat("SELECT id, account, source_name, target_realm, state, result, copy_name "
-        "FROM coa_ptr_copy_request WHERE source_realm = {} AND notified = 0 AND state <> {}", realm.Id.Realm,
-        uint8(RequestState::Pending));
+        "FROM coa_ptr_copy_request WHERE source_realm = {} AND notified = 0 AND state IN ({}, {})", realm.Id.Realm,
+        uint8(RequestState::Copied), uint8(RequestState::Failed));
 }
 
 std::unordered_map<uint32, Player*> OnlinePlayersByAccount()
@@ -317,14 +379,16 @@ void NotifyFinishedCopies(QueryResult finished)
 
 namespace PtrCharacterCopy
 {
-TestOverride::TestOverride()
+TestOverride::TestOverride(Interruption firstLoadInterruption)
 {
+    testInterruption = firstLoadInterruption;
     testOverrideActive = true;
 }
 
 TestOverride::~TestOverride()
 {
     testOverrideActive = false;
+    testInterruption = Interruption::None;
 }
 }
 
@@ -373,6 +437,7 @@ public:
                 switch (RequestState(fields[1].Get<uint8>()))
                 {
                     case RequestState::Pending:
+                    case RequestState::Loading:
                         statusByGuid[fields[0].Get<uint32>()] = "复制进行中";
                         break;
                     case RequestState::Copied:
@@ -398,12 +463,14 @@ public:
         return true;
     }
 
-    static bool HandleCopy(ChatHandler* handler, std::string name)
+    static bool HandleCopy(ChatHandler* handler, Tail typedName)
     {
         Settings const settings = LoadSettings();
         if (RejectNotSource(handler, settings))
             return false;
 
+        std::string name(typedName);
+        name.erase(name.find_last_not_of(' ') + 1);
         WorldSession* session = handler->GetSession();
         uint32 const accountId = session->GetAccountId();
         std::optional<SourceCharacter> source;
@@ -469,10 +536,10 @@ public:
         if (settings.receive && !_loadingCopy)
         {
             _loadingCopy = true;
-            _queries.AddCallback(LoginDatabase.AsyncQuery(OldestPendingCopyQuery()).WithCallback(
-                [this](QueryResult pending)
+            _queries.AddCallback(LoginDatabase.AsyncQuery(NextCopyRequestQuery()).WithCallback(
+                [this](QueryResult request)
                 {
-                    LoadOldestPendingCopy(std::move(pending));
+                    ProcessNextCopyRequest(std::move(request));
                     _loadingCopy = false;
                 }));
         }

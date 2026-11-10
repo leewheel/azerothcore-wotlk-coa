@@ -379,6 +379,7 @@ void AddSC_AscensionChronomancerMovement();
 void AddSC_AscensionAdventurerCache();
 void AddSC_AscensionBankVoucher();
 void AddSC_AscensionRunePouches();
+void AddSC_AscensionGoldSatchels();
 void AddSC_AscensionUpgradeKits();
 void AddSC_AscensionProfessionRanks();
 void AddSC_AscensionPrestigiousCache();
@@ -684,6 +685,7 @@ void AddCoAScripts()
     AddSC_AscensionAdventurerCache();
     AddSC_AscensionBankVoucher();
     AddSC_AscensionRunePouches();
+    AddSC_AscensionGoldSatchels();
     AddSC_AscensionUpgradeKits();
     AddSC_AscensionProfessionRanks();
     AddSC_AscensionPrestigiousCache();
