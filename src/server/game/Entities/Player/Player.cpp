@@ -6274,6 +6274,42 @@ void Player::CheckAreaExploreAndOutdoor()
         if (zoneId && zoneId != areaId)
             areaEntry = sAreaTableStore.LookupEntry(zoneId);
 
+        //By leewheel 2026年11月11日 再退一级兜底：area 和 zone 都缺时（如地图数据里的 7486，
+        //  AreaTable.dbc 里完全没有这个 id），用同一地形格子里的区域图找一个在 AreaTable 里存在的区域。
+        //  COA 的地图数据里这类脏值往往只占一两格，周围都是正常区域，取邻近有效区域记探索即可，
+        //  既不造假数据也不会让玩家站在那儿刷错误日志。
+        if (!areaEntry)
+        {
+            if (Map* map = GetMap())
+            {
+                if (GridTerrainData* terrain = map->GetGridTerrainData(GetPositionX(), GetPositionY()))
+                {
+                    // 地形图里该格的默认区域优先（gridArea 为 0 表示没有）
+                    if (uint16 const gridAreaId = terrain->getGridArea())
+                        if (gridAreaId != areaId)
+                            areaEntry = sAreaTableStore.LookupEntry(gridAreaId);
+
+                    // 默认区域也不可用时，遍历 16x16 区域图取第一个已知区域
+                    if (!areaEntry)
+                    {
+                        if (GridTerrainData::AreaMapType const* areaMap = terrain->getAreaMap())
+                        {
+                            for (uint16 candidate : *areaMap)
+                            {
+                                if (candidate == areaId)
+                                    continue;
+                                if (AreaTableEntry const* entry = sAreaTableStore.LookupEntry(candidate))
+                                {
+                                    areaEntry = entry;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         if (!areaEntry)
         {
             LOG_ERROR("entities.player",

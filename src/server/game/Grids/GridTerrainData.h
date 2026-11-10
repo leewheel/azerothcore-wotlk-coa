@@ -246,6 +246,14 @@ public:
     TerrainMapDataReadResult Load(std::string const& mapFileName);
 
     uint16 getArea(float x, float y) const;
+
+    //By leewheel 2026年11月11日 暴露地形区域图与格子默认区域：上游在 area id 查不到 AreaTable 条目时
+    //  需要靠这份地形数据兜底（COA 地图数据里有个别 area id 在 DBC 里根本没注册）。
+    typedef LoadedAreaData::AreaMapType AreaMapType;
+    AreaMapType const* getAreaMap() const { return _loadedAreaData ? _loadedAreaData->areaMap.get() : nullptr; }
+    uint16 getGridArea() const { return _loadedAreaData ? _loadedAreaData->gridArea : 0; }
+    //End By leewheel
+
     inline float getHeight(float x, float y) const { return (this->*_gridGetHeight)(x, y); }
     float getMinHeight(float x, float y) const;
     float getLiquidLevel(float x, float y) const;
