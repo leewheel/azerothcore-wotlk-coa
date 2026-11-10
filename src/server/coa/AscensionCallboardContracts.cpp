@@ -505,8 +505,11 @@ uint32 Activate(Player* player, Catalogue const& contracts, Settings const& curr
     std::string const name = DisplayName(contract->type);
     if (!current.payment.Allows(request.payWithGold))
     {
-        chat.SendSysMessage(request.payWithGold ? "Temporal Contracts cannot be paid with gold."
-            : "Temporal Contracts cannot be paid with Bazaar Tokens.");
+        //By leewheel 2026年11月11日
+        // 上游 #11926 新增：合约按付款方式限制，玩家可见提示同步汉化
+        chat.SendSysMessage(request.payWithGold ? "限时合约不能用金币支付。"
+            : "限时合约不能用集市代币支付。");
+        //End By leewheel
         return 0;
     }
 
