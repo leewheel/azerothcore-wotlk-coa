@@ -336,7 +336,9 @@ public:
         float const reach = reachArg.value_or(45.0f);
         if (reach < 10.0f || reach > 150.0f)
         {
-            handler->SendErrorMessage("The reach must be between 10 and 150 yards.");
+            //By leewheel 2026年11月12日 中文化
+            handler->SendErrorMessage("半径必须在 10 到 150 码之间。");
+            //End By leewheel
             return false;
         }
         Optional<uint32> const entry = ResolveEntry(handler, entryArg);
@@ -361,9 +363,11 @@ public:
             trans->Append("INSERT INTO `coa_boss_leash_point` (`entry`, `point`, `x`, `y`, `z`) VALUES ({}, {}, {}, {}, {})",
                 *entry, i, outline[i].GetPositionX(), outline[i].GetPositionY(), outline[i].GetPositionZ());
         WorldDatabase.CommitTransaction(trans);
-        handler->PSendSysMessage("{} ({}): room leash with {} points around {:.1f} {:.1f}, cut at the exits. "
-            "Check it with .leash show and fix single points with .leash undo / .leash point.",
-            BossName(*entry), *entry, outline.size(), from.GetPositionX(), from.GetPositionY());
+        //By leewheel 2026年11月12日 中文化
+        handler->PSendSysMessage("{}（{}）：已围绕 {:.1f} {:.1f} 生成房间拴绳区，共 {} 个点，出口处已裁断。"
+            "可用 .leash show 查看，用 .leash undo / .leash point 修正单个点。",
+            BossName(*entry), *entry, from.GetPositionX(), from.GetPositionY(), outline.size());
+        //End By leewheel
         return true;
     }
 

@@ -292,7 +292,9 @@ namespace
         if (!count)
             return;
         CharacterDatabaseTransaction trans = CharacterDatabase.BeginTransaction();
-        MailDraft draft("Setis", "Your bags were full, so this part of your reward was sent by mail.");
+        //By leewheel 2026年11月12日 邮件正文中文化
+        MailDraft draft("Setis", "你的背包已满，这部分奖励已通过邮件寄给你。");
+        //End By leewheel
         if (Item* mailed = Item::CreateItem(item, count, player))
         {
             mailed->SaveToDB(trans);

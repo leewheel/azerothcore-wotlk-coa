@@ -60,7 +60,9 @@ namespace coa_world_boss_instance
         if (!count)
             return;
         CharacterDatabaseTransaction trans = CharacterDatabase.BeginTransaction();
-        MailDraft draft(sender, "Your bags were full, so this part of your reward was sent by mail.");
+        //By leewheel 2026年11月12日 玩家可见文本中文化
+        MailDraft draft(sender, "你的背包已满，这部分奖励已通过邮件寄给你。");
+        //End By leewheel
         if (Item* mailed = Item::CreateItem(item, count, player))
         {
             mailed->SaveToDB(trans);
@@ -80,10 +82,12 @@ namespace coa_world_boss_instance
             if (!player->IsAlive())
                 return true;
             ClearGossipMenuFor(player);
-            AddGossipItemFor(player, GOSSIP_ICON_BATTLE, std::string("Challenge ") + _config.boss, GOSSIP_SENDER_MAIN,
+            //By leewheel 2026年11月12日 玩家可见文本中文化
+            AddGossipItemFor(player, GOSSIP_ICON_BATTLE, std::string("挑战 ") + _config.boss, GOSSIP_SENDER_MAIN,
                 GOSSIP_ACTION_INFO_DEF + 1);
-            AddGossipItemFor(player, GOSSIP_ICON_CHAT, "Take your hands off the shrine.", GOSSIP_SENDER_MAIN,
+            AddGossipItemFor(player, GOSSIP_ICON_CHAT, "把手从神龛上拿开。", GOSSIP_SENDER_MAIN,
                 GOSSIP_ACTION_INFO_DEF + 2);
+            //End By leewheel
             SendGossipMenuFor(player, _config.shrineText, go->GetGUID());
             return true;
         }
@@ -96,8 +100,10 @@ namespace coa_world_boss_instance
             // Only Normal is open for now: Heroic, Mythic and Ascended (raid difficulties 1-3) are refused.
             if (player->GetRaidDifficulty() != RAID_DIFFICULTY_10MAN_NORMAL)
             {
-                ChatHandler(player->GetSession()).SendNotification("{} only answers the Normal difficulty.",
+                //By leewheel 2026年11月12日 中文化
+                ChatHandler(player->GetSession()).SendNotification("{} 目前只接受普通难度。",
                     _config.boss);
+                //End By leewheel
                 return true;
             }
             player->TeleportTo(_config.bossMap, _config.entrance.GetPositionX(), _config.entrance.GetPositionY(),

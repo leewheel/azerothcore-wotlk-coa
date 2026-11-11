@@ -1239,17 +1239,19 @@ namespace
             {
                 ownerHere = true;
                 if (!nextKey)
+                    //By leewheel 2026年11月12日 玩家可见提示中文化
                     ChatHandler(player->GetSession()).PSendSysMessage(
-                        "Mythic+: no dungeon has a level {} keystone, your keystone stays as it is.", newLevel);
+                        "Mythic+：没有地下城有 {} 层钥石，你的钥石保持原样。", newLevel);
                 else
                 {
                     ReplaceKeystone(player, run.keystoneItem, nextKey);
                     if (timed)
                         ChatHandler(player->GetSession()).PSendSysMessage(
-                            "Mythic+: keystone upgraded +{}, now level {}.", upgrade, newLevel);
+                            "Mythic+：钥石已升级 +{}，当前为 {} 层。", upgrade, newLevel);
                     else
                         ChatHandler(player->GetSession()).PSendSysMessage(
-                            "Mythic+: out of time, keystone drops to level {}.", newLevel);
+                            "Mythic+：超时，钥石降为 {} 层。", newLevel);
+                    //End By leewheel
                 }
             }
         });
