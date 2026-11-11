@@ -91,6 +91,9 @@ worldserver 与 `dbimport` 在 `Updates.AutoSetup` 发现空库时，从 [世界
 
 AzerothCore 本身也是一份理解 MMORPG 服务端结构、游戏模拟器实现以及 C++ / SQL 的学习资料。参与本仓库时请留意：
 
+🤖 使用任何 AI 代理参与本仓库开发前，请先阅读[AI 代理工程指南](https://www.azerothcore.org/wiki/agentic-engineering)。
+本仓库的代理说明位于 [AGENTS.md](../AGENTS.md) 与 [.agents/rules/](../.agents/rules/)，按任务划分的指引在 [.agents/docs/](../.agents/docs/)；接入方式见 [.agents/README.md](../.agents/README.md)。
+
 - 遵循 [AGENTS.md](../AGENTS.md) 与 `.editorconfig`（UTF-8、LF、无行尾空格）；CoA 自有代码用命名、结构与测试表达意图，不追加解释性注释；继承的 AzerothCore 源码保留原有注释，以便上游合并保持干净。
 - **SQL 边界**：`data/sql/base/`、`data/sql/archive/`、`data/sql/updates/db_*/` 不可改动，新迁移只写入 `data/sql/updates/pending_db_*/`。
 - **验证**：改动涉及源码时包含 `build` 阶段；提交前运行 `python -B tools/verify_all.py --stages source --base origin/main`。
