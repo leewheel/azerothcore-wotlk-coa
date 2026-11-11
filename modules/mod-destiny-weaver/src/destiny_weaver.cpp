@@ -112,8 +112,10 @@ namespace
 
     /// The green / red the original paints the state in. The trailing |r closes both the colour
     /// and the texture escape that precedes the label.
-    constexpr char const* STATE_ENABLED = "|cff00ff00ENABLED";
-    constexpr char const* STATE_DISABLED = "|cffff2020DISABLED";
+    //By leewheel 20261111 开关状态文字汉化
+    constexpr char const* STATE_ENABLED = "|cff00ff00已开启";
+    constexpr char const* STATE_DISABLED = "|cffff2020已关闭";
+    //End By leewheel
 
     enum DestinyWeaverAction : uint32
     {
@@ -173,12 +175,12 @@ namespace
         // themselves: control off means the bonuses still pay. Clicking flips it and the menu is
         // re-sent, which is what the live NPC did.
         AddGossipItemFor(player, GOSSIP_ICON_CHAT,
-                         OptionText(ICON_EXPERIENCE_BONUS, "Experience bonuses!",
+                         OptionText(ICON_EXPERIENCE_BONUS, "经验加成！",
                                     !DestinyWeaver::ExperienceBonusControlEnabled(player)),
                          GOSSIP_SENDER_DESTINY_WEAVER, ACTION_TOGGLE_EXPERIENCE_BONUS_CONTROL);
 
         AddGossipItemFor(player, GOSSIP_ICON_CHAT,
-                         OptionText(ICON_OPEN_WORLD_SCALING, "Open world scaling!",
+                         OptionText(ICON_OPEN_WORLD_SCALING, "野外动态等级！",
                                     DestinyWeaver::LevelScalingEnabled(player)),
                          GOSSIP_SENDER_DESTINY_WEAVER, ACTION_TOGGLE_SCALING);
 
@@ -300,8 +302,10 @@ void NotifyGroupScaling(Player* player, bool enabled)
     // Yellow for the sentence, the state word in its own colour and then reset: what the live
     // notification looked like, and the reason the message is built here rather than localised - the
     // one word that carries the meaning is coloured, so it cannot be split out into a format string.
-    std::string const line = std::string("|cffffff00Your group has Level Scaling ") +
-        (enabled ? "|cff00ff00ENABLED|r" : "|cffff0000DISABLED|r");
+    //By leewheel 20261111 玩家可见通知汉化（关键字仍单独着色）
+    std::string const line = std::string("|cffffff00你的队伍动态等级：") +
+        (enabled ? "|cff00ff00已开启|r" : "|cffff0000已关闭|r");
+    //End By leewheel
 
     SendCentered(player, line);
     ChatHandler(player->GetSession()).SendSysMessage(line);
@@ -324,9 +328,11 @@ void NotifyPersonalScaling(Player* player, bool enabled)
     // The second line is only there when switching off, and it is the reason the switch matters: a
     // creature that is grey to the character awards no quest items and no credits, which scaling on
     // is what lifts it out of.
-    std::string const line = std::string("|cffffff00You have ") +
-        (enabled ? "|cff00ff00enabled|r" : "|cffff0000disabled|r") +
-        "|cffffff00 open world creature scaling!|r";
+    //By leewheel 20261111 玩家可见通知汉化（关键字仍单独着色）
+    std::string const line = std::string("|cffffff00你已经") +
+        (enabled ? "|cff00ff00开启|r" : "|cffff0000关闭|r") +
+        "|cffffff00了野外生物动态等级！|r";
+    //End By leewheel
 
     if (!enabled)
     {
@@ -334,7 +340,7 @@ void NotifyPersonalScaling(Player* player, bool enabled)
         // with the newest line on top, so the sentence about what just happened is the one written
         // last and the note reads underneath it - the order the live realm showed.
         std::string const note =
-            "|cffffff00Quest items and credits will not be awarded if creatures are grey level.|r";
+            "|cffffff00如果生物对你来说是灰色等级，任务物品和击杀计数都不会获得。|r";
         SendCentered(player, note);
         SendCentered(player, line);
         ChatHandler(player->GetSession()).SendSysMessage(line);

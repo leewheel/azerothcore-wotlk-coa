@@ -168,10 +168,12 @@ public:
             // there is nothing among those rods for it to take up. Both answers
             // are said the same way whichever variant was used, so a player who
             // carries the wrong rod is told what the item wants either way.
+            //By leewheel 20261111 玩家可见提示汉化
             if (coverable)
-                SendNotice(player, "This Dispenser already covers every Runed Rod you carry.");
+                SendNotice(player, "这个工具分配器已经涵盖了你身上所有符文棒能做的活。");
             else
-                SendNotice(player, "This Dispenser learns the trade of a Runed Rod: carry one and use the Dispenser again.");
+                SendNotice(player, "这个工具分配器需要学一门符文棒的手艺：带一根符文棒来，再对它使用一次。");
+            //End By leewheel
 
             return true;                // handled: the use does not fall through to the spell
         }
@@ -195,8 +197,18 @@ public:
         if (Item* given = player->StoreNewItem(dest, upgrade, true, Item::GenerateItemRandomPropertyId(upgrade)))
             player->SendNewItem(given, 1, true, false);
 
-        SendNotice(player, std::string("The Dispenser takes up the rod's trade and becomes ") +
-                           upgradeProto->Name1 + ".");
+        //By leewheel 20261111 物品名走 zhCN 本地化，避免提示里出现英文物品名
+        std::string upgradeName = upgradeProto->Name1;
+        if (ItemLocale const* il = sObjectMgr->GetItemLocale(upgrade))
+        {
+            std::string localized;
+            ObjectMgr::GetLocaleString(il->Name, LOCALE_zhCN, localized);
+            if (!localized.empty())
+                upgradeName = localized;
+        }
+
+        SendNotice(player, std::string("工具分配器学会了这根符文棒的手艺，变成了「") + upgradeName + "」。");
+        //End By leewheel
 
         LOG_DEBUG("module.bazaar", "Ethereal Bazaar: {} upgraded a tool dispenser from {} to {}.",
                   player->GetName(), current, upgrade);

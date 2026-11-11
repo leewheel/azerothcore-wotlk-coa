@@ -192,12 +192,14 @@ namespace GrootCoin
             CharacterDatabaseTransaction trans = CharacterDatabase.BeginTransaction();
             coin->SaveToDB(trans);
 
+            //By leewheel 20261111 玩家可见邮件主题与正文汉化
             std::string const body = request.issueNumber
-                ? Acore::StringFormat("Thank you for your report on issue #{}. Exchange these coins with Tiraxis for "
-                    "Bazaar Tokens. This mail is kept for {} days.", request.issueNumber, MAIL_RETENTION_DAYS)
-                : Acore::StringFormat("Thank you: {}. Exchange these coins with Tiraxis for Bazaar Tokens. This mail is "
-                    "kept for {} days.", request.reason, MAIL_RETENTION_DAYS);
-            delivery->draft = std::make_unique<MailDraft>("Groot Coins", body);
+                ? Acore::StringFormat("感谢你对第 #{} 号问题的反馈。拿着这些硬币去找提拉希斯（Tiraxis）兑换集市代币。"
+                    "本邮件保留 {} 天。", request.issueNumber, MAIL_RETENTION_DAYS)
+                : Acore::StringFormat("感谢你：{}。拿着这些硬币去找提拉希斯（Tiraxis）兑换集市代币。"
+                    "本邮件保留 {} 天。", request.reason, MAIL_RETENTION_DAYS);
+            delivery->draft = std::make_unique<MailDraft>("Groot 硬币", body);
+            //End By leewheel
             delivery->draft->AddItem(coin);
             delivery->staged = delivery->draft->StageMailTo(trans, request.recipient.GetCounter(),
                 MailSender(MAIL_NORMAL, request.actor.GetCounter(), MAIL_STATIONERY_GM), MAIL_CHECK_MASK_COPIED,

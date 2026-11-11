@@ -110,8 +110,10 @@ TEST(CoAPrestige, ActivationNeedsAQuietMomentInTheOpenWorld)
 TEST(CoAPrestige, RefusalsExplainThemselves)
 {
     // PRESTIGE_UI_ERROR_LEVEL, the client's own wording for the same refusal.
+    //By leewheel 20261111 服务端提示已汉化，断言同步中文
     EXPECT_EQ(RefusalMessage(Refusal::BelowLevel, 60),
-        "You must be level 60 or higher to participate in Prestige Mode");
+        "你需要达到 60 级或更高才能参与威望模式");
+    //End By leewheel
     EXPECT_TRUE(RefusalMessage(Refusal::None, 60).empty());
     for (Refusal refusal : { Refusal::Disabled, Refusal::InProgress, Refusal::NoSpecialization,
              Refusal::Dead, Refusal::InCombat, Refusal::Travelling, Refusal::NotInOpenWorld })
@@ -128,7 +130,7 @@ TEST(CoAPrestige, TheSpecializationStaysLockedWhilePrestiging)
     EXPECT_TRUE(IsSpecializationSwitchAllowed(finished, 26));
     EXPECT_TRUE(IsSpecializationSwitchAllowed(State{}, 26));
     EXPECT_EQ(SpecializationLockedMessage(60),
-        "Your active specialization is prestige locked until you reach level 60.");
+        "你当前的专精在达到 60 级之前处于威望锁定状态。");
 }
 
 TEST(CoAPrestige, CompletedPrestigeKeepsOnlySignatureRestorationPending)

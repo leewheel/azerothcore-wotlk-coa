@@ -160,15 +160,17 @@ namespace GrootCoin
     {
         switch (result)
         {
-            case ExchangeResult::Ok: return "Done.";
-            case ExchangeResult::Disabled: return "The Groot Coin exchange is closed.";
-            case ExchangeResult::InvalidAmount: return "That amount cannot be exchanged.";
-            case ExchangeResult::NotEnoughCoins: return "You are not carrying enough Groot Coins.";
-            case ExchangeResult::NoSpace: return "You need room in your bags for the Bazaar Tokens.";
-            case ExchangeResult::InvalidQuote: return "That offer has expired. Please choose again.";
-            case ExchangeResult::NotAtVendor: return "You are too far away.";
-            case ExchangeResult::PlayerState: return "You cannot exchange coins right now.";
-            case ExchangeResult::Failed: return "The exchange failed; nothing was spent.";
+            //By leewheel 20261111 玩家可见提示汉化
+            case ExchangeResult::Ok: return "兑换完成。";
+            case ExchangeResult::Disabled: return "Groot 硬币兑换暂未开放。";
+            case ExchangeResult::InvalidAmount: return "这个数量无法兑换。";
+            case ExchangeResult::NotEnoughCoins: return "你身上的 Groot 硬币不够。";
+            case ExchangeResult::NoSpace: return "背包里需要留出放集市代币的空间。";
+            case ExchangeResult::InvalidQuote: return "这个报价已过期，请重新选择。";
+            case ExchangeResult::NotAtVendor: return "你离得太远了。";
+            case ExchangeResult::PlayerState: return "你现在无法兑换硬币。";
+            case ExchangeResult::Failed: return "兑换失败，没有扣除任何东西。";
+            //End By leewheel
         }
         return "";
     }

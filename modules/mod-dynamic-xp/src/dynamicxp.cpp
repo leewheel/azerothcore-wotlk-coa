@@ -112,7 +112,7 @@ namespace
         for (size_t i = 0; i < choices.size(); ++i)
         {
             if (i)
-                text += i + 1 == choices.size() ? " or " : ", ";
+                text += i + 1 == choices.size() ? " 或 " : "、";
             text += choices[i];
         }
         return text;
@@ -266,8 +266,8 @@ namespace
         if (!text.empty())
             return text;
 
-        return "|cff4CFF00XP rate|r: pick your own with " + DescribeAllowed(".xp") +
-               ", or |cff4CFF00.xp default|r to follow the realm. |cff4CFF00.xp|r shows what you are on.";
+        return "|cff4CFF00经验倍率|r：用 " + DescribeAllowed(".xp") +
+               " 自己选一个，或者用 |cff4CFF00.xp default|r 跟随本服设置。|cff4CFF00.xp|r 可以查看你当前的倍率。";
     }
 
     /// One announcement, to every player who is online and has not turned automatic
@@ -382,7 +382,7 @@ private:
 
         if (!IsKnownPreset(preset))
         {
-            handler->SendErrorMessage("{} is not offered on this realm. Pick {}.", DescribePreset(preset),
+            handler->SendErrorMessage("本服不提供 {} 这个倍率。可选：{}。", DescribePreset(preset),
                                       DescribeAllowed(".xp"));
             return false;
         }
@@ -438,7 +438,7 @@ private:
 
         if (!IsKnownPreset(preset))
         {
-            handler->SendErrorMessage("{} is not offered on this realm. Pick {}.", DescribePreset(preset),
+            handler->SendErrorMessage("本服不提供 {} 这个倍率。可选：{}。", DescribePreset(preset),
                                       DescribeAllowed(".xp realm"));
             return false;
         }

@@ -254,9 +254,11 @@ namespace
             mail->stationery = MAIL_STATIONERY_DEFAULT;
             mail->sender = GallywixEntry;
             mail->receiver = guid;
-            mail->subject = refund ? "Gallywix's Lottery Ticket Refund" : "Gallywix's Lottery Jackpot";
-            mail->body = refund ? "Your lottery tickets have been refunded. The full gold amount paid is enclosed."
-                : "Your golden ticket won this week's lottery. Your jackpot is enclosed!";
+            //By leewheel 20261111 玩家可见邮件主题与正文汉化
+            mail->subject = refund ? "加里维克斯的彩票退款" : "加里维克斯的彩票奖金";
+            mail->body = refund ? "你的彩票已退款，你支付的全部金币随信附上。"
+                : "你的金票中了本周的彩票，奖金随信附上！";
+            //End By leewheel
             mail->money = pot;
             mail->deliver_time = now;
             mail->expire_time = now + 90 * DAY;
@@ -405,8 +407,8 @@ namespace
             stmt->SetData(3, uint16(0));
             stmt->SetData(4, GallywixEntry);
             stmt->SetData(5, winner);
-            stmt->SetData(6, std::string("Gallywix's Lottery Jackpot"));
-            stmt->SetData(7, std::string("Your golden ticket won this week's lottery. Your jackpot is enclosed!"));
+            stmt->SetData(6, std::string("加里维克斯的彩票奖金"));
+            stmt->SetData(7, std::string("你的金票中了本周的彩票，奖金随信附上！"));
             stmt->SetData(8, bool(bonus));
             stmt->SetData(9, uint32(now + 90 * DAY));
             stmt->SetData(10, uint32(now));
@@ -618,13 +620,15 @@ namespace
             Creature* creature = map && !_guid.IsEmpty() ? map->GetCreature(_guid) : nullptr;
             if (!creature || !creature->IsAlive())
                 return;
+            //By leewheel 20261111 开奖是全区域喊话，必须中文
             std::string message = houseWin
-                ? Acore::StringFormat("A house ticket wins! Trade Prince Gallywix takes the {} gold jackpot! "
-                    "The whole pot is destroyed! Better luck next time, pal!",
+                ? Acore::StringFormat("庄家的票中了！贸易亲王加里维克斯拿走了 {} 金的奖池！"
+                    "整个奖池被销毁！下次好运，朋友！",
                     copper / 10000)
-                : Acore::StringFormat("We got a winner! {} just won the {} gold jackpot! "
-                    "Your prize is in the mail, pal! Everybody else, the next lottery is open!",
+                : Acore::StringFormat("我们出中奖者了！{} 刚刚赢走了 {} 金的奖池！"
+                    "奖金已经寄出，朋友！其他人注意，下一轮彩票已经开始！",
                     name, copper / 10000);
+            //End By leewheel
             auto builder = [creature, &message](WorldPacket* packet, LocaleConstant locale)
             {
                 return ChatHandler::BuildChatPacket(*packet, CHAT_MSG_MONSTER_YELL, LANG_UNIVERSAL,
@@ -756,37 +760,38 @@ namespace
     {
         ClearGossipMenuFor(player);
         player->PlayerTalkClass->GetGossipMenu().SetMenuId(GallywixMenuId);
-        std::string text = "Time is money, pal! Ask about my lottery, then see Goldilocks if you want a ticket.";
+        //By leewheel 20261111 加里维克斯的对话正文与选项汉化
+        std::string text = "时间就是金钱，朋友！先问问我的彩票，想要票就去找金发姑娘。";
         if (action == GallywixRulesAction)
         {
             uint32 duration = ready ? round.duration : settings.duration;
             uint32 contribution = ready ? round.contribution : settings.contribution;
             uint32 fakeTickets = ready ? round.fakeTickets : HouseTickets(settings.seed, settings.fakeTickets);
             text = Acore::StringFormat(
-                "Listen up, pal! Goldilocks sells golden tickets for 10 gold apiece. "
-                "Buy more tickets, get more chances! "
-                "{} percent of your ticket money goes into the jackpot. "
-                "We draw every {} days, {} hours and {} minutes. "
-                "Every ticket gets the same shot at winning, and one ticket takes the whole pot.\n\n"
-                "The house has {} tickets of its own, each adding 10 gold to the opening pot. Mine have exactly the "
-                "same chance as yours. If a house ticket wins, the winner is Trade Prince Gallywix - that's me! "
-                "The whole pot is destroyed, and nobody gets gold or a bonus prize. Hey, you asked for the rules!\n\n"
-                "If YOUR ticket wins, the whole gold jackpot is mailed to your character, along with that round's "
-                "bonus item if there's one. Keep an eye on your mailbox! Tickets belong to this round only, "
-                "and the next draw starts a fresh pot with fresh house tickets. "
-                "If there are no player or house tickets, we extend the round instead of drawing.\n\n"
-                "Want in? Talk to Goldilocks. I handle the important business.",
+                "听好了，朋友！金发姑娘卖的金票十金币一张。"
+                "买得越多，中奖机会越多！"
+                "你买票的钱有 {}% 会进入奖池。"
+                "我们每 {} 天 {} 小时 {} 分钟开一次奖。"
+                "每张票中奖概率完全一样，一张票就能独吞整个奖池。\n\n"
+                "庄家自己手里有 {} 张票，每张给初始奖池加十金币。我的票和你的票机会完全一样。"
+                "如果庄家的票中了，中奖人就是贸易亲王加里维克斯——也就是我！"
+                "整个奖池会被销毁，谁也别想拿到金币或奖励物品。嘿，是你自己要问规则的！\n\n"
+                "如果是你的票中了，全部金币奖池会直接邮寄给你的角色，"
+                "如果那一轮有额外奖励物品，也会一起寄过去。记得看邮箱！"
+                "票只对当前这一轮有效，下一次开奖会重新起一个奖池、重新发庄家票。"
+                "如果既没有玩家的票也没有庄家的票，我们就延长这一轮，而不是开奖。\n\n"
+                "想参与？去找金发姑娘。重要的事由我来管。",
                 contribution, duration / DAY, duration / HOUR % 24, duration / MINUTE % 60, fakeTickets);
             if (!settings.enabled || !ready)
-                text += "\n\nThe lottery isn't taking bets right now, pal. These are the latest terms.";
+                text += "\n\n彩票现在不收注，朋友。上面这些是最新的条款。";
         }
         else if (action == GallywixWinnersAction)
         {
-            text = "Here's the latest from my winner's ledger, pal. Read it and dream big!\n";
+            text = "这是我中奖账簿上的最新记录，朋友。读一读，做个大梦吧！\n";
             auto winners = CharacterDatabase.Query(
                 CharacterDatabase.GetPreparedStatement(CHAR_SEL_LOTTERY_RECENT_WINNERS));
             if (!winners)
-                text += "\nNo recent winners are recorded in the ledger yet.";
+                text += "\n账簿上还没有近期中奖记录。";
             else
                 do
                 {
@@ -798,21 +803,22 @@ namespace
                     bool houseWin = fields[3].Get<uint8>() != 0;
                     uint32 total = fields[5].Get<uint32>();
                     if (houseWin)
-                        text += Acore::StringFormat("\n{}: {}g{}s{}c jackpot, {} house tickets, {} purchased tickets. "
-                            "The pot was destroyed!\n",
+                        text += Acore::StringFormat("\n{}：{}金{}银{}铜的奖池，庄家 {} 张票，售出 {} 张票。"
+                            "奖池已被销毁！\n",
                             name, copper / 10000, copper / 100 % 100, copper % 100, tickets,
                             total > tickets ? total - tickets : 0);
                     else if (complimentary)
-                        text += Acore::StringFormat("\n{} won {}g{}s{}c with {} tickets ({} complimentary).\n",
-                            name, copper / 10000, copper / 100 % 100, copper % 100, tickets, complimentary);
+                        text += Acore::StringFormat("\n{} 用 {} 张票（其中 {} 张是赠送票）赢走了 {}金{}银{}铜。\n",
+                            name, tickets, complimentary, copper / 10000, copper / 100 % 100, copper % 100);
                     else
-                        text += Acore::StringFormat("\n{} won {}g{}s{}c with {} purchased tickets.\n",
-                            name, copper / 10000, copper / 100 % 100, copper % 100, tickets);
+                        text += Acore::StringFormat("\n{} 用 {} 张购买票赢走了 {}金{}银{}铜。\n",
+                            name, tickets, copper / 10000, copper / 100 % 100, copper % 100);
                 } while (winners->NextRow());
         }
-        AddGossipItemFor(player, GOSSIP_ICON_CHAT, "What are the rules?", GOSSIP_SENDER_MAIN, GallywixRulesAction);
-        AddGossipItemFor(player, GOSSIP_ICON_CHAT, "Who has won recently?", GOSSIP_SENDER_MAIN, GallywixWinnersAction);
+        AddGossipItemFor(player, GOSSIP_ICON_CHAT, "规则是什么？", GOSSIP_SENDER_MAIN, GallywixRulesAction);
+        AddGossipItemFor(player, GOSSIP_ICON_CHAT, "最近有谁中奖了？", GOSSIP_SENDER_MAIN, GallywixWinnersAction);
         player->PlayerTalkClass->SendDynamicGossipMenu(text, creature->GetGUID());
+        //End By leewheel
     }
 
     LotteryCities advertiser;

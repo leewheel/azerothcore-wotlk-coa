@@ -1351,16 +1351,18 @@ struct npc_echo_of_medivh : public ScriptedAI
         uint32 chessPhase = _instance->GetData(DATA_CHESS_GAME_PHASE);
         switch (chessPhase)
         {
+            //By leewheel 20261111 玩家可见对话选项汉化
             case CHESS_PHASE_NOT_STARTED:
-                AddGossipItemFor(player, GOSSIP_ICON_CHAT, "We want to play a game against you!", GOSSIP_SENDER_MAIN, MEDIVH_GOSSIP_START_PVE);
+                AddGossipItemFor(player, GOSSIP_ICON_CHAT, "我们想和你下一局！", GOSSIP_SENDER_MAIN, MEDIVH_GOSSIP_START_PVE);
                 break;
             case CHESS_PHASE_INPROGRESS_PVE:
             case CHESS_PHASE_INPROGRESS_PVP:
-                AddGossipItemFor(player, GOSSIP_ICON_CHAT, "Restart", GOSSIP_SENDER_MAIN, MEDIVH_GOSSIP_RESTART); // We want to player another game against you
+                AddGossipItemFor(player, GOSSIP_ICON_CHAT, "重新开始", GOSSIP_SENDER_MAIN, MEDIVH_GOSSIP_RESTART); // We want to player another game against you
                 break;
             case CHESS_PHASE_PVE_FINISHED:
-                AddGossipItemFor(player, GOSSIP_ICON_CHAT, "PvP", GOSSIP_SENDER_MAIN, MEDIVH_GOSSIP_START_PVP); // We'd like to fight each other
+                AddGossipItemFor(player, GOSSIP_ICON_CHAT, "玩家对战", GOSSIP_SENDER_MAIN, MEDIVH_GOSSIP_START_PVP); // We'd like to fight each other
                 break;
+            //End By leewheel
         }
 
         SendGossipMenuFor(player, player->GetGossipTextId(me), me->GetGUID());
@@ -1990,7 +1992,7 @@ struct npc_chesspiece : public ScriptedAI
 
         if (ok && !player->HasAura(SPELL_RECENTLY_INGAME))
         {
-            AddGossipItemFor(player, GOSSIP_ICON_CHAT, "Control " + me->GetName(), GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 1);
+            AddGossipItemFor(player, GOSSIP_ICON_CHAT, std::string("控制 ") + me->GetNameForLocaleIdx(LOCALE_zhCN), GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 1); //By leewheel 20261111
         }
 
         SendGossipMenuFor(player, player->GetGossipTextId(me), me->GetGUID());

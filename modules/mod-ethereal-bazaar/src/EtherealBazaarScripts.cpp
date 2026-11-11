@@ -46,22 +46,24 @@ namespace
 
     void SendMainMenu(Player* player, Creature* creature)
     {
+        //By leewheel 20261111 玩家可见对话选项汉化
         ClearGossipMenuFor(player);
-        AddGossipItemFor(player, GOSSIP_ICON_VENDOR, IconOption("Spell_Shadow_Teleport", "Explore the Bazaar"),
+        AddGossipItemFor(player, GOSSIP_ICON_VENDOR, IconOption("Spell_Shadow_Teleport", "随便逛逛"),
                          GOSSIP_SENDER, GOSSIP_BAZAAR);
-        AddGossipItemFor(player, GOSSIP_ICON_VENDOR, IconOption("inv_legion_chest_legionfall", "Lost Caches"),
+        AddGossipItemFor(player, GOSSIP_ICON_VENDOR, IconOption("inv_legion_chest_legionfall", "遗失的宝箱"),
                          GOSSIP_SENDER, GOSSIP_LOST_CACHES);
-        AddGossipItemFor(player, GOSSIP_ICON_VENDOR, IconOption("inv_chest_awakening", "Convenience Items"),
+        AddGossipItemFor(player, GOSSIP_ICON_VENDOR, IconOption("inv_chest_awakening", "便利物品"),
                          GOSSIP_SENDER, GOSSIP_CONVENIENCE);
-        AddGossipItemFor(player, GOSSIP_ICON_VENDOR, IconOption("inv_misc_scrollrolled02c", "Consumables"),
+        AddGossipItemFor(player, GOSSIP_ICON_VENDOR, IconOption("inv_misc_scrollrolled02c", "消耗品"),
                          GOSSIP_SENDER, GOSSIP_CONSUMABLES);
-        AddGossipItemFor(player, GOSSIP_ICON_VENDOR, IconOption("inv_sword_39", "Heirlooms"),
+        AddGossipItemFor(player, GOSSIP_ICON_VENDOR, IconOption("inv_sword_39", "传家宝"),
                          GOSSIP_SENDER, GOSSIP_HEIRLOOMS);
-        AddGossipItemFor(player, GOSSIP_ICON_VENDOR, IconOption("inv_item_stonen", "Stones of Retreat"),
+        AddGossipItemFor(player, GOSSIP_ICON_VENDOR, IconOption("inv_item_stonen", "隐退之石"),
                          GOSSIP_SENDER, GOSSIP_STONES);
-        AddGossipItemFor(player, GOSSIP_ICON_CHAT, "How do I get Bazaar Tokens?", GOSSIP_SENDER, GOSSIP_TOKENS);
+        AddGossipItemFor(player, GOSSIP_ICON_CHAT, "我要怎么获得集市代币？", GOSSIP_SENDER, GOSSIP_TOKENS);
         GrootCoin::TiraxisMenu::AddEntry(player);
         SendGossipMenuFor(player, GOSSIP_TEXT_ID, creature);
+        //End By leewheel
     }
 
     bool Enabled()
@@ -120,7 +122,7 @@ public:
                 break;
             case GOSSIP_TOKENS:
                 ClearGossipMenuFor(player);
-                AddGossipItemFor(player, GOSSIP_ICON_CHAT, "Back", GOSSIP_SENDER, GOSSIP_BACK);
+                AddGossipItemFor(player, GOSSIP_ICON_CHAT, "返回", GOSSIP_SENDER, GOSSIP_BACK);
                 SendGossipMenuFor(player, GOSSIP_TOKENS_TEXT_ID, creature);
                 break;
             case GOSSIP_BACK:

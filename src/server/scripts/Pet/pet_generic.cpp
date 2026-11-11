@@ -277,12 +277,14 @@ struct npc_pet_gen_argent_pony_bridle : public ScriptedAI
         if (!creature->HasAura(player->GetTeamId(true) ? SPELL_AURA_TIRED_G : SPELL_AURA_TIRED_S))
         {
             uint8 _state = creature->AI()->GetData(0 /*GET_DATA_STATE*/);
+            //By leewheel 20261111 玩家可见对话选项汉化
             if (_state == ARGENT_PONY_STATE_ENCH || _state == ARGENT_PONY_STATE_VENDOR)
-                AddGossipItemFor(player, GOSSIP_ICON_VENDOR, "Visit a trader.", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_TRADE);
+                AddGossipItemFor(player, GOSSIP_ICON_VENDOR, "找商人交易。", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_TRADE);
             if (_state == ARGENT_PONY_STATE_ENCH || _state == ARGENT_PONY_STATE_BANK)
-                AddGossipItemFor(player, GOSSIP_ICON_INTERACT_1, "Visit a bank.", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_BANK);
+                AddGossipItemFor(player, GOSSIP_ICON_INTERACT_1, "使用银行。", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_BANK);
             if (_state == ARGENT_PONY_STATE_ENCH || _state == ARGENT_PONY_STATE_MAILBOX)
-                AddGossipItemFor(player, GOSSIP_ICON_CHAT, "Visit a mailbox.", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_MAILBOX);
+                AddGossipItemFor(player, GOSSIP_ICON_CHAT, "使用邮箱。", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_MAILBOX);
+            //End By leewheel
         }
 
         for (auto const& [raceId, banner] : argentBanners)

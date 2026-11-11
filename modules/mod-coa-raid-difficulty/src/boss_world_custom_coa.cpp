@@ -471,10 +471,12 @@ namespace
             if (!player->IsAlive())
                 return true;
             ClearGossipMenuFor(player);
-            AddGossipItemFor(player, GOSSIP_ICON_BATTLE, "Challenge Setis the Gate Warden", GOSSIP_SENDER_MAIN,
+            //By leewheel 20261111 玩家可见对话选项汉化
+            AddGossipItemFor(player, GOSSIP_ICON_BATTLE, "挑战守门人塞蒂斯", GOSSIP_SENDER_MAIN,
                 GOSSIP_ACTION_INFO_DEF + 1);
-            AddGossipItemFor(player, GOSSIP_ICON_CHAT, "Take your hands off the shrine.", GOSSIP_SENDER_MAIN,
+            AddGossipItemFor(player, GOSSIP_ICON_CHAT, "把你的手从神龛上拿开。", GOSSIP_SENDER_MAIN,
                 GOSSIP_ACTION_INFO_DEF + 2);
+            //End By leewheel
             SendGossipMenuFor(player, SETIS_SHRINE_TEXT, go->GetGUID());
             return true;
         }

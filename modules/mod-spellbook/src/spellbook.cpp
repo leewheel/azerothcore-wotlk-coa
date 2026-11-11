@@ -797,8 +797,10 @@ namespace
             if (OpenTrainer(player, book))
                 return true;
 
-            AddGossipItemFor(player, GOSSIP_ICON_TRAINER, "Learn everything I am eligible for.",
+            //By leewheel 20261111 玩家可见对话选项汉化
+            AddGossipItemFor(player, GOSSIP_ICON_TRAINER, "把所有我能学的都学了。",
                              GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF);
+            //End By leewheel
             SendGossipMenuFor(player, BookGossipText(book), book->GetGUID());
             return true;
         }

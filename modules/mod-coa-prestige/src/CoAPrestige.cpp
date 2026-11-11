@@ -728,7 +728,7 @@ namespace
     {
         if (!g_enabled || !LoadState(player).active || active == requested)
             return {};
-        return "Your active specialization slot is Prestige locked until you complete this Prestige.";
+        return "你当前使用的专精槽在完成这次威望之前处于锁定状态。";
     }
 }
 

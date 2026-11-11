@@ -216,28 +216,30 @@ struct PlayableClass
 // BARBARIAN, WITCHDOCTOR, WITCHHUNTER, FLESHWARDEN, MONK, RANGER.
 constexpr PlayableClass PlayableClasses[] =
 {
-    { 23, "Necromancer",     "|cff45db9c", "NECROMANCER" },
-    { 24, "Pyromancer",      "|cffff6112", "PYROMANCER" },
-    { 25, "Cultist",         "|cff9c45f2", "CULTIST" },
-    { 26, "Starcaller",      "|cff8fffff", "STARCALLER" },
-    { 27, "Sun Cleric",      "|cffffb240", "SUNCLERIC" },
-    { 28, "Tinker",          "|cffd9d9d9", "TINKER" },
-    { 32, "Runemaster",      "|cff40c7eb", "SPIRITMAGE" },
-    { 31, "Primalist",       "|cffe38c59", "WILDWALKER" },
-    { 30, "Reaper",          "|cff0a876b", "REAPER" },
-    { 29, "Venomancer",      "|cff6ba600", "PROPHET" },
-    { 22, "Chronomancer",    "|cffffed4a", "CHRONOMANCER" },
-    { 20, "Bloodmage",       "|cffa30000", "SONOFARUGAL" },
-    { 18, "Guardian",        "|cff9c9482", "GUARDIAN" },
-    { 16, "Stormbringer",    "|cff007ded", "STORMBRINGER" },
-    { 14, "Felsworn",        "|cff75fa00", "DEMONHUNTER" },
-    { 12, "Barbarian",       "|cff8a3303", "BARBARIAN" },
-    { 13, "Witch Doctor",    "|cfff500ff", "WITCHDOCTOR" },
-    { 15, "Witch Hunter",    "|cff5433cf", "WITCHHUNTER" },
-    { 17, "Knight of Xoroth","|cfffc0005", "FLESHWARDEN" },
-    { 19, "Templar",         "|cfffffab2", "MONK" },
-    { 21, "Ranger",          "|cffbff06b", "RANGER" }
+//By leewheel 20261111 Name 只用于显示，改中文；Key 是客户端职业键，一字不动
+    { 23, "通灵法师",        "|cff45db9c", "NECROMANCER" },
+    { 24, "火焰法师",        "|cffff6112", "PYROMANCER" },
+    { 25, "教徒",            "|cff9c45f2", "CULTIST" },
+    { 26, "唤星者",          "|cff8fffff", "STARCALLER" },
+    { 27, "阳光牧师",        "|cffffb240", "SUNCLERIC" },
+    { 28, "工匠师",          "|cffd9d9d9", "TINKER" },
+    { 32, "符文大师",        "|cff40c7eb", "SPIRITMAGE" },
+    { 31, "原始主义者",      "|cffe38c59", "WILDWALKER" },
+    { 30, "收割者",          "|cff0a876b", "REAPER" },
+    { 29, "毒法师",          "|cff6ba600", "PROPHET" },
+    { 22, "时空法师",        "|cffffed4a", "CHRONOMANCER" },
+    { 20, "阿鲁加尔之子",    "|cffa30000", "SONOFARUGAL" },
+    { 18, "守护者",          "|cff9c9482", "GUARDIAN" },
+    { 16, "风暴使者",        "|cff007ded", "STORMBRINGER" },
+    { 14, "恶魔猎手",        "|cff75fa00", "DEMONHUNTER" },
+    { 12, "野蛮人",          "|cff8a3303", "BARBARIAN" },
+    { 13, "巫医",            "|cfff500ff", "WITCHDOCTOR" },
+    { 15, "猎巫人",          "|cff5433cf", "WITCHHUNTER" },
+    { 17, "索罗斯骑士",      "|cfffc0005", "FLESHWARDEN" },
+    { 19, "武僧",            "|cfffffab2", "MONK" },
+    { 21, "游侠",            "|cffbff06b", "RANGER" }
 };
+//End By leewheel
 
 // The colours the notices are written in: the realm's own notice yellow (the one
 // mod-scrolls-of-retreat and mod-treasure-keeper write their lines in), item gold for a potion
@@ -293,20 +295,23 @@ struct Service
 {
     char const* Plain;
     char const* Color;      // nullptr: the notice accent
+    //By leewheel 20261111 玩家可见的服务名（Plain 仍留给日志，日志保持英文）
+    char const* Name;
+    //End By leewheel
 };
 
-Service const ServiceCustomize{ "Customize", nullptr };
-Service const ServiceRaceChange{ "Race Change", nullptr };
-Service const ServiceFactionChange{ "Faction Change", nullptr };
-Service const ServiceFactionChangeToHorde{ "Faction Change to Horde", HordeRed };
-Service const ServiceFactionChangeToAlliance{ "Faction Change to Alliance", nullptr };
+Service const ServiceCustomize{ "Customize", nullptr, "角色自定义" };
+Service const ServiceRaceChange{ "Race Change", nullptr, "种族转换" };
+Service const ServiceFactionChange{ "Faction Change", nullptr, "阵营转换" };
+Service const ServiceFactionChangeToHorde{ "Faction Change to Horde", HordeRed, "阵营转换（转部落）" };
+Service const ServiceFactionChangeToAlliance{ "Faction Change to Alliance", nullptr, "阵营转换（转联盟）" };
 
 char const* ClassName(uint8 classId)
 {
     for (PlayableClass const& entry : PlayableClasses)
         if (entry.Id == classId)
             return entry.Name;
-    return "Unknown";
+    return "未知";
 }
 
 // The class's own colour code ("|cffRRGGBB"), the notice yellow when the class is not ours.
@@ -368,9 +373,11 @@ std::string ServiceSentence(std::string const& potion, Service const& service)
 
     // Yellow after the potion as well as before it: the potion may be an item link, whose own gold
     // would otherwise run on into the rest of the sentence.
-    return std::string(Yellow) + potion + Yellow + " used. You will be logged out to the character screen in " +
-           accent + "10 seconds" + Reset + Yellow + ", where the " +
-           Colored(service.Color, service.Plain) + Yellow + " button is waiting." + Reset;
+    //By leewheel 20261111 提示句汉化
+    return std::string(Yellow) + potion + Yellow + " 已使用。你将在 " + accent + "10 秒" + Reset + Yellow +
+           " 后被退回角色选择界面，在那里等着你的是「" + Colored(service.Color, service.Name) + Yellow +
+           "」按钮。" + Reset;
+    //End By leewheel
 }
 
 // "|cffffff00You are now a |cff45db9cNecromancer|r|cffffff00. You will be logged out to the character
@@ -379,9 +386,10 @@ std::string ServiceSentence(std::string const& potion, Service const& service)
 // the same accent as the service potions' countdown.
 std::string ClassSentence(std::string const& className, char const* classColor)
 {
-    return std::string(Yellow) + "You are now a " + classColor + className + Reset + Yellow +
-           ". You will be logged out to the character screen in " + Accent() + "10 seconds" +
-           Reset + Yellow + "." + Reset;
+    //By leewheel 20261111 提示句汉化
+    return std::string(Yellow) + "你现在是 " + classColor + className + Reset + Yellow +
+           "。你将在 " + Accent() + "10 秒" + Reset + Yellow + " 后被退回角色选择界面。" + Reset;
+    //End By leewheel
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -1138,13 +1146,13 @@ void ApplyClassChange(Player* player, Item* item, uint8 newClass)
     PlayerInfo const* newInfo = sObjectMgr->GetPlayerInfo(race, newClass);
     if (!newInfo)
     {
-        Notice(player, "That class cannot be combined with your race.");
+        Notice(player, "这个职业无法与你的种族组合。");
         return;
     }
 
     if (player->IsInCombat())
     {
-        Notice(player, "You cannot drink a change potion in combat.");
+        Notice(player, "战斗中不能喝转换药水。");
         return;
     }
 
@@ -1260,19 +1268,27 @@ bool RequestService(Player* player, Item* item, AtLoginFlags flag, Service const
     // outlive its own destruction.
     ItemTemplate const* proto = item->GetTemplate();
     uint32 const entry = item->GetEntry();
-    std::string const potion = proto ? proto->Name1 : "Change Potion";
+    //By leewheel 20261111 药水名走 zhCN 本地化，避免提示里出现英文物品名
+    std::string potion = proto ? proto->Name1 : "转换药水";
+    if (ItemLocale const* il = sObjectMgr->GetItemLocale(entry))
+    {
+        std::string localized;
+        ObjectMgr::GetLocaleString(il->Name, LOCALE_zhCN, localized);
+        if (!localized.empty())
+            potion = localized;
+    }
+    //End By leewheel
 
     if (ServicePending(player))
     {
-        Notice(player, "You already have a character change waiting. Log out to the character "
-                       "selection screen and use it before drinking another potion.");
+        Notice(player, "你已经有一个待处理的角色转换了。请先退回角色选择界面把它用掉，再喝下一瓶药水。");
         Acknowledge(player, item);
         return true;
     }
 
     if (player->IsInCombat())
     {
-        Notice(player, "You cannot drink a change potion in combat.");
+        Notice(player, "战斗中不能喝转换药水。");
         Acknowledge(player, item);
         return true;
     }
@@ -1309,14 +1325,14 @@ bool OfferClassChange(Player* player, Item* item)
 {
     if (!ClassChangeEnabled())
     {
-        Notice(player, "Class changes are not available on this realm.");
+        Notice(player, "本服未开放职业转换。");
         Acknowledge(player, item);
         return true;
     }
 
     if (player->IsInCombat())
     {
-        Notice(player, "You cannot drink a change potion in combat.");
+        Notice(player, "战斗中不能喝转换药水。");
         Acknowledge(player, item);
         return true;
     }
@@ -1336,7 +1352,7 @@ bool OfferClassChange(Player* player, Item* item)
 
     if (!offered)
     {
-        Notice(player, "No other class can be combined with your race.");
+        Notice(player, "没有其它职业能和你的种族组合。");
         Acknowledge(player, item);
         return true;
     }

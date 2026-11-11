@@ -62,7 +62,7 @@ namespace GrootCoin::TiraxisMenu
 
         std::string Coins(uint32 coins)
         {
-            return Acore::StringFormat("{} Groot Coin{}", coins, coins == 1 ? "" : "s");
+            return Acore::StringFormat("{} 个 Groot 硬币", coins);
         }
 
         // One option per amount. The client's own pop-up is the only confirmation;
@@ -73,7 +73,7 @@ namespace GrootCoin::TiraxisMenu
             if (tokens > std::numeric_limits<uint32>::max())
                 return;
             AddGossipItemFor(player, GOSSIP_ICON_VENDOR, label, uint32(tokens), action,
-                Acore::StringFormat("Exchange {} for {} Bazaar Tokens?", Coins(coins), tokens), 0, false);
+                Acore::StringFormat("用 {} 个 Groot 硬币兑换 {} 枚集市代币？", Coins(coins), tokens), 0, false);
         }
 
         void ShowExchange(Player* player, Creature* creature)
@@ -81,17 +81,19 @@ namespace GrootCoin::TiraxisMenu
             uint32 const carried = CarriedCoins(player);
             uint32 const rate = GetSettings().tokensPerCoin;
 
+            //By leewheel 20261111 玩家可见对话文本汉化
             ClearGossipMenuFor(player);
             for (uint32 const coins : EXCHANGE_BUNDLES)
                 if (carried >= coins)
-                    AddOffer(player, Acore::StringFormat("Exchange {} for {} Bazaar Tokens.", Coins(coins),
+                    AddOffer(player, Acore::StringFormat("用 {} 个 Groot 硬币兑换 {} 枚集市代币。", Coins(coins),
                         uint64(coins) * rate), coins, rate, BundleAction(coins));
             if (carried >= 1)
-                AddOffer(player, Acore::StringFormat("Exchange all {} for {} Bazaar Tokens.", Coins(carried),
+                AddOffer(player, Acore::StringFormat("把身上的 {} 个 Groot 硬币全部兑换成 {} 枚集市代币。", Coins(carried),
                     uint64(carried) * rate), carried, rate, GOSSIP_GROOT_ALL);
-            AddGossipItemFor(player, GOSSIP_ICON_CHAT, "Back.", GOSSIP_SENDER_GROOT, GOSSIP_GROOT_BACK);
-            player->PlayerTalkClass->SendDynamicGossipMenu(Acore::StringFormat("You carry {} Groot Coin(s). One coin "
-                "is worth {} Bazaar Tokens.", carried, rate), creature->GetGUID());
+            AddGossipItemFor(player, GOSSIP_ICON_CHAT, "返回。", GOSSIP_SENDER_GROOT, GOSSIP_GROOT_BACK);
+            player->PlayerTalkClass->SendDynamicGossipMenu(Acore::StringFormat("你身上有 {} 个 Groot 硬币。"
+                "每个硬币值 {} 枚集市代币。", carried, rate), creature->GetGUID());
+            //End By leewheel
         }
 
         void Tell(Player* player, std::string_view text)
@@ -108,7 +110,7 @@ namespace GrootCoin::TiraxisMenu
     void AddEntry(Player* player)
     {
         if (ExchangeAvailable())
-            AddGossipItemFor(player, GOSSIP_ICON_MONEY_BAG, "I want to exchange Groot Coins.", GOSSIP_SENDER_GROOT,
+            AddGossipItemFor(player, GOSSIP_ICON_MONEY_BAG, "我想兑换 Groot 硬币。", GOSSIP_SENDER_GROOT,
                 GOSSIP_GROOT_MENU);
     }
 

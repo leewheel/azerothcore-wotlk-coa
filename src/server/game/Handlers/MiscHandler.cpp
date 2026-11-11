@@ -1535,11 +1535,13 @@ void WorldSession::HandleSetRaidDifficultyOpcode(WorldPackets::Instance::SetRaid
                 switch (group->GetDifficultyChangePreventionReason())
                 {
                     case DIFFICULTY_PREVENTION_CHANGE_BOSS_KILLED:
-                        ChatHandler(this).PSendSysMessage("Raid was in combat recently and may not change difficulty again for {} sec.", preventionTime);
+                        //By leewheel 20261111 玩家可见提示汉化
+                        ChatHandler(this).PSendSysMessage("团队副本最近刚进入过战斗，{} 秒内不能再次更改难度。", preventionTime);
                         break;
                     case DIFFICULTY_PREVENTION_CHANGE_RECENTLY_CHANGED:
                     default:
-                        ChatHandler(this).PSendSysMessage("Raid difficulty has changed recently, and may not change again for {} sec.", preventionTime);
+                        ChatHandler(this).PSendSysMessage("团队副本难度最近刚改过，{} 秒内不能再次更改。", preventionTime);
+                        //End By leewheel
                         break;
                 }
 

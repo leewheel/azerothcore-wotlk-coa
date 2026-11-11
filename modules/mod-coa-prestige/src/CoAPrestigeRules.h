@@ -142,6 +142,7 @@ namespace CoAPrestige
         return Refusal::None;
     }
 
+    //By leewheel 20261111 玩家可见提示全部汉化
     inline std::string RefusalMessage(Refusal refusal, uint32_t requiredLevel)
     {
         switch (refusal)
@@ -149,25 +150,26 @@ namespace CoAPrestige
             case Refusal::None:
                 return {};
             case Refusal::Disabled:
-                return "Chromie cannot wind back time right now.";
+                return "克罗米现在无法倒转时间。";
             case Refusal::BelowLevel:
-                return "You must be level " + std::to_string(requiredLevel) +
-                    " or higher to participate in Prestige Mode";
+                return "你需要达到 " + std::to_string(requiredLevel) +
+                    " 级或更高才能参与威望模式";
             case Refusal::InProgress:
-                return "You are already in Prestige Mode.";
+                return "你已经处于威望模式中。";
             case Refusal::NoSpecialization:
-                return "Choose a specialization before you activate Prestige Mode.";
+                return "请先选择一个专精，再开启威望模式。";
             case Refusal::Dead:
-                return "You cannot activate Prestige Mode while dead.";
+                return "死亡状态下无法开启威望模式。";
             case Refusal::InCombat:
-                return "You cannot activate Prestige Mode while in combat.";
+                return "战斗状态下无法开启威望模式。";
             case Refusal::Travelling:
-                return "You cannot activate Prestige Mode while travelling.";
+                return "移动途中无法开启威望模式。";
             case Refusal::NotInOpenWorld:
-                return "Prestige Mode can only be activated in the open world.";
+                return "威望模式只能在野外开启。";
         }
         return {};
     }
+    //End By leewheel
 
     // Warcraft Reborn keeps its talent specialization locked during Prestige. Custom-class
     // archetypes use separate slot-switch protection instead.
@@ -176,11 +178,12 @@ namespace CoAPrestige
         return !state.active || !state.specialization || requestedSpecialization == state.specialization;
     }
 
+    //By leewheel 20261111 玩家可见提示汉化
     inline std::string SpecializationLockedMessage(uint32_t requiredLevel)
     {
-        return "Your active specialization is prestige locked until you reach level " +
-            std::to_string(requiredLevel) + ".";
+        return "你当前的专精在达到 " + std::to_string(requiredLevel) + " 级之前处于威望锁定状态。";
     }
+    //End By leewheel
 
     // Quest types (quest_template.QuestInfoID) that are ordinary open-world content.
     constexpr uint32_t QuestTypeNormal = 0;
