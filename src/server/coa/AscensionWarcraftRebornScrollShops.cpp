@@ -52,7 +52,10 @@ ScrollShop const* ShopFor(Player const* player, Creature const* creature)
 
 std::string OptionText(ScrollShop const& shop)
 {
-    return "|TInterface/ICONS/" + std::string(shop.Icon) + ":30:30:-18:0|t|rMystic Scrolls";
+    //By leewheel 2026年11月11日 汉化：这是训练师对话框里的选项文字，玩家可见。
+    //  原文 "Mystic Scrolls"，本服全中文口径，改为「秘法卷轴」。
+    return "|TInterface/ICONS/" + std::string(shop.Icon) + ":30:30:-18:0|t|r秘法卷轴";
+    //End By leewheel
 }
 }
 

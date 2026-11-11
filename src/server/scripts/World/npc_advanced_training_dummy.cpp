@@ -225,14 +225,16 @@ struct npc_advanced_training_dummy : ScriptedAI
                 SetTrainingLevel(1);
             }
             me->SetHealth(_healingEnabled ? me->CountPctFromMaxHealth(50) : me->GetMaxHealth());
-            me->Whisper(_healingEnabled ? "Healing practice enabled." : "Healing practice stopped.", LANG_UNIVERSAL, player);
+            //By leewheel 2026年11月11日 玩家可见文本中文化
+            me->Whisper(_healingEnabled ? "治疗练习已开启。" : "治疗练习已停止。", LANG_UNIVERSAL, player);
+            //End By leewheel
             return;
         }
         if (me->GetEntry() != DYNAMIC_CONFIGURABLE)
             return;
         if (emote == TEXT_EMOTE_CURIOUS || emote == TEXT_EMOTE_WAVE)
         {
-            me->Whisper("/poke: vulnerability. In combat: /agree or /no: level. Crowd control immunity is always enabled.",
+            me->Whisper("/poke：切换是否可被攻击。战斗中：/agree 升一级，/no 降一级。控制免疫始终开启。",
                 LANG_UNIVERSAL, player);
         }
         else if (emote == TEXT_EMOTE_POKE && !me->IsInCombat())
@@ -248,7 +250,7 @@ struct npc_advanced_training_dummy : ScriptedAI
                 SetTrainingLevel(me->GetLevel() - 1);
             else if (emote == TEXT_EMOTE_CLAP)
             {
-                me->Whisper("Crowd control immunity is always enabled.", LANG_UNIVERSAL, player);
+                me->Whisper("控制免疫始终开启。", LANG_UNIVERSAL, player);
             }
         }
     }
@@ -290,7 +292,7 @@ private:
                 _heavyPending = false;
                 events.CancelEvent(EVENT_BOSS_HEAVY_HIT);
                 SetBossCounterImmunity(true);
-                me->Whisper("Heavy strike stopped!", LANG_UNIVERSAL, owner);
+                me->Whisper("重击已中断！", LANG_UNIVERSAL, owner);
                 BeginBossImmunity(owner);
             }
         }
@@ -356,7 +358,7 @@ private:
             return;
         _ccPhase = true;
         SetTrainingDummyCrowdControlImmunity(me, true);
-        me->Whisper("CC IMMUNITY: immune to all crowd control for 10 seconds!", LANG_UNIVERSAL, owner, true);
+        me->Whisper("控制免疫：10 秒内免疫所有控制技能！", LANG_UNIVERSAL, owner, true);
         events.ScheduleEvent(EVENT_BOSS_CC_IMMUNE_END, 10s);
     }
 
@@ -370,7 +372,7 @@ private:
             case EVENT_BOSS_CC_IMMUNE_END:
                 _ccPhase = false;
                 SetTrainingDummyCrowdControlImmunity(me, false);
-                me->Whisper("CC immunity ended! Shadow Bolt incoming - INTERRUPT!",
+                me->Whisper("控制免疫结束！暗影箭即将到来——快打断！",
                     LANG_UNIVERSAL, owner, true);
                 [[fallthrough]];
             case EVENT_BOSS_SPELL:
@@ -393,7 +395,7 @@ private:
                 }
                 _heavyPending = true;
                 SetBossCounterImmunity(false);
-                me->Whisper("Heavy strike in 3 seconds! STUN or DISARM to stop it!", LANG_UNIVERSAL, owner, true);
+                me->Whisper("3 秒后重击！用眩晕或缴械打断！", LANG_UNIVERSAL, owner, true);
                 events.ScheduleEvent(EVENT_BOSS_HEAVY_HIT, 3s);
                 break;
             case EVENT_BOSS_HEAVY_HIT:

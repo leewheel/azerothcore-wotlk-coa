@@ -56,7 +56,7 @@
       "actor": "alliance",
       "metric": "gossip_option_text",
       "index": 0,
-      "text": "PvE Quests",
+      "text": "PvE 任务",
       "equals": 1
     },
     {

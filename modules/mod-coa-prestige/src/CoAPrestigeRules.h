@@ -19,8 +19,10 @@ namespace CoAPrestige
     // The client's PrestigeModeUI (AscensionUI/Gossips/PrestigeMode.lua) redirects the gossip of
     // creature 178081 to its own window and finds its buttons by these exact option texts.
     constexpr uint32_t ChromieEntry = 178081;
-    constexpr std::string_view OptionActivate = "I would like to prestige!";
-    constexpr std::string_view OptionRewards = "I would like to purchase Prestige items!";
+    //By leewheel 20261112 联动汉化：选项文本改中文，客户端 PrestigeMode.lua 同步按中文匹配（英文已兜底保留）
+    constexpr std::string_view OptionActivate = "我要进行威望重置！";
+    constexpr std::string_view OptionRewards = "我想购买威望物品！";
+    //End By leewheel
     constexpr std::string_view OptionExperienceItems = "GOSSIP_ACTION_EXPERIENCE_ITEMS";
 
     // Vendor list behind the Experience Items button; never spawned.

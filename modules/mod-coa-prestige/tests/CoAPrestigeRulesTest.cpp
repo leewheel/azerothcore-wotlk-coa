@@ -13,9 +13,11 @@ using namespace CoAPrestige;
 
 TEST(CoAPrestige, GossipOptionsMatchTheClientWindow)
 {
-    // PrestigeModeUI.MSGS.GOSSIP_OPTION_* in AscensionUI/Gossips/PrestigeMode.lua.
-    EXPECT_EQ(OptionActivate, "I would like to prestige!");
-    EXPECT_EQ(OptionRewards, "I would like to purchase Prestige items!");
+    // PrestigeModeUI.ScanGossipOptions in AscensionUI/Gossips/PrestigeMode.lua.
+    //By leewheel 20261112 联动汉化：选项文本改中文，断言同步
+    EXPECT_EQ(OptionActivate, "我要进行威望重置！");
+    EXPECT_EQ(OptionRewards, "我想购买威望物品！");
+    //End By leewheel
     EXPECT_EQ(OptionExperienceItems, "GOSSIP_ACTION_EXPERIENCE_ITEMS");
     EXPECT_EQ(ChromieEntry, 178081u);
     EXPECT_EQ(PrestigedAura, 9930831u);

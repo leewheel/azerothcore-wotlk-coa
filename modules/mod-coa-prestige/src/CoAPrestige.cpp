@@ -510,7 +510,9 @@ namespace
     {
         for (std::size_t first = 0; first < items.size(); first += MAX_MAIL_ITEMS)
         {
-            MailDraft draft("Prestige Mode", "Chromie has returned your equipped gear and any overflow Prestige rewards.");
+            //By leewheel 20261112 邮件标题与正文汉化（玩家可见）
+            MailDraft draft("威望模式", "克罗米已把你穿戴的装备和溢出的威望奖励寄回给你。");
+            //End By leewheel
             for (std::size_t index = first; index < std::min(items.size(), first + MAX_MAIL_ITEMS); ++index)
                 draft.AddItem(items[index]);
             draft.SendMailTo(trans, MailReceiver(player), MailSender(MAIL_CREATURE, ChromieEntry),
@@ -754,12 +756,13 @@ public:
         AddGossipItemFor(player, GOSSIP_ICON_VENDOR, std::string(OptionRewards), GOSSIP_SENDER_MAIN, ACTION_REWARDS);
         AddGossipItemFor(player, GOSSIP_ICON_VENDOR, std::string(OptionExperienceItems), GOSSIP_SENDER_MAIN,
             ACTION_EXPERIENCE_ITEMS);
-        // The client matches this label with "^Today's Prestige Quest is (.*)$"
+        // The client matches this label with "^今日威望任务：(.*)$"
         // to fill the daily tab; it is a label, not an actionable option.
+        //By leewheel 20261112 联动汉化：标签改中文，客户端 PrestigeMode.lua 正则同步更新
         if (uint32 const dailyId = ActiveDailyQuest())
             if (Quest const* daily = sObjectMgr->GetQuestTemplate(dailyId))
                 AddGossipItemFor(player, GOSSIP_ICON_CHAT,
-                    "Today's Prestige Quest is " + daily->GetTitle(), GOSSIP_SENDER_MAIN, ACTION_DAILY_LABEL);
+                    "今日威望任务：" + daily->GetTitle(), GOSSIP_SENDER_MAIN, ACTION_DAILY_LABEL);
         SendPrestigeLevels(player);
         if (AscensionWildcard::IsWildcardHero(player))
             AscensionWildcard::SendPrestigeInfo(player);

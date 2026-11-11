@@ -1367,8 +1367,15 @@ std::vector<std::vector<uint32>> SpellMgr::LoadClientSpellRankChains() const
         {
             if (rank != chain.size() + 1 || !GetSpellInfo(spellId))
             {
+                //By leewheel 2026年11月11日 这里原本报的 17 条断链已从数据侧修好：
+                //  链 911115 用客户端 area-52\patch-D.MPQ 里完整的 rank2(911367) 补上；
+                //  Arcane Ward / Unbridled Wrath 的首阶键写错已合并（1192172-77 → 1192171、912999 系 → 912322）；
+                //  Focused Mind / Living Spirit / Soul Fire / Meteor 等跨号 rank 按法术 ID 升序重排为 1..N；
+                //  只有一条记录的伪链（970033 / 966049）删除。
+                //  修复后 SpellRank.dbc 3520 条链全部连续，所以这里恢复 ERROR，将来再出现断链要能被发现。
                 LOG_ERROR("server.loading", "SpellRank.dbc chain {} rank {} (spell {}) is out of order or does not exist, chain skipped.",
                     key, rank, spellId);
+                //End By leewheel
                 chain.clear();
                 break;
             }

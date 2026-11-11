@@ -24,12 +24,14 @@ namespace CoALottery
         uint32_t tickets;
     };
 
+    //By leewheel 20261112 联动汉化：购买选项改中文，客户端 Lottery.lua internalGossipOptions 同步按中文建键（英文键保留兜底）
     constexpr std::array<PurchaseOption, 4> Options = {{
-        { "Get golden ticket x1 (10g0s0c)", 1 },
-        { "Get golden ticket x10 (100g0s0c)", 10 },
-        { "Get golden ticket x100 (1000g0s0c)", 100 },
-        { "Get golden ticket x1000 (10000g0s0c)", 1000 }
+        { "购买金票 x1（10金0银0铜）", 1 },
+        { "购买金票 x10（100金0银0铜）", 10 },
+        { "购买金票 x100（1000金0银0铜）", 100 },
+        { "购买金票 x1000（10000金0银0铜）", 1000 }
     }};
+    //End By leewheel
 
     inline bool ParseDuration(std::string_view text, uint32_t& seconds)
     {

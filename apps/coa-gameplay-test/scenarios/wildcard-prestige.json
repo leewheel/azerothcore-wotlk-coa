@@ -35,7 +35,7 @@
     {"action": "snapshot", "actor": "wild", "metric": "server_packets", "opcode": 1824, "save_as": "prestige_info"},
     {"action": "gossip_hello", "actor": "wild", "target": "chromie", "label": "Speak to Chromie"},
     {"action": "assert", "label": "Chromie's window gets the repurchasable scrolls", "actor": "wild", "metric": "server_packets", "opcode": 1824, "relative_to": "prestige_info", "equals": 1},
-    {"action": "assert", "label": "and the activation option", "actor": "wild", "metric": "gossip_option_text", "index": 0, "text": "I would like to prestige!", "equals": 1},
+    {"action": "assert", "label": "and the activation option", "actor": "wild", "metric": "gossip_option_text", "index": 0, "text": "我要进行威望重置！", "equals": 1},
     {"action": "snapshot", "actor": "wild", "metric": "item_count", "item": 375250, "save_as": "runes_before"},
     {"action": "gossip_select", "actor": "wild", "option": 0, "label": "I would like to prestige!"},
     {"action": "assert", "label": "Back to level 1", "actor": "wild", "metric": "level", "equals": 1, "within_ms": 5000},

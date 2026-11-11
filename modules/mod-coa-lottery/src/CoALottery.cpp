@@ -489,12 +489,14 @@ namespace
         auto entry = round.entries.find(guid);
         uint32 tickets = entry == round.entries.end() ? 0 : entry->second;
         uint64 remaining = round.ends > Now() ? round.ends - Now() : 0;
+        //By leewheel 20261112 联动汉化：正文改中文，客户端 Lottery.lua gossipText 正则同步更新（英文 pattern 保留兜底）
         std::string text = Acore::StringFormat(
-            "Total jackpot: {}g{}s{}c\nBonus reward: {}\nYour gold tickets: {}\n"
-            "Gold lottery ends in: {}d{}h{}m{}s",
+            "总奖池：{}金{}银{}铜\n额外奖励：{}\n你的金票：{}\n"
+            "距开奖：{}天{}时{}分{}秒",
             round.pot / 10000, round.pot / 100 % 100, round.pot % 100,
             round.bonusItem ? round.bonusItem : NoBonusItem, tickets,
             remaining / DAY, remaining / HOUR % 24, remaining / MINUTE % 60, remaining % MINUTE);
+        //End By leewheel
         for (uint32 i = 0; i < Options.size(); ++i)
             AddGossipItemFor(player, GOSSIP_ICON_CHAT, std::string(Options[i].text), GOSSIP_SENDER_MAIN, i + 1);
         player->PlayerTalkClass->SendDynamicGossipMenu(text, creature->GetGUID());

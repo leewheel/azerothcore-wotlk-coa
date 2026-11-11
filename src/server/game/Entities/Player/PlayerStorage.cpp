@@ -5872,12 +5872,17 @@ void Player::_LoadActions(PreparedQueryResult result)
             }
             else
             {
-
-                LOG_ERROR("entities.player", "ActionButton loading problem, will be deleted from db. player: {}, guid: {}, button: {}, action: {}, type: {}", GetName(), GetGUID().GetCounter(), button, action, type);
+                //By leewheel 2026年11月11日 这条不是服务器故障，是玩家动作条里存了「他已经没有的技能」
+                //  （典型来源：天赋替换技能，例如 501454 气流爆破=54 级、503359 湍流之怒=58 级，
+                //  玩家等级回退或改天赋后动作条残留）。服务端本来就会把这个按钮标记删除、下次保存落库，
+                //  属于自愈行为，用 ERROR 级刷日志只会误导运维、把 Errors.log 填满。
+                //  这里降为 Debug：需要排查时开 Logger.entities.player=5 仍能看到完整上下文。
+                LOG_DEBUG("entities.player", "ActionButton loading problem, will be deleted from db. player: {}, guid: {}, button: {}, action: {}, type: {}", GetName(), GetGUID().GetCounter(), button, action, type);
 
                 // Will deleted in DB at next save (it can create data until save but marked as deleted)
                 m_actionButtons[button].uState = ACTIONBUTTON_DELETED;
             }
+            //End By leewheel
         } while (result->NextRow());
     }
 }
