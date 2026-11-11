@@ -59,27 +59,6 @@ namespace
     constexpr time_t UnlinkedRecoveryInterval = 15 * 60;
     constexpr uint32 RewardSpread = 17;
 
-    bool CanLinkRecruitmentAddresses(WorldSession& inviter, WorldSession& recipient)
-    {
-        auto parse = [](WorldSession& session) -> std::optional<boost::asio::ip::address_v6::bytes_type>
-        {
-            boost::system::error_code error;
-            auto const address = Acore::Net::make_address(session.GetRemoteAddress(), error);
-            if (error || address.is_unspecified())
-                return std::nullopt;
-            auto const normalized = address.is_v4()
-                ? boost::asio::ip::make_address_v6(boost::asio::ip::v4_mapped, address.to_v4())
-                : address.to_v6();
-            if (normalized.is_v4_mapped() &&
-                boost::asio::ip::make_address_v4(boost::asio::ip::v4_mapped, normalized).is_unspecified())
-                return std::nullopt;
-            return normalized.to_bytes();
-        };
-        auto const inviterAddress = parse(inviter);
-        auto const recipientAddress = parse(recipient);
-        return inviterAddress && recipientAddress && *inviterAddress != *recipientAddress;
-    }
-
     uint8 GrantLevelError(Player* donor, Player* target)
     {
         if (!target || target == donor)
@@ -207,6 +186,67 @@ void WorldSession::RefreshRecruitAFriendFlags()
     _player->GetSocial()->SendSocialList(_player, SOCIAL_FLAG_FRIEND);
 }
 
+namespace
+{
+    std::optional<std::string> RecruitmentAddress(WorldSession& session)
+    {
+        boost::system::error_code error;
+        auto const address = Acore::Net::make_address(session.GetRemoteAddress(), error);
+        if (error || address.is_unspecified())
+            return std::nullopt;
+        auto const normalized = address.is_v4()
+            ? boost::asio::ip::make_address_v6(boost::asio::ip::v4_mapped, address.to_v4())
+            : address.to_v6();
+        if (normalized.is_v4_mapped() &&
+            boost::asio::ip::make_address_v4(boost::asio::ip::v4_mapped, normalized).is_unspecified())
+            return std::nullopt;
+        return normalized.to_string();
+    }
+
+    struct RecruitmentAddresses
+    {
+        bool valid = false;
+        std::optional<std::string> shared;
+    };
+
+    RecruitmentAddresses LinkRecruitmentAddresses(WorldSession& inviter, WorldSession& recipient)
+    {
+        auto const inviterAddress = RecruitmentAddress(inviter);
+        auto const recipientAddress = RecruitmentAddress(recipient);
+        if (!inviterAddress || !recipientAddress)
+            return {};
+        if (*inviterAddress == *recipientAddress)
+            return { true, inviterAddress };
+        return { true, std::nullopt };
+    }
+
+    uint32 SharedAddressLinkLimit()
+    {
+        return sWorld->getIntConfig(CONFIG_RECRUIT_A_FRIEND_SHARED_ADDRESS_LINKS);
+    }
+
+    bool SharedAddressHasFreeLink(std::string const& address)
+    {
+        auto* links = LoginDatabase.GetPreparedStatement(LOGIN_SEL_RAF_SHARED_ADDRESS_LINKS);
+        links->SetData(0, address);
+        PreparedQueryResult const result = LoginDatabase.Query(links);
+        return result && result->Fetch()[0].Get<uint64>() < SharedAddressLinkLimit();
+    }
+
+    void SetSharedAddress(LoginDatabasePreparedStatement* stmt, uint8 index, std::optional<std::string> const& address)
+    {
+        if (address)
+            stmt->SetData(index, *address);
+        else
+            stmt->SetData(index, nullptr);
+    }
+
+    //By leewheel 2026年11月12日 玩家可见提示中文化
+    constexpr char const* InvalidAddressRefusal = "招募战友需要双方都是有效的 IP 地址。";
+    constexpr char const* SharedAddressRefusal = "招募战友需要双方使用不同的 IP 地址。";
+    //End By leewheel
+}
+
 bool WorldSession::InviteRecruitAFriend(Player* target)
 {
     ChatHandler chat(this);
@@ -224,8 +264,13 @@ bool WorldSession::InviteRecruitAFriend(Player* target)
         return reject("你不能招募自己或同账号下的其他角色。");
 
     WorldSession* recipient = target->GetSession();
-    if (!CanLinkRecruitmentAddresses(*this, *recipient))
-        return reject("招募战友要求双方使用不同的有效 IP 地址。");
+    //By leewheel 2026年11月12日 合并上游 #11823：改用 LinkRecruitmentAddresses（同 IP 允许两条招募）
+    RecruitmentAddresses const addresses = LinkRecruitmentAddresses(*this, *recipient);
+    if (!addresses.valid)
+        return reject(InvalidAddressRefusal);
+    if (addresses.shared && !SharedAddressLinkLimit())
+        return reject(SharedAddressRefusal);
+    //End By leewheel
     if (recipient->recruiterId == GetAccountId())
         return reject("该账号已被你招募。招募关系永久有效；可用 .raf status 查看你的被招募者。");
     if (recipient->recruiterId)
@@ -251,6 +296,14 @@ bool WorldSession::InviteRecruitAFriend(Player* target)
         return false;
     }
     _rafInviteCooldown = now + 10;
+    if (addresses.shared && !SharedAddressHasFreeLink(*addresses.shared))
+    {
+        //By leewheel 2026年11月12日 中文化
+        chat.PSendSysMessage("同一 IP 地址最多允许 {} 条招募绑定，该 IP 已达上限。",
+            SharedAddressLinkLimit());
+        //End By leewheel
+        return false;
+    }
     recipient->_rafInviter = _player->GetGUID();
     recipient->_rafInviteExpiry = now + ProposalLifetime;
     target->PlayerTalkClass->ClearMenus();
@@ -290,9 +343,10 @@ bool WorldSession::HandleRecruitAFriendInviteResponse(uint32 menuId, uint32 acti
         _player->IsInCombat() || inviter->IsInCombat())
         return true;
 
-    if (!CanLinkRecruitmentAddresses(*inviter->GetSession(), *this))
+    RecruitmentAddresses const addresses = LinkRecruitmentAddresses(*inviter->GetSession(), *this);
+    if (!addresses.valid || (addresses.shared && !SharedAddressLinkLimit()))
     {
-        ChatHandler(this).SendSysMessage("招募战友要求双方使用不同的有效 IP 地址。");
+        ChatHandler(this).SendSysMessage(addresses.valid ? SharedAddressRefusal : InvalidAddressRefusal);
         return true;
     }
 
@@ -300,16 +354,23 @@ bool WorldSession::HandleRecruitAFriendInviteResponse(uint32 menuId, uint32 acti
     auto* stmt = LoginDatabase.GetPreparedStatement(LOGIN_UPD_RAF_RECRUITER);
     stmt->SetData(0, inviterAccount);
     stmt->SetData(1, GetAccountId());
-    stmt->SetData(2, inviterAccount);
-    stmt->SetData(3, GetAccountId());
+    SetSharedAddress(stmt, 2, addresses.shared);
+    stmt->SetData(3, inviterAccount);
+    stmt->SetData(4, GetAccountId());
+    SetSharedAddress(stmt, 5, addresses.shared);
+    stmt->SetData(6, SharedAddressLinkLimit());
     LoginDatabaseTransaction trans = LoginDatabase.BeginTransaction();
     trans->Append(LoginDatabase.GetPreparedStatement(LOGIN_INS_RAF_LINK_LOCK));
     trans->Append(LoginDatabase.GetPreparedStatement(LOGIN_UPD_RAF_LINK_LOCK));
     trans->Append(stmt);
-    auto* registration = LoginDatabase.GetPreparedStatement(LOGIN_INS_RAF_ACCOUNT);
-    registration->SetData(0, GetAccountId());
+    auto* registration = LoginDatabase.GetPreparedStatement(LOGIN_INS_RAF_LINKED_ACCOUNT);
+    SetSharedAddress(registration, 0, addresses.shared);
+    registration->SetData(1, GetAccountId());
+    registration->SetData(2, inviterAccount);
     trans->Append(registration);
-    AddTransactionCallback(LoginDatabase.AsyncCommitTransaction(trans)).AfterComplete([this, inviterAccount](bool success)
+    bool const sharesAddress = addresses.shared.has_value();
+    AddTransactionCallback(LoginDatabase.AsyncCommitTransaction(trans)).AfterComplete(
+        [this, inviterAccount, sharesAddress](bool success)
     {
         if (!success)
         {
@@ -321,13 +382,18 @@ bool WorldSession::HandleRecruitAFriendInviteResponse(uint32 menuId, uint32 acti
         auto* status = LoginDatabase.GetPreparedStatement(LOGIN_SEL_RAF_STATUS);
         status->SetData(0, GetAccountId());
         GetQueryProcessor().AddCallback(LoginDatabase.AsyncQuery(status).WithPreparedCallback(
-            [this, inviterAccount](PreparedQueryResult result)
+            [this, inviterAccount, sharesAddress](PreparedQueryResult result)
             {
                 if (!result || result->Fetch()[0].Get<uint32>() != inviterAccount)
                 {
-                    ChatHandler(this).SendSysMessage("招募未被接受：某账号已被绑定，或会形成招募循环。");
+                    //By leewheel 2026年11月12日 合并上游 #11823：区分同 IP 达到绑定上限的提示，并中文化
+                    char const* refusal = sharesAddress
+                        ? "招募未被接受：某账号已被绑定、会形成招募循环，或你所在的共享 IP 已达到招募绑定上限。"
+                        : "招募未被接受：某账号已被绑定，或会形成招募循环。";
+                    ChatHandler(this).SendSysMessage(refusal);
                     if (WorldSession* recruiter = sWorldSessionMgr->FindSession(inviterAccount))
-                        ChatHandler(recruiter).SendSysMessage("招募未被接受：某账号已被绑定，或会形成招募循环。");
+                        ChatHandler(recruiter).SendSysMessage(refusal);
+                    //End By leewheel
                     return;
                 }
                 recruiterId = inviterAccount;
