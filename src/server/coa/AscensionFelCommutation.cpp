@@ -706,9 +706,11 @@ public:
             return false;
 
         SendAscensionClientLuaFormatter(player, id, token, std::string(lua));
+        //By leewheel 20261112
         handler->PSendSysMessage(
-            "Sent SMSG 0x05BC row {} token {}. Run it with /run ChallengeUtil.GetRequirementLocalization(\"{}\")", id,
-            token, token);
+            "已发送 SMSG 0x05BC 行 {}（令牌 {}）。可用 /run ChallengeUtil.GetRequirementLocalization(\"{}\") 复核",
+            id, token, token);
+        //End By leewheel
         return true;
     }
 
@@ -720,14 +722,16 @@ public:
 
         AscensionClientLuaRoute const route = GetAscensionClientLuaRoute(player->GetSession()->GetAccountId());
         RunWindowLua(player);
+        //By leewheel 20261112
         if (route == AscensionClientLuaRoute::HotPatch)
-            handler->PSendSysMessage("Sent the Fel Commutation window as hot patch {}; /hotpatch lists what the client ran.",
+            handler->PSendSysMessage("已通过热补丁 {} 发送邪能变身窗口；/hotpatch 可查看客户端实际执行的内容。",
                 WindowBootstrapToken);
         else if (route == AscensionClientLuaRoute::Queue)
-            handler->PSendSysMessage("Queued hot patch {} until the client announces the hot-patch channel.",
+            handler->PSendSysMessage("热补丁 {} 已排队，等待客户端宣告热补丁通道后发送。",
                 WindowBootstrapToken);
         else
-            handler->PSendSysMessage("Hot patch {} not sent: this client has no hot-patch channel.", WindowBootstrapToken);
+            handler->PSendSysMessage("热补丁 {} 未发送：该客户端没有热补丁通道。", WindowBootstrapToken);
+        //End By leewheel
         return true;
     }
 
@@ -865,12 +869,14 @@ void ReportLoss(Player* player, uint32 insuranceFee, uint32 droppedGold)
     if (!insuranceFee)
         return;
 
+    //By leewheel 20261112
     std::string const detail = droppedGold
-        ? Acore::StringFormat("{} insurance and {} dropped gold", FormatMoney(insuranceFee), FormatMoney(droppedGold))
-        : Acore::StringFormat("{} insurance", FormatMoney(insuranceFee));
+        ? Acore::StringFormat("{} 保险费与 {} 掉落金币", FormatMoney(insuranceFee), FormatMoney(droppedGold))
+        : Acore::StringFormat("{} 保险费", FormatMoney(insuranceFee));
     ChatHandler(player->GetSession()).SendSysMessage(Acore::StringFormat(
-        "You lost {} but some of your items were kept safe by Fel Commutation: {}.",
+        "你损失了 {}，但部分物品已被邪能变身保全：{}。",
         FormatMoney(uint64(insuranceFee) + droppedGold), detail));
+    //End By leewheel
 }
 }
 

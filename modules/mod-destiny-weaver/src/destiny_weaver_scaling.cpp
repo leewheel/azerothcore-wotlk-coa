@@ -253,16 +253,35 @@ namespace
                sLFGMgr->inLfgDungeonMap(group->GetGUID(), map->GetId(), map->GetDifficulty());
     }
 
+    //By leewheel 2026年11月12日 副本门口走进去的缩放开关（玩家反馈：官方版有这个开关）：
+    // DestinyWeaver.Scaling.WalkInNoScale = 1（默认）时，除地下城查找器之外，从副本门口走进去不再缩放等级
+    //（生物与掉落保持原始等级，与改前行为一致）；= 0 时门口走进去也按查找器同等待遇缩放（官方默认行为）。
+    // 支持 .reload config 热生效。
+    bool WalkInNoScale()
+    {
+        return sConfigMgr->GetOption<bool>("DestinyWeaver.Scaling.WalkInNoScale", true);
+    }
+
+    //By leewheel 2026年11月12日 这个角色所在的副本要不要为它缩放：查找器指派的副本始终缩放；
+    // 门口走进去的副本只在开关允许门口缩放（WalkInNoScale = 0）时缩放。
+    bool ScaledDungeonFor(Player const* player, Map const* map)
+    {
+        return FinderScaledDungeon(player, map) || (!WalkInNoScale() && ScaledDungeon(map));
+    }
+//End By leewheel
+
     /// Installed as the core's resolver, so the loot a scaled dungeon drops follows the same rule as its
     /// creatures.
+    //By leewheel 2026年11月12日 门口走进去且开关允许缩放时，同样按 Finder 级别上报（生物、掉落、治疗共享全部按缩放算）
     LocalLevelScaling::DungeonScaling InScaledDungeonForCore(Player const* player)
     {
         Map const* map = player ? player->FindMap() : nullptr;
         if (!ScaledDungeon(map))
             return LocalLevelScaling::DungeonScaling::None;
-        return FinderScaledDungeon(player, map) ? LocalLevelScaling::DungeonScaling::Finder
-                                                : LocalLevelScaling::DungeonScaling::WalkedIn;
+        return ScaledDungeonFor(player, map) ? LocalLevelScaling::DungeonScaling::Finder
+                                             : LocalLevelScaling::DungeonScaling::WalkedIn;
     }
+//End By leewheel
 
     /// One row of `creature_classlevelstats`: everything the core builds a creature of a given level
     /// out of. Rank and template multipliers are deliberately absent - they do not depend on level,
@@ -439,8 +458,11 @@ namespace
         bool const personalInstance = LocalLevelScaling::PersonalInstanceScalingFor(map, viewer);
         if (map->IsScriptedPrivateInstance() && !personalInstance)
             return false;
+        //By leewheel 2026年11月12日 门口走进去的副本按 WalkInNoScale 开关决定缩放与否：
+        // 开关=1（默认）保持只缩放查找器副本；开关=0 时门口进入也缩放
         if (!personalInstance && (map->IsDungeon() ?
-            !FinderScaledDungeon(viewer, map) : !LocalLevelScaling::ScalingChoiceEnabled(viewer)))
+            !ScaledDungeonFor(viewer, map) : !LocalLevelScaling::ScalingChoiceEnabled(viewer)))
+//End By leewheel
             return false;
 
         uint8 const own = creature->GetLevel();
@@ -572,9 +594,11 @@ namespace
         Map const* map = to->FindMap();
         bool const personalInstance = LocalLevelScaling::PersonalInstanceScalingFor(map, from) &&
             LocalLevelScaling::PersonalInstanceScalingFor(map, to);
+        //By leewheel 2026年11月12日 门口走进去的副本在开关允许缩放（WalkInNoScale=0）时，治疗共享同样按缩放判定
         if (from->FindMap() != map ||
-            (!personalInstance && (!FinderScaledDungeon(from, map) || !FinderScaledDungeon(to, map))))
+            (!personalInstance && (!ScaledDungeonFor(from, map) || !ScaledDungeonFor(to, map))))
             return 1.0;
+//End By leewheel
 
         // A character held to the authored creatures by a challenge fights blows of the authored size.
         if ((LocalLevelScaling::ScalingBlocksFor(from) | LocalLevelScaling::ScalingBlocksFor(to)) &
@@ -1285,6 +1309,12 @@ public:
                  "character's level inside a dungeon's band, every stat row with it (health, mana, armor, "
                  "damage, skills); quest levels follow each character's choice",
                  offset);
+
+        //By leewheel 2026年11月12日 把门口进入缩放开关的状态打进启动日志，方便核对（.reload config 后同样会刷新）
+        LOG_INFO("module.destiny_weaver",
+                 "副本门口进入的缩放开关 DestinyWeaver.Scaling.WalkInNoScale = {}（1=除地下城查找器外，门口进入不缩放；0=门口进入也缩放）",
+                 WalkInNoScale() ? 1 : 0);
+//End By leewheel
     }
 
     void OnAfterConfigLoad(bool /*reload*/) override

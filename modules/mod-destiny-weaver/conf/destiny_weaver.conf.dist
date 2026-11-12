@@ -88,6 +88,16 @@ DestinyWeaver.Scaling.DungeonIds = "1 2 4 6 8 10 12 14 16 18 20 22 24 26 28 30 3
 
 DestinyWeaver.Scaling.DungeonBands = "401:15-59 402:15-59 45:35-59"
 
+#    DestinyWeaver.Scaling.WalkInNoScale
+#        Description: 除地下城查找器之外，从副本门口进入不再缩放等级。开启（1）时，玩家从副本门口
+#                     走进去，生物与掉落保持原始等级，只有地下城查找器指派的副本缩放；关闭（0）时，
+#                     门口走进去的副本也按查找器同等待遇缩放（官方默认行为）。
+#        Default:     1 - (门口进入不缩放)
+#                     0 - (门口进入也缩放)
+#        Reloadable:  yes (.reload config)
+
+DestinyWeaver.Scaling.WalkInNoScale = 1
+
 #    DestinyWeaver.ExperienceBonusControl
 #        Description: Whether the Experience Bonus Control service exists at all. A character who
 #                     turns it on stops receiving the bonus experience sources - Potions of
