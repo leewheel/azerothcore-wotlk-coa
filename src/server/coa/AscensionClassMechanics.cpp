@@ -36,6 +36,7 @@
 #include "AscensionRunemasterZenith.h"
 #include "AscensionTemplarLibrams.h"
 #include "AscensionHealingStatSelectors.h"
+#include "AscensionNightmareDamageTaken.h"
 #include "AscensionHeroWarrior.h"
 #include "AscensionGuardianResources.h"
 #include "AscensionSpellProgressionData.h"
@@ -1168,6 +1169,7 @@ void ApplyAscensionClassMechanics(SpellInfo* spellInfo)
     ApplyAscensionRunemasterZenithContracts(spellInfo);
     ApplyAscensionTemplarLibramContracts(spellInfo);
     ApplyAscensionHealingStatSelectorContracts(spellInfo);
+    ApplyAscensionNightmareDamageTakenContracts(spellInfo);
     ApplyAdditionalTargetContracts(spellInfo);
     ApplyRangerOffensiveSpellContracts(spellInfo);
     ApplyRangerForestDwellerContract(spellInfo);
