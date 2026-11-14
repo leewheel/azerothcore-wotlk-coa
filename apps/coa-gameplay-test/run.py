@@ -61,7 +61,7 @@ MAX_MUTANT_PERCENT = 1000
 METRICS = TIMELINE_METRICS | EVENT_TIME_METRICS | {
     'spell_power_cost', 'position_o', 'avoidance_samples', 'spell_effect_kind', 'spell_effect_misc', 'movie_exists',
     'item_random_property', 'item_suffix_factor', 'item_enchantment', 'item_guid', 'item_soulbound', 'item_duration',
-    'mana_regen', 'mana_regen_interrupted', 'resting',
+    'mana_regen', 'mana_regen_interrupted', 'resting', 'free_for_all_pvp',
     'sent_mana_regen', 'sent_mana_regen_interrupted',
     'moving', 'spline_remaining_ms', 'spline_speed', 'water_walk', 'in_water', 'terrain_in_water', 'ground_height',
     'forced_forward', 'distance_2d',
@@ -165,7 +165,7 @@ METRICS = TIMELINE_METRICS | EVENT_TIME_METRICS | {
     'attack_time_ms', 'pet_attack_time_ms', 'run_speed_rate', 'flight_speed_rate', 'display_id', 'target_entry', 'mount_display_id', 'can_fly',
     'aura_amplitude_ms', 'melee_crit_chance', 'melee_crit_chance_refreshed', 'dodge_chance', 'parry_chance',
     'expertise', 'combat_rating',
-    'spell_modifier', 'spell_cast_time_ms', 'client_cast_time_ms', 'client_attributes', 'client_spell_targets', 'spell_max_range', 'spell_max_stacks', 'spell_healing_done',
+    'spell_modifier', 'spell_cast_time_ms', 'client_cast_time_ms', 'client_attributes', 'client_spell_targets', 'spell_max_range', 'spell_ignores_los', 'spell_max_stacks', 'spell_healing_done',
     'spell_duration_ms',
     'aura_crit_chance', 'aura_script_value', 'melee_hit_chance', 'spell_hit_chance', 'spell_power',
     'spell_done_crit_chance', 'spell_taken_crit_chance', 'spell_done_crit_chance_scripted', 'ranged_taken_crit_chance',
@@ -190,7 +190,7 @@ METRICS = TIMELINE_METRICS | EVENT_TIME_METRICS | {
     'spell_proc_count', 'spell_proc_chance', 'aura_proc_rate', 'temporary_spell_replacement',
     'aura_apply_count',
     'spell_family_flags',
-    'creature_loot_quality_rate', 'item_loot_item_rate', 'equipped_gear_loot_rate', 'forced_loot_count',
+    'creature_loot_quality_rate', 'creature_loot_item_rate', 'item_loot_item_rate', 'equipped_gear_loot_rate', 'forced_loot_count',
     'quest_menu_items', 'quest_menu_has', 'player_setting', 'server_packets', 'server_packet_u8', 'server_packet_u32',
     'server_packet_float', 'server_packet_contains',
     'known_entry_rank',
@@ -203,7 +203,7 @@ MELEE_OUTCOME_METRICS = {'melee_damage_count', 'melee_damage_total'}
 MAX_VICTIM_STATE = 8
 SPELL_DAMAGE_METRICS = {'spell_damage_count', 'spell_damage_total'}
 PLAYER_STAT_METRICS = {
-    'mana_regen', 'mana_regen_interrupted', 'resting',
+    'mana_regen', 'mana_regen_interrupted', 'resting', 'free_for_all_pvp',
     'sent_mana_regen', 'sent_mana_regen_interrupted',
     'spell_go_count',
     'global_cooldown_ms',
@@ -212,7 +212,7 @@ PLAYER_STAT_METRICS = {
     'pet_power', 'pet_max_power', 'spell_energize_count', 'spell_energize_total',
     'melee_crit_chance', 'melee_crit_chance_refreshed', 'dodge_chance', 'parry_chance', 'expertise',
     'combat_rating',
-    'spell_modifier', 'spell_cast_time_ms', 'client_cast_time_ms', 'client_attributes', 'client_spell_targets', 'spell_max_range', 'spell_max_stacks', 'spell_healing_done',
+    'spell_modifier', 'spell_cast_time_ms', 'client_cast_time_ms', 'client_attributes', 'client_spell_targets', 'spell_max_range', 'spell_ignores_los', 'spell_max_stacks', 'spell_healing_done',
     'spell_duration_ms',
     'spell_family_flags',
     'melee_hit_chance', 'spell_power', 'spell_done_crit_chance',
@@ -249,8 +249,8 @@ METRIC_FIELDS = {'actor', 'metric', 'spell', 'power', 'caster', 'effect', 'item'
                  'row', 'offset', 'skip_strings', 'from_end', 'x', 'y', 'min_required_level', 'max_required_level',
                  'flat_coefficient_modifier', 'dominant_stat', 'off_stat', 'below_armor_class', 'unwearable', 'spells',
                  'min_level', 'max_level', 'min_home_distance', 'spawn', 'entries',
-                  'guid', 'spawn_type', 'tolerance', 'map', 'z', 'glancing', 'blocked', 'victim_state', 'school_mask'} \
-    | TIMELINE_FIELDS | EVENT_TIME_FIELDS
+                  'guid', 'spawn_type', 'tolerance', 'map', 'z', 'glancing', 'blocked', 'victim_state', 'school_mask',
+                  'rolls'} | TIMELINE_FIELDS | EVENT_TIME_FIELDS
 ACTIONS = {
     'stop_attack': ({'actor'}, {'actor'}),
     'set_moving': ({'actor', 'enabled'}, {'actor', 'enabled', 'flag', 'unit_state'}),
@@ -1161,7 +1161,7 @@ def validate(scenario, clock=REAL_CLOCK):
                     'spell_damage_done', 'spell_damage_taken', 'spell_healing_taken', 'spell_hit_bonus_taken',
                     'spell_cast_count', 'spell_go_count', 'spell_modifier', 'spell_cast_time_ms',
                     'client_cast_time_ms', 'client_attributes', 'client_spell_targets',
-                    'spell_max_range', 'spell_max_stacks', 'spell_duration_ms', 'spell_healing_done',
+                    'spell_max_range', 'spell_ignores_los', 'spell_max_stacks', 'spell_duration_ms', 'spell_healing_done',
                     'spell_done_crit_chance',
                     'spell_family_flags',
                     'spell_taken_crit_chance',
@@ -1382,6 +1382,8 @@ def validate(scenario, clock=REAL_CLOCK):
                 require('entry' in step, f'{where}: metric needs creature entry')
             if metric == 'item_loot_item_rate':
                 require('entry' in step and 'item' in step, f'{where}: metric needs an item loot entry and an item')
+            if metric == 'creature_loot_item_rate':
+                require('entry' in step and 'item' in step, f'{where}: metric needs a creature loot entry and an item')
             if metric == 'taxi_node':
                 number(step.get('entry'), f'{where}.entry', 1, 2**31 - 1, True)
             if metric == 'ball_offers_quest':
@@ -1422,6 +1424,10 @@ def validate(scenario, clock=REAL_CLOCK):
             if 'heroic' in step:
                 require(metric == 'loot_bloodforged' and isinstance(step['heroic'], bool),
                         f'{where}.heroic must be a boolean on loot_bloodforged')
+            if 'rolls' in step:
+                require(metric in {'creature_loot_item_rate', 'creature_loot_quality_rate'},
+                        f'{where}: rolls applies only to creature loot rates')
+                number(step['rolls'], f'{where}.rolls', 1, 1000000, True)
             if 'quality' in step:
                 require(metric in {'loot_count', 'loot_entry', 'loot_required_level', 'loot_item_level', 'loot_bloodforged',
                                    'carried_pool_item_count'},

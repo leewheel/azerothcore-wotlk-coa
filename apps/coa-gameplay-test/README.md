@@ -401,6 +401,11 @@ The [Who scenarios](scenarios/who-lists-bots.json) check both sides of `Who.Show
 like players with the shipped `Who.ShowBots=1`, and the [hidden case](scenarios/who-hides-bots.json) requires
 `Who.ShowBots=0` in the source config, where the same roster leaves only the two real players in the response
 and a name search for a bot returns nothing.
+The [guardian travel scenarios](scenarios/guardians-follow-teleport-to-another-map.json) check that summoned
+guardians come along on far travel with the shipped `CoA.Guardians.FollowTravel=1`; the
+[disabled case](scenarios/guardians-lost-on-teleport-when-follow-travel-off.json) requires
+`CoA.Guardians.FollowTravel=0` in the source config, where the same teleport leaves no guardian and frees
+their Life Force.
 The [resource talents scenario](scenarios/resource-talents.json) checks the live-tree 1% resource bonuses.
 Arm of Thorim rolls 133–144 base damage at the fixture level, so two independent rolls need ratio ranges
 of 1.10–1.31 with its 20% bonus and 0.91–1.09 without it (including integer rounding). Charged Conduit
@@ -881,6 +886,8 @@ returns the highest per-item level that native item scaling stored for such an i
 for the actor and reports the percentage of fills holding an item of at least `quality` (default 3, rare).
 `item_loot_item_rate` requires `entry` (an item loot id, the container's item entry) and `item`, fills that template
 10000 times for the actor and reports the percentage of fills holding `item`.
+`creature_loot_item_rate` requires `entry` (a creature loot id) and `item`, fills that template `rolls` times
+(default 10000) for the actor and reports the percentage of fills holding `item`.
 `forced_loot_count` requires `item`, adds it directly through `Loot::AddItem` with the actor as loot owner
 (bypassing any loot table), and reports how many uncollected copies survive that call; a gate inside `AddItem`
 that rejects the item for that actor reports zero.
@@ -1055,7 +1062,8 @@ The [portable gadgets scenario](scenarios/portable-gadgets.json) checks item sum
 teleports and expiry. It requires `mod-portablemail`; mailbox and altar client interfaces are not tested.
 `power`/`max_power` and `pet_power`/`pet_max_power` accept a numeric `power` (0..6).
 `mana_regen` and `mana_regen_interrupted` read the player's owner-visible mana regeneration fields in
-mana per second, outside and inside the five-second rule. `resting` reads the native resting player flag.
+mana per second, outside and inside the five-second rule. `resting` reads the native resting player flag and
+`free_for_all_pvp` the native free-for-all PvP flag the player's own client receives.
 `sent_mana_regen` and `sent_mana_regen_interrupted` decode those fields from native values-update packets
 received by the owner's session, returning -1 until the field has been observed. These metrics do not
 inspect a rendered resource bar.

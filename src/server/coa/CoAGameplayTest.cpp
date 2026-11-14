@@ -3377,6 +3377,11 @@ private:
             Require(unit->IsPlayer(), "Resting state needs a player");
             return unit->ToPlayer()->HasPlayerFlag(PLAYER_FLAGS_RESTING);
         }
+        if (metric == "free_for_all_pvp")
+        {
+            Require(unit->IsPlayer(), "Free-for-all PvP state needs a player");
+            return unit->IsFFAPvP();
+        }
         if (metric == "creature_type")
             return unit->GetCreatureType();
         if (metric == "display_id")
@@ -4412,6 +4417,25 @@ private:
             }
             return 100.0 * hits / rolls;
         }
+        if (metric == "creature_loot_item_rate")
+        {
+            uint32 const lootId = step.get<uint32>("entry");
+            uint32 const wanted = step.get<uint32>("item");
+            uint32 const rolls = step.get<uint32>("rolls", 10000);
+            Require(LootTemplates_Creature.HaveLootFor(lootId), "Unknown creature loot template");
+            Require(rolls != 0, "creature_loot_item_rate needs rolls");
+            uint32 hits = 0;
+            for (uint32 roll = 0; roll < rolls; ++roll)
+            {
+                Loot loot;
+                loot.FillLoot(lootId, LootTemplates_Creature, player, true, true);
+                hits += std::any_of(loot.items.begin(), loot.items.end(), [wanted](LootItem const& item)
+                {
+                    return item.itemid == wanted;
+                });
+            }
+            return 100.0 * hits / rolls;
+        }
         if (metric == "item_loot_item_rate")
         {
             uint32 const lootId = step.get<uint32>("entry");
@@ -5116,7 +5140,7 @@ private:
             return player->MeleeDamageBonusDone(target, 1000, BASE_ATTACK, info, info->GetSchoolMask());
         }
         if (metric == "spell_modifier" || metric == "spell_cast_time_ms" || metric == "spell_max_range"
-            || metric == "spell_max_stacks" || metric == "spell_duration_ms" || metric == "spell_healing_done"
+            || metric == "spell_ignores_los" || metric == "spell_max_stacks" || metric == "spell_duration_ms" || metric == "spell_healing_done"
             || metric == "spell_effect_value" || metric == "spell_effect_radius"
             || metric == "spell_family_flags" || metric == "spell_calc_amount_hooks")
         {
@@ -5189,6 +5213,8 @@ private:
                 return info->CalcCastTime(player);
             if (metric == "spell_max_range")
                 return info->GetMaxRange(info->IsPositive(), player);
+            if (metric == "spell_ignores_los")
+                return info->HasAttribute(SPELL_ATTR2_IGNORE_LINE_OF_SIGHT) ? 1 : 0;
             if (metric == "spell_max_stacks")
                 return info->CalcMaxAuraStacks(player);
             if (metric == "spell_duration_ms")
