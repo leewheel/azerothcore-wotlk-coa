@@ -23,8 +23,11 @@
 #include "DBCStores.h"
 #include "DatabaseEnv.h"
 #include "ObjectGuid.h"
+#include <functional>
 #include <map>
 #include <string>
+#include <string_view>
+#include <unordered_map>
 
 typedef std::list<AchievementCriteriaEntry const*> AchievementCriteriaEntryList;
 typedef std::list<AchievementEntry const*>         AchievementEntryList;
@@ -336,6 +339,13 @@ private:
     Player* _player;
     CriteriaProgressMap _criteriaProgress;
     CompletedAchievementMap _completedAchievements;
+    //By leewheel 2026年11月13日 同义副本成就公告去重：
+    // COA 的血碗竞技场成就存在三套 criteria 完全相同的副本（如 Gurubashi Blood Bowl Wrecking Ball
+    // 的 6547 / 8547 / 10547），一次 criteria 更新会同时完成三个成就、连刷三条「获得了成就 XXX」。
+    // 这里记录「成就名 hash -> 最近一次公告时间」，短窗口内同名的成就只广播第一条；
+    // 成就本身的完成/入库/奖励不受影响，成就面板里依旧全部点亮。
+    std::unordered_map<uint32, time_t> _recentAnnouncedAchievementNames;
+    //End By leewheel
     typedef std::map<uint32, uint32> TimedAchievementMap;
     TimedAchievementMap _timedAchievements;      // Criteria id/time left in MS
 

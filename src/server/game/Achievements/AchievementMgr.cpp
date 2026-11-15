@@ -2313,7 +2313,34 @@ void AchievementMgr::CompletedAchievement(AchievementEntry const* achievement)
 
     LOG_DEBUG("achievement", "AchievementMgr::CompletedAchievement({})", achievement->ID);
 
-    SendAchievementEarned(achievement);
+    //By leewheel 2026年11月13日 同义副本成就公告去重（10 秒窗口内同名成就只广播第一条）：
+    // COA 的血碗竞技场成就有三套 criteria 完全相同的副本（Wrecking Ball 的 6547/8547/10547 等），
+    // 一次 criteria 更新会同时完成三个成就，客户端因此连刷三条「获得了成就 XXX」。
+    // 这里在广播前按成就名（enUS）去重：10 秒内同名的只发第一条 SMSG/公会公告，
+    // 成就的完成、入库、奖励、面板点亮全部不受影响；窗口过期记录顺带清理，防止集合无限增长。
+    {
+        time_t now = GameTime::GetGameTime().count();
+        uint32 nameHash = std::hash<std::string_view>{}(achievement->name[0] ? std::string_view(achievement->name[0]) : std::string_view());
+        auto itr = _recentAnnouncedAchievementNames.find(nameHash);
+        if (itr == _recentAnnouncedAchievementNames.end() || now - itr->second >= 10)
+        {
+            SendAchievementEarned(achievement);
+            _recentAnnouncedAchievementNames[nameHash] = now;
+        }
+        else
+        {
+            LOG_DEBUG("achievement", "成就 {} 的名字与 10 秒内已公告的成就相同，跳过重复公告", achievement->ID);
+        }
+        for (auto it = _recentAnnouncedAchievementNames.begin(); it != _recentAnnouncedAchievementNames.end();)
+        {
+            if (now - it->second >= 600)
+                it = _recentAnnouncedAchievementNames.erase(it);
+            else
+                ++it;
+        }
+    }
+    //End By leewheel
+
     CompletedAchievementData& ca = _completedAchievements[achievement->ID];
     ca.date = GameTime::GetGameTime().count();
     ca.changed = true;
