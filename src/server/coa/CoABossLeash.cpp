@@ -41,7 +41,9 @@ namespace
     constexpr float RoomPadding = 2.0f;
     constexpr std::array<float, 2> RoomRayHeights = { 2.0f, 5.0f };
     constexpr Milliseconds ResetHidden = 10s;
-    constexpr char const* ResetText = "%s has lost interest in fighting with you.";
+    // By leewheel 20261115 脱战公告汉化（玩家可见，%s 为生物名）
+    constexpr char const* ResetText = "%s 已对你失去战斗兴趣。";
+    // End By leewheel
 
     struct Leash
     {

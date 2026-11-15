@@ -168,8 +168,10 @@ namespace PathToAscension
         {
             bool const claimed = std::any_of(variants.begin(), variants.end(),
                 [player](uint32 id) { return Claimed(player, id); });
-            SendResult(player, claimed ? "This tutorial reward has already been collected."
-                : "This tutorial is not available for your character.");
+            // By leewheel 20261115 领取结果回执汉化（客户端只显示这段文本，不做英文匹配）
+            SendResult(player, claimed ? "这份教学奖励已经领取过了。"
+                : "你的角色无法领取这份教学奖励。");
+            // End By leewheel
         }
 
         void SendRewardedList(Player* player)
@@ -353,17 +355,19 @@ namespace PathToAscension
     void Claim(Player* player, uint32 id)
     {
         Tutorial const* tutorial = GetCatalog().Find(id);
+        // By leewheel 20261115 以下领取失败原因全部汉化（客户端只显示，不做英文匹配）
         if (!tutorial)
-            return SendResult(player, "Unknown tutorial.");
+            return SendResult(player, "未知的教学内容。");
         if (Claimed(player, id))
-            return SendResult(player, "This tutorial reward has already been collected.");
+            return SendResult(player, "这份教学奖励已经领取过了。");
         if (!Complete(player, id) || !Eligible(player, *tutorial))
-            return SendResult(player, "This tutorial reward is not available for your character.");
+            return SendResult(player, "你的角色无法领取这份教学奖励。");
         if (!IsVerified(player, *tutorial) && !IsIntroduction(*tutorial)
             && !(id == InnkeeperTutorial && player->HasAchieved(InnkeeperAchievement)))
-            return SendResult(player, "This objective's original completion rule is not restored yet.");
+            return SendResult(player, "该目标的原始完成判定尚未恢复。");
         if (player->IsBeingTeleportedFar() || player->GetTradeData())
-            return SendResult(player, "Finish your transfer or trade before collecting this reward.");
+            return SendResult(player, "请先结束传送或交易，再领取这份奖励。");
+        // End By leewheel
 
         std::vector<std::unique_ptr<Item>> prepared;
         std::vector<Item*> items;
@@ -371,17 +375,17 @@ namespace PathToAscension
         {
             ItemTemplate const* itemTemplate = sObjectMgr->GetItemTemplate(reward.itemId);
             if (!itemTemplate || !reward.count)
-                return SendResult(player, "The original reward item is unavailable on this server.");
+                return SendResult(player, "本服缺少原始奖励物品。");
 
             for (uint32 remaining = reward.count; remaining;)
             {
                 uint32 const count = std::min(remaining, itemTemplate->GetMaxStackSize());
                 if (!count || prepared.size() >= MaxRewardStacks)
-                    return SendResult(player, "The original reward could not be prepared.");
+                    return SendResult(player, "无法准备原始奖励物品。");
 
                 std::unique_ptr<Item> item(Item::CreateItem(reward.itemId, count, player));
                 if (!item)
-                    return SendResult(player, "The original reward could not be prepared.");
+                    return SendResult(player, "无法准备原始奖励物品。");
 
                 items.push_back(item.get());
                 prepared.push_back(std::move(item));
@@ -391,7 +395,7 @@ namespace PathToAscension
 
         uint32 limitedCategory = 0;
         if (player->CanStoreItems(items.data(), int(items.size()), &limitedCategory) != EQUIP_ERR_OK)
-            return SendResult(player, "There is not enough room for this reward, or an item limit has been reached.");
+            return SendResult(player, "背包空间不足，或已达物品数量上限。");
 
         struct StoredPart
         {
@@ -413,7 +417,7 @@ namespace PathToAscension
                         player->DestroyItemCount(stored, part->count, true);
 
                 LOG_ERROR("module.pta", "Reward placement rejected for tutorial {}: {}", id, result);
-                return SendResult(player, "The reward could not be placed in your inventory. No reward was collected.");
+                return SendResult(player, "奖励无法放入背包，本次未领取任何奖励。");
             }
 
             uint32 const count = item->GetCount();
