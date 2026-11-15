@@ -135,6 +135,7 @@
 
 #include <algorithm>
 #include <array>
+#include <atomic>
 #include <bit>
 #include <cstdlib>
 #include <cstring>
@@ -9786,9 +9787,19 @@ public:
 class AscensionCompatPlayerScript : public PlayerScript {
     std::mutex _pendingEquipmentLock;
     std::unordered_map<ObjectGuid, std::vector<ObjectGuid>> _pendingEquipment;
+    // By leewheel 20261115 性能：EquipNewItems 每个玩家每帧都调，
+    //  而绝大多数时候根本没有待装备物品，却要为此付一次全局互斥量（地图线程 >1 时会互相串行）。
+    //  加一个原子标志做零成本快速判断；表内容变更处同步维护。
+    std::atomic<bool> _pendingEquipmentAny{ false };
+    // End By leewheel
 
     void EquipNewItems(Player* player)
     {
+        // By leewheel 20261115 没有待装备物品时直接返回，不进锁
+        if (!_pendingEquipmentAny.load(std::memory_order_relaxed))
+            return;
+        // End By leewheel
+
         std::vector<ObjectGuid> items;
         {
             std::lock_guard<std::mutex> lock(_pendingEquipmentLock);
@@ -9798,6 +9809,7 @@ class AscensionCompatPlayerScript : public PlayerScript {
 
             items = std::move(itr->second);
             _pendingEquipment.erase(itr);
+            _pendingEquipmentAny.store(!_pendingEquipment.empty(), std::memory_order_relaxed); // By leewheel 20261115
         }
 
         for (ObjectGuid guid : items)
@@ -10160,6 +10172,7 @@ public:
     {
       std::lock_guard<std::mutex> lock(_pendingEquipmentLock);
       _pendingEquipment.erase(player->GetGUID());
+      _pendingEquipmentAny.store(!_pendingEquipment.empty(), std::memory_order_relaxed); // By leewheel 20261115
     }
     AscensionClassService::Instance().OnPlayerLogout(player);
     AscensionResourceService::Instance().OnPlayerLogout(player);
@@ -10235,6 +10248,7 @@ public:
     {
         std::lock_guard<std::mutex> lock(_pendingEquipmentLock);
         _pendingEquipment[player->GetGUID()].push_back(item->GetGUID());
+        _pendingEquipmentAny.store(true, std::memory_order_relaxed); // By leewheel 20261115
     }
   }
 

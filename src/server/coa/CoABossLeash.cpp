@@ -19,6 +19,7 @@
 #include "WorldScript.h"
 #include "WorldSession.h"
 #include <array>
+#include <atomic>
 #include <cmath>
 #include <map>
 #include <mutex>
@@ -64,6 +65,13 @@ namespace
 
     std::mutex HiddenLock;
     std::map<HiddenKey, HiddenBoss> Hidden;
+    // By leewheel 20261115 性能：OnAllCreatureUpdate 对每个生物每帧都会走一次 UpdateHidden，
+    //  而 Hidden 平时是空表，却要为此付一次全局互斥量 + 三元组 key 构造。
+    //  地图线程大于 1 时这把锁还会把各线程串起来，正是玩家反馈「不定时卡顿」的放大器。
+    //  这里加一个原子计数做零成本快速判断：表空时直接返回，不再进锁。
+    //  Hidden 是跨地图共享的全局表，所以必须无条件维护这个计数（不能用「只在本图有隐藏首领时才查」的近似）。
+    std::atomic<uint32> HiddenCount{ 0 };
+    // End By leewheel
 
     HiddenKey KeyOf(Creature const* creature)
     {
@@ -210,6 +218,7 @@ namespace
 
         std::lock_guard lock(HiddenLock);
         Hidden[KeyOf(creature)] = boss;
+        HiddenCount.store(uint32(Hidden.size()), std::memory_order_relaxed); // By leewheel 20261115
     }
 
     void ShowAfterReset(Creature* creature, HiddenBoss const& boss)
@@ -227,6 +236,11 @@ namespace
 
     bool UpdateHidden(Creature* creature)
     {
+        // By leewheel 20261115 无隐藏首领时直接返回：不构造三元组 key、不进全局互斥量
+        if (HiddenCount.load(std::memory_order_relaxed) == 0)
+            return false;
+        // End By leewheel
+
         std::optional<HiddenBoss> back;
         {
             std::lock_guard lock(HiddenLock);
@@ -237,6 +251,7 @@ namespace
             {
                 back = itr->second;
                 Hidden.erase(itr);
+                HiddenCount.store(uint32(Hidden.size()), std::memory_order_relaxed); // By leewheel 20261115
             }
         }
         if (back)
@@ -296,7 +311,8 @@ public:
     void OnCreatureRemoveWorld(Creature* creature) override
     {
         std::lock_guard lock(HiddenLock);
-        Hidden.erase(KeyOf(creature));
+        if (Hidden.erase(KeyOf(creature)))
+            HiddenCount.store(uint32(Hidden.size()), std::memory_order_relaxed); // By leewheel 20261115
     }
 };
 

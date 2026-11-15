@@ -25,6 +25,7 @@
 #include "SpellInfo.h"
 #include "SpellScript.h"
 #include "TemporarySummon.h"
+#include "Timer.h"
 #include "World.h"
 #include "WorldPacket.h"
 #include "WorldSession.h"
@@ -35,6 +36,8 @@
 #include <mutex>
 #include <sstream>
 #include <string>
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 namespace CrowsCache
@@ -716,17 +719,47 @@ class Maps final : public AllMapScript
 {
 public:
     Maps() : AllMapScript("crows_cache_maps", {ALLMAPHOOK_ON_MAP_UPDATE}) { }
+
+    // By leewheel 20261115 性能优化（玩家反馈的不定时卡顿）：
+    //   原实现每张世界地图每 10ms（MapUpdateInterval）都做三件重活：
+    //     ① 进一次全局 recursive_mutex；
+    //     ② 对 events 里全部鸦巢各扫一遍本图玩家求 500 码内（O(事件 × 玩家)）；
+    //     ③ 对本图每个玩家再遍历整张 events 表找「谁在携带」（std::map 逐节点跳，缓存极不友好）。
+    //   鸦巢是分钟级的世界事件，完全没有 100Hz 刷新的必要。改为：
+    //     · 每张地图最多 500ms 跑一次（时序精度对玩家不可感知）；
+    //     · 携带者用一张每次跑时重建的索引，没拿鸦巢的玩家直接跳过；
+    //     · 身上还挂着 Spite 的玩家照旧走完整判断，保证减益能正常回收。
+    //   世界地图数量 × 2 次/秒，开销从「每帧几十万次距离计算」降到可忽略。
     void OnMapUpdate(Map* map, uint32) override
     {
         if (!enabled || map->Instanceable())
             return;
+
+        uint32 const nowMs = getMSTime();
         std::lock_guard lock(mutex);
+        uint32& last = lastRun[map->GetId()];
+        if (getMSTimeDiff(last, nowMs) < MapRefreshMs)
+            return;
+        last = nowMs;
+
+        carriers.clear();
+        for (auto const& [id, event] : events)
+            if (event.phase == Phase::Carried && event.carrier)
+                carriers.insert(event.carrier);
+
         for (auto& [id, event] : events)
             Spawn(map, event);
         for (auto const& reference : map->GetPlayers())
             if (Player* player = reference.GetSource())
-                UpdateCarrier(player);
+                if (carriers.contains(player->GetGUID().GetCounter()) || player->HasAura(Spite))
+                    UpdateCarrier(player);
     }
+    // End By leewheel
+
+private:
+    static constexpr uint32 MapRefreshMs = 500;      // By leewheel 20261115 每张地图的刷新间隔
+    std::unordered_map<uint32, uint32> lastRun;      // By leewheel 20261115 地图 ID → 上次运行时刻
+    std::unordered_set<uint32> carriers;             // By leewheel 20261115 正在携带鸦巢的玩家（GUID 计数）
 };
 
 class Players final : public PlayerScript
