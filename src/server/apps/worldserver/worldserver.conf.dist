@@ -1367,6 +1367,14 @@ MapUpdateInterval = 10
 #    MapUpdate.Threads
 #        Description: Number of threads to update maps.
 #        Default:     1
+#        🔴 By leewheel 20261115 本服必须保持 1，不要调大。
+#        COA 定制代码里有大量全局状态压在每帧钩子上（CoABossLeash 的 Hidden 表、
+#        AscensionCompat 的待装备表、AscensionCrowsCache 的事件表、MythicPlus 的 g_lock、
+#        XPHotspots 的 Mutex、AscensionArenaQueue / AscensionBuildCreator 的请求表…）。
+#        线程数为 1 时这些锁没有争用；调到 4 后四条地图线程会互相排队等锁，实测比 1 更卡。
+#        500 机器人常驻时要降卡顿，正确方向是削掉每帧的锁与 O(事件×玩家) 扫描
+#        （见 2026.11.15 性能优化说明），不是加线程。
+#        0 = 关闭地图工作线程（全部在主线程跑，仅供 COA 自测 harness 使用）。
 
 MapUpdate.Threads = 1
 
