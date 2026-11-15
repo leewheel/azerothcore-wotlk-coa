@@ -277,7 +277,7 @@ void UpdateCarrier(Player* player)
 
 bool Eligible(Player const* player)
 {
-    return Eligible(player->GetLevel(), player->HasAura(HighRisk), player->IsAlive());
+    return Eligible(player->GetLevel(), player->HasAura(HighRisk), player->HasAura(Mercenary), player->IsAlive());
 }
 
 Event* Find(GameObject const* object)

@@ -88,6 +88,8 @@ keys are appended automatically on deploy.
 .coa reset [all] <player>
 ```
 
+A player with a two-word name is given in quotes, in any letter case: `.coa reset "Firstname Lastname"`.
+
 ## Multi-language (i18n)
 
 Every string the player can read lives in the world database, the same way

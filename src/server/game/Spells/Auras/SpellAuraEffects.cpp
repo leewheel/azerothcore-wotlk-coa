@@ -7046,7 +7046,7 @@ void AuraEffect::HandlePeriodicManaLeechAuraTick(Unit* target, Unit* caster) con
 {
     Powers PowerType = Powers(GetMiscValue());
 
-    if (!caster || !caster->IsAlive() || !target->IsAlive() || !target->HasActivePowerType(PowerType))
+    if (!caster || !caster->IsAlive() || !target->IsAlive() || !target->CanLosePowerToSpell(PowerType))
         return;
 
     if (target->IsImmunedToAuraPeriodicTick(caster, GetSpellInfo()))
@@ -7205,7 +7205,7 @@ void AuraEffect::HandlePeriodicPowerBurnAuraTick(Unit* target, Unit* caster) con
 {
     Powers PowerType = Powers(GetMiscValue());
 
-    if (!caster || !target->IsAlive() || !target->HasActivePowerType(PowerType))
+    if (!caster || !target->IsAlive() || !target->CanLosePowerToSpell(PowerType))
         return;
 
     if (target->IsImmunedToDamage(caster, GetSpellInfo()))
