@@ -848,7 +848,11 @@ void HandleActivatePreset(Player* player, State& state, WorldPacket& packet)
 void HandleUnlockPreset(Player* player, State& state)
 {
     ClientConfig const config = CurrentClientConfig();
-    uint32 const result = CheckPresetUnlock(Describe(player, config), uint32(state.Presets.size()));
+    // By leewheel 20261116 国度兜底：未开放神秘附魔的国度（基础服）禁止解锁专精预设，
+    // 即使玩家通过跨服邮件等途径拿到令牌也无法使用，避免误消耗物品
+    uint32 const result = !AscensionFreepick::RealmOffersMysticAltars() ? PRESET_UNLOCK_BAD_REALM
+        : CheckPresetUnlock(Describe(player, config), uint32(state.Presets.size()));
+    // End By leewheel
     if (result == PRESET_UNLOCK_OK)
     {
         player->DestroyItemCount(PRESET_UNLOCK_TOKEN, 1, true);
@@ -1007,8 +1011,11 @@ public:
 
     bool OnItemRoll(Player const*, LootStoreItem const* item, float& chance, Loot&, LootStore const&) override
     {
-        if (!item->reference && !AscensionFreepick::RealmOffersMysticAltars() && IsMysticScroll(item->itemid))
+        // By leewheel 20261116 掉落层国度过滤统一口径：由仅挡神秘卷轴改为 IsItemHiddenForRealm（含卷轴+专精令牌），
+        // 原有卷轴拦截行为保持不变，仅新增专精令牌防串线；开放神秘附魔的国度不受任何影响
+        if (!item->reference && AscensionMysticEnchant::IsItemHiddenForRealm(item->itemid))
             chance = 0.0f;
+        // End By leewheel
         return true;
     }
 };
@@ -1240,6 +1247,18 @@ uint32 ClearActivePreset(Player* player)
     }
     return cleared;
 }
+
+// By leewheel 20261116 神秘附魔国度专属物品判定：
+// 专精解锁令牌（1806961）与所有神秘附魔卷轴属于开放神秘附魔国度的内容，
+// 基础服（CoA.RealmOffersMysticAltars = 0）玩家在拍卖行/遗失商店看到这些物品却无法使用，
+// 属跨国度内容泄漏，本判定供 AuctionHouseSearcher 与 SendListInventory 过滤展示。
+// 注意：本函数被拍卖行 worker 线程调用，仅读取进程级只读状态（MysticAltars/Ready/Loaded），线程安全。
+bool IsItemHiddenForRealm(uint32 itemId)
+{
+    return !AscensionFreepick::RealmOffersMysticAltars() &&
+        (itemId == PRESET_UNLOCK_TOKEN || IsMysticScroll(itemId));
+}
+// End By leewheel
 
 std::optional<Collection> Summarize(Player const* player)
 {

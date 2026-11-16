@@ -7211,16 +7211,18 @@ public:
     auto vanityItr = _vanityItems.find(itemId);
     if (vanityItr == _vanityItems.end())
     {
+      // By leewheel 20261116 汉化：本服玩家可见提示，原英文串沿用上游未译
       ChatHandler(player->GetSession())
           .PSendSysMessage(
-              "Vanity item {} is not present in this client build.", itemId);
+              "当前客户端版本没有外观物品 {}。", itemId); // By leewheel 20261116
       return;
     }
 
     if (IsBrokenCosmeticPetToken(itemId))
     {
+      // By leewheel 20261116 汉化：上游 f7708acc1c 新增的哨子拦截提示
       ChatHandler(player->GetSession())
-          .SendSysMessage("That whistle is not available on this realm.");
+          .SendSysMessage("本服务器未开放该宠物哨子。"); // By leewheel 20261116
       return;
     }
 

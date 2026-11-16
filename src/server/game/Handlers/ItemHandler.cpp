@@ -18,6 +18,7 @@
 #include "AscensionItemRecovery.h"
 #include "AscensionCosmeticPetTokens.h"
 #include "AscensionVanityOwnership.h"
+#include "AscensionRealmItemFilter.h" // By leewheel 20261116 神秘附魔国度专属物品商人列表过滤（game 层钩子声明，实现在 coa 层）
 #include "Common.h"
 #include "Item.h"
 #include "LocalLevelScaling.h"
@@ -958,6 +959,14 @@ void WorldSession::SendListInventory(ObjectGuid vendorGuid, uint32 vendorEntry)
                 {
                     continue;
                 }
+
+                // By leewheel 20261116 神秘附魔国度专属物品（专精令牌/神秘卷轴）只在开放神秘附魔的国度出售，
+                // 基础服玩家在遗失商店等商人处同样不应看到这些跨国度物品
+                if (!_player->IsGameMaster() && AscensionMysticEnchant::IsItemHiddenForRealm(item->item))
+                {
+                    continue;
+                }
+                // End By leewheel
 
                 ConditionList conditions = sConditionMgr->GetConditionsForNpcVendorEvent(vendor->GetEntry(), item->item);
                 if (!sConditionMgr->IsObjectMeetToConditions(_player, vendor, conditions))

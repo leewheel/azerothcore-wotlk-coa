@@ -22,6 +22,7 @@
 #include "GameTime.h"
 #include "LocalLevelScaling.h"
 #include "Player.h"
+#include "AscensionRealmItemFilter.h" // By leewheel 20261116 神秘附魔国度专属物品过滤（game 层钩子声明，实现在 coa 层）
 
 AuctionHouseWorkerThread::AuctionHouseWorkerThread(ProducerConsumerQueue<AuctionSearcherRequest*>* requestQueue, MPSCQueue<AuctionSearcherResponse>* responseQueue)
 {
@@ -186,6 +187,10 @@ void AuctionHouseWorkerThread::SearchListRequest(AuctionSearchListRequest const&
         for (auto const& pair : searchableAuctionMap)
         {
             std::shared_ptr<SearchableAuctionEntry> const& Aentry = pair.second;
+            // By leewheel 20261116 getAll 浏览模式同样隐藏神秘附魔国度专属物品
+            if (AscensionMysticEnchant::IsItemHiddenForRealm(Aentry->item.itemTemplate->ItemId))
+                continue;
+            // End By leewheel
             ++count;
             Aentry->BuildAuctionInfo(searchResponse->packet);
 
@@ -283,9 +288,14 @@ void AuctionHouseWorkerThread::BuildListAuctionItems(AuctionSearchListRequest co
         && searchRequest.searchInfo.levelmin == 0x00 && searchRequest.searchInfo.levelmax == 0x00
         && searchRequest.searchInfo.usable == 0x00 && searchRequest.searchInfo.wsearchedname.empty())
     {
+        // By leewheel 20261116 基础服拍卖行默认浏览隐藏神秘附魔国度专属物品（专精令牌/神秘卷轴）
         for (auto const& pair : auctionMap)
+        {
+            if (AscensionMysticEnchant::IsItemHiddenForRealm(pair.second->item.itemTemplate->ItemId))
+                continue;
             auctionEntries.push_back(pair.second.get());
-
+        }
+        // End By leewheel
         return;
     }
 
@@ -294,6 +304,11 @@ void AuctionHouseWorkerThread::BuildListAuctionItems(AuctionSearchListRequest co
         std::shared_ptr<SearchableAuctionEntry> const& Aentry = pair.second;
         SearchableAuctionEntryItem const& Aitem = Aentry->item;
         ItemTemplate const* proto = Aitem.itemTemplate;
+
+        // By leewheel 20261116 基础服拍卖行条件搜索同样隐藏神秘附魔国度专属物品
+        if (AscensionMysticEnchant::IsItemHiddenForRealm(proto->ItemId))
+            continue;
+        // End By leewheel
 
         if (searchRequest.searchInfo.itemClass != 0xffffffff && proto->Class != searchRequest.searchInfo.itemClass)
             continue;

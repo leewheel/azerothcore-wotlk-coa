@@ -140,6 +140,7 @@ enum PresetUnlockResult : std::uint32_t
     PRESET_UNLOCK_BUILD_DRAFT,
     PRESET_UNLOCK_NOT_WHILE_CASTING,
     PRESET_UNLOCK_BAD_CLASS,
+    PRESET_UNLOCK_BAD_REALM, // By leewheel 20261116 新增：当前国度未开放神秘附魔，拒绝解锁专精预设
     PRESET_UNLOCK_RESULT_COUNT
 };
 
