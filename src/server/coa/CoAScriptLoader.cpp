@@ -32,6 +32,7 @@ void AddSC_AscensionCrowsCache();
 void AddSC_AscensionAetherialReliquary();
 void AddSC_CoAProbeRelay();
 void AddSC_AscensionCustomClassFallback();  // 自定义职业的原型职业映射 //By leewheel 2026年10月31日
+void AddSC_CoAChatLog();
 void AddSC_AscensionItemScaling();
 void AddSC_AscensionNativeItemScaling();
 void AddSC_AscensionQuestScaling();
@@ -329,6 +330,7 @@ void AddSC_AscensionPrimalistBarrier();
 void AddSC_AscensionPrimalistGrove();
 void AddSC_AscensionPrimalistMountainFury();
 void AddSC_AscensionPrimalistBoulder();
+void AddSC_AscensionPrimalistMagmaFissure();
 void AddSC_AscensionPrimalistUrsoc();
 void AddSC_AscensionPrimalistTorn();
 void AddSC_AscensionPrimalistRexxarMight();
@@ -638,6 +640,7 @@ void AddCoAScripts()
     AddSC_AscensionPrimalistGrove();
     AddSC_AscensionPrimalistMountainFury();
     AddSC_AscensionPrimalistBoulder();
+    AddSC_AscensionPrimalistMagmaFissure();
     AddSC_AscensionPrimalistUrsoc();
     AddSC_AscensionPrimalistTorn();
     AddSC_AscensionPrimalistRexxarMight();
@@ -851,6 +854,7 @@ void AddCoAScripts()
     AddSC_AscensionAetherialReliquary();
     AddSC_CoAProbeRelay();
     AddSC_AscensionCustomClassFallback();
+    AddSC_CoAChatLog();
     AddSC_AscensionItemScaling();
     AddSC_AscensionNativeItemScaling();
     AddSC_AscensionQuestScaling();
