@@ -702,7 +702,8 @@ class spell_pri_power_word_shield_aura : public AuraScript
     {
         canBeRecalculated = false;
         if (Unit* caster = GetCaster())
-            amount = CalculateSpellAmount(caster, GetTarget(), amount, GetSpellInfo(), aurEff);
+            // By leewheel 20261118 修 DoEffectCalcAmount 早期 hook 里 GetTarget() 无效告警：aura 持有者即被盾者，用 GetUnitOwner()
+            amount = CalculateSpellAmount(caster, GetUnitOwner(), amount, GetSpellInfo(), aurEff);
     }
 
     void ReflectDamage(AuraEffect* aurEff, DamageInfo& dmgInfo, uint32& absorbAmount)
