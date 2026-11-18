@@ -211,6 +211,22 @@ uint32 KnownRank(Player* player, uint32 root)
             result = id;
     return result;
 }
+//By leewheel 20261119 玩家反馈 bug_137：死灵天赋「死亡研究」704721 的
+// 「仆从的冰霜/物理伤害使邪恶狂乱的冷却缩短 0.5 秒」实测无效，冷却照旧走满。
+// 原因：服务端确实减了冷却，但 Player::ModifySpellCooldown 对负值只发 SMSG_MODIFY_COOLDOWN，
+// 客户端动作条不按它重绘（完整重置走的是另一条清除包，所以重置类天赋看起来是好的）。
+// 结果服务端已减、客户端仍显示原冷却，还按旧冷却拒绝施放，玩家自然判定「没减」。
+// 这里减完之后补发一次权威的「剩余冷却」包（核心给正值 / 重置补发用的是同一套），客户端才会按新剩余时间重绘。
+static void ResendCooldown(Player* player, uint32 spellId)
+{
+    if (!player || !player->HasActiveSpell(spellId))
+        return;
+
+    WorldPacket data;
+    player->BuildCooldownPacket(data, SPELL_COOLDOWN_FLAG_NONE, spellId, player->GetSpellCooldownDelay(spellId));
+    player->SendDirectMessage(&data);
+}
+
 void Reduce(Player* player, uint32 root, int32 milliseconds)
 {
     for (auto const& [id, value] : player->GetSpellMap())
@@ -219,9 +235,14 @@ void Reduce(Player* player, uint32 root, int32 milliseconds)
             if (milliseconds == INT32_MAX)
                 player->RemoveSpellCooldown(id, true);
             else
+            {
                 player->ModifySpellCooldown(id, -std::abs(milliseconds));
+                // 把减完之后的真实剩余冷却推给客户端，否则界面不刷新（见上面的说明）
+                ResendCooldown(player, id);
+            }
         }
 }
+//End By leewheel
 bool Chance(Player* player, uint32 talent, float multiplier, uint32 cooldown)
 {
     SpellInfo const* info = sSpellMgr->GetSpellInfo(talent);
