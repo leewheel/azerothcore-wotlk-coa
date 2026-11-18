@@ -23,6 +23,12 @@ void AddSC_spell_coa_stormwind_quests();
 // By leewheel 2026年10月28日 - 移植自动钓鱼（源自 LWCorePlayerbotsBlizzardLike2026Revision，简化为命令直达）
 void AddSC_AutoFish();
 // End By leewheel
+void AddSC_instance_guardians_library();
+void AddSC_wisdomball_velthessa();
+void AddSC_wisdomball_khadgar_voice();
+void AddSC_wisdomball_leash();
+void AddSC_wisdomball_escort_wait();
+void AddSC_wisdomball_memory_blizzard();
 
 // The name of this function should match:
 // void Add${NameOfDirectory}Scripts()
@@ -35,4 +41,10 @@ void AddCustomScripts()
     // By leewheel 2026年10月28日
     AddSC_AutoFish();
     // End By leewheel
+    AddSC_instance_guardians_library();
+    AddSC_wisdomball_velthessa();
+    AddSC_wisdomball_khadgar_voice();
+    AddSC_wisdomball_leash();
+    AddSC_wisdomball_escort_wait();
+    AddSC_wisdomball_memory_blizzard();
 }
