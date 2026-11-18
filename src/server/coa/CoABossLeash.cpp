@@ -49,6 +49,7 @@ namespace
     struct Leash
     {
         float radius = 0.0f;
+        bool target = false;
         std::vector<Position> points;
     };
 
@@ -116,15 +117,17 @@ namespace
     void LoadLeashes()
     {
         std::unordered_map<uint32, Leash> leashes;
-        if (QueryResult result = WorldDatabase.Query("SELECT `entry`, `radius` FROM `coa_boss_leash`"))
+        if (PreparedQueryResult result = WorldDatabase.Query(WorldDatabase.GetPreparedStatement(WORLD_SEL_COA_BOSS_LEASH)))
         {
             do
             {
                 Field* fields = result->Fetch();
-                leashes[fields[0].Get<uint32>()].radius = fields[1].Get<float>();
+                Leash& leash = leashes[fields[0].Get<uint32>()];
+                leash.radius = fields[1].Get<float>();
+                leash.target = fields[2].Get<uint8>() != 0;
             } while (result->NextRow());
         }
-        if (QueryResult result = WorldDatabase.Query("SELECT `entry`, `x`, `y`, `z` FROM `coa_boss_leash_point` ORDER BY `entry`, `point`"))
+        if (PreparedQueryResult result = WorldDatabase.Query(WorldDatabase.GetPreparedStatement(WORLD_SEL_COA_BOSS_LEASH_POINTS)))
         {
             do
             {
@@ -261,9 +264,24 @@ namespace
         return true;
     }
 
-    bool LeashedOnMap(Map const* map)
+    bool OutsideLeash(Creature const* creature)
     {
-        return map && map->IsNonRaidDungeon() && map->GetSpawnMode() != DUNGEON_DIFFICULTY_NORMAL;
+        Map const* map = creature->GetMap();
+        if (!map || !map->IsNonRaidDungeon())
+            return false;
+
+        std::shared_lock lock(LeashLock);
+        auto const itr = Leashes.find(creature->GetEntry());
+        if (itr == Leashes.end())
+            return false;
+
+        Leash const& leash = itr->second;
+        Position const& home = creature->GetHomePosition();
+        if (map->GetSpawnMode() != DUNGEON_DIFFICULTY_NORMAL && !Inside(leash, home, creature->GetPositionX(), creature->GetPositionY()))
+            return true;
+
+        Unit const* victim = creature->GetVictim();
+        return leash.target && victim && !Inside(leash, home, victim->GetPositionX(), victim->GetPositionY());
     }
 }
 
@@ -288,15 +306,8 @@ public:
         if (UpdateHidden(creature))
             return;
 
-        if (!creature->IsInCombat() || creature->IsInEvadeMode() || !creature->IsAlive() || !LeashedOnMap(creature->GetMap()))
+        if (!creature->IsInCombat() || creature->IsInEvadeMode() || !creature->IsAlive() || !OutsideLeash(creature))
             return;
-
-        {
-            std::shared_lock lock(LeashLock);
-            auto const itr = Leashes.find(creature->GetEntry());
-            if (itr == Leashes.end() || Inside(itr->second, creature->GetHomePosition(), creature->GetPositionX(), creature->GetPositionY()))
-                return;
-        }
 
         CreatureAI* ai = creature->AI();
         if (!ai)
@@ -437,7 +448,11 @@ public:
             std::unique_lock lock(LeashLock);
             Leashes[*entry].radius = radius;
         }
-        WorldDatabase.Execute("REPLACE INTO `coa_boss_leash` (`entry`, `radius`) VALUES ({}, {})", *entry, radius);
+        WorldDatabasePreparedStatement* statement = WorldDatabase.GetPreparedStatement(WORLD_INS_COA_BOSS_LEASH_RADIUS);
+        statement->SetData(0, *entry);
+        statement->SetData(1, radius);
+        WorldDatabase.Execute(statement);
+        // By leewheel 20261118 合并上游：改用 prepared statement，保留我方中文回显
         handler->PSendSysMessage("{}（{}）：拴绳半径 {} 码（以刷新点为中心）；拴绳点达到 3 个或更多时以拴绳点为准。",
             BossName(*entry), *entry, radius);
         return true;
@@ -513,7 +528,9 @@ public:
         }
 
         Player* player = handler->GetPlayer();
-        handler->PSendSysMessage("{}（{}）：半径 {} 码，{} 个点。", BossName(*entry), *entry, leash->radius, leash->points.size());
+        // By leewheel 20261118 合并上游：新增 target（目标离开区域也重置）回显，中文
+        handler->PSendSysMessage("{}（{}）：半径 {} 码，{} 个点。{}", BossName(*entry), *entry, leash->radius, leash->points.size(),
+            leash->target ? " 目标离开区域时也会重置，所有难度均生效。" : "");
         for (std::size_t i = 0; i < leash->points.size(); ++i)
         {
             Position const& point = leash->points[i];
