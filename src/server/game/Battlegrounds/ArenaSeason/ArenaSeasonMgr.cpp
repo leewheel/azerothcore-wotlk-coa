@@ -109,7 +109,16 @@ void ArenaSeasonMgr::LoadRewards()
 void ArenaSeasonMgr::LoadActiveSeason()
 {
     QueryResult result = CharacterDatabase.Query("SELECT season_id, season_state FROM active_arena_season");
-    ASSERT(result, "active_arena_season can't be empty");
+
+    // By leewheel 20261119 空表不再断言崩服：新国度、新装或刚重建的角色库可能还没写赛季数据，
+    // 原来的 ASSERT 会让整个 worldserver 起不来（0xC0000420 断言失败，日志停在 Loading WorldState...）。
+    // 改为警告并按「无赛季」降级，插入一条 active_arena_season 记录后重启即可恢复。
+    if (!result)
+    {
+        LOG_WARN("server.loading", ">> Loaded 0 active arena season. DB table `active_arena_season` is empty, arena season stays disabled until a row is inserted.");
+        LOG_INFO("server.loading", " ");
+        return;
+    }
 
     Field* fields = result->Fetch();
     _currentSeason      = fields[0].Get<uint8>();
