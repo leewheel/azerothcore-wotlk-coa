@@ -1130,6 +1130,17 @@ CrowsCache.GoldenMarksOfWar = "10 10"
 #        Default:     400
 
 CrowsCache.BazaarTokens = 400
+
+#
+#    CrowsCache.WallRange
+#        说明：以鸦巢密藏（宝箱、携带者或掉落在地上的密藏）为中心的这一半径（码）内，
+#              「佣兵契约」玩家与没有该状态的玩家之间不能互相攻击、治疗或加增益，
+#              组队状态同样生效。只要双方有一方在范围内即判定生效。
+#              0 = 不设墙。最大 500。
+#        默认：100
+# By leewheel 20261120
+
+CrowsCache.WallRange = 100
 CrowsCache.X = -7831
 CrowsCache.Y = -3465
 CrowsCache.Z = 56.87
