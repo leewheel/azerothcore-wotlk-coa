@@ -1,5 +1,6 @@
--- Shadowburn Recruit and Shadowburn Guard drop gold, cloth, food and CoA World Loot like Braicag Ealdir,
--- the level 27-28 humanoid of Pale Reach whose table the earlier Pale Reach port filled.
+-- 2026.11.20 暗燃新兵与暗燃卫兵补掉落：金钱、布料、食物与 CoA 世界掉落，
+-- 参照苍凉之地 27-28 级人形怪「布莱卡格·埃尔迪尔」的掉落表（该表由早前苍凉之地移植时填好）。
+-- 上游 #12834（世界任务批次 16）议题 #12354。// By leewheel 20261120
 UPDATE `creature_template` SET `lootid` = `entry`, `mingold` = 37, `maxgold` = 129
 WHERE `entry` IN (164476, 164489)
     AND `lootid` = 0;

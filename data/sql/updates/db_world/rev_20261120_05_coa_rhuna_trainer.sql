@@ -1,4 +1,5 @@
--- Rhuna (#12751) is the Crossroads Leatherworking Trainer of her WDB row but only offered quests.
+-- 2026.11.20 鲁娜（议题 #12751）在 WDB 数据里是十字路口的制皮训练师，但此前只提供任务。
+-- 上游 #12817（世界任务批次 9）。// By leewheel 20261120
 UPDATE `creature_template` SET `npcflag` = 83, `gossip_menu_id` = 9010710 WHERE `entry` = 41739;
 
 DELETE FROM `gossip_menu_option` WHERE `MenuID` = 9010710 AND `OptionID` = 0;

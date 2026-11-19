@@ -1,13 +1,12 @@
--- Defias guarding the Pilfered Lesser Healing Potions crate (gameobject guid 9001100) in Westfall, with the new
--- Defias Fisherman (35913), and the crate raised onto the floor (Z from the PR author's in-game .gps).
--- The client's Creature.dbc names entry 35913 but its display 700004 is not in the client. The captured creature
--- cache (hertigservices/ascension-data, cachedata/by-mode/conquest-of-azeroth/creaturecache.tsv.gz, captured
--- 2026-09-04) gives type 7, type_flags 0, rank 0 and HealthModifier 1, but no level, faction, loot or spawns.
--- Level, look and weapon come from the PR author's review of original Ascension footage
--- (https://youtu.be/3Nl8pJ8tyWQ?t=6487): level 13, shirtless, green trousers, red bandana, fishing rod.
--- Stats, faction, money, loot and the low-health flee are copied from Defias Trapper (504), plus a 5% Fishing
--- Pole; the look is a stand-in preset built on the Trapper's male display (2332) with the chest removed and green
--- trousers (2082) in place of brown.
+-- 2026.11.20 西部荒野：新增「迪菲亚渔夫」（生物 35913）看守被窃的小治疗药水木箱（物件 guid 9001100），
+-- 并把木箱抬回地面（Z 取自提交者游戏内 .gps）。上游 #12864 议题 #12863。// By leewheel 20261120
+-- 客户端 Creature.dbc 有 35913 这个名字，但其外观 700004 不在客户端里。抓包生物缓存
+-- （hertigservices/ascension-data，cachedata/by-mode/conquest-of-azeroth/creaturecache.tsv.gz，抓取于
+-- 2026-09-04）给出的类型为 7、type_flags 0、rank 0、HealthModifier 1，但没有等级、阵营、掉落和刷新点。
+-- 等级、外形与武器取自提交者对原版 Ascension 录像的判读
+-- （https://youtu.be/3Nl8pJ8tyWQ?t=6487）：13 级、赤膊、绿裤、红头巾、鱼竿。
+-- 属性、阵营、金钱、掉落与低血逃跑全部照抄「迪菲亚陷阱手」(504)，另加 5% 鱼竿；
+-- 外形是在陷阱手男性外观 (2332) 基础上做的替身预设：去掉胸甲，把棕色裤子换成绿裤 (2082)。
 INSERT INTO `creature_template` (`entry`, `difficulty_entry_1`, `difficulty_entry_2`, `difficulty_entry_3`,
   `KillCredit1`, `KillCredit2`, `name`, `subname`, `IconName`, `gossip_menu_id`, `minlevel`, `maxlevel`, `exp`,
   `faction`, `npcflag`, `speed_walk`, `speed_run`, `speed_swim`, `speed_flight`, `detection_range`, `rank`,

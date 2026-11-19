@@ -1,4 +1,6 @@
--- Classic Battleground reward quests and Battleground Spoils bags (live CoA, AscensionDB conquest-of-azeroth captures)
+-- 2026.11.20 经典战场奖励任务与「战地物资」包裹（依据正式服 CoA / AscensionDB conquest-of-azeroth 抓包）
+-- 上游 #12862：战场结算改为发放对应等级段的任务，胜/负各一档；60 级档额外给竞技场点数。
+-- 任务中文标题见 rev_20261120_16_zh_battleground_spoils_quests.sql。// By leewheel 20261120
 INSERT INTO `quest_template` (`ID`, `QuestType`, `QuestLevel`, `MinLevel`, `RewardXPDifficulty`, `Flags`, `RewardItem1`, `RewardAmount1`, `RewardItem2`, `RewardAmount2`, `RewardArenaPoints`, `LogTitle`, `VerifiedBuild`) VALUES
 (90001, 2, 25, 10, 4, 136, 1175636, 1, 375250, 500, 0, 'Classic Battleground 10-20 (Win)', 12340),
 (90002, 2, 35, 21, 4, 136, 1175637, 1, 375250, 750, 0, 'Classic Battleground 21-30 (Win)', 12340),

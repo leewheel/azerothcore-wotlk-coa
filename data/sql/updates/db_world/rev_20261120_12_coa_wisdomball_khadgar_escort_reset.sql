@@ -1,3 +1,5 @@
+-- 2026.11.20 智慧球任务「坚守锚点」护送（卡德加）重置：按路径点前方 20 码处重新放怪，避免一波怪卡住导致护送停滞。
+-- 同时给卡德加补两句台词（第 4、第 5 段）、第三波补「裂隙正在撕裂」提示。上游 #12876 议题 #12842。// By leewheel 20261120
 DELETE FROM `smart_scripts` WHERE (`entryorguid`, `source_type`) IN ((941700401, 9), (941700411, 9), (941700421, 9), (941700431, 9), (941700432, 9), (941700441, 9), (941700442, 9), (941704001, 9), (941704002, 9), (941704003, 9));
 INSERT INTO `smart_scripts` (`entryorguid`, `source_type`, `id`, `link`, `event_type`, `event_phase_mask`, `event_chance`, `event_flags`, `event_param1`, `event_param2`, `event_param3`, `event_param4`, `event_param5`, `event_param6`, `action_type`, `action_param1`, `action_param2`, `action_param3`, `action_param4`, `action_param5`, `action_param6`, `target_type`, `target_param1`, `target_param2`, `target_param3`, `target_param4`, `target_x`, `target_y`, `target_z`, `target_o`, `comment`) VALUES
 (941700401, 9, 0, 0, 0, 0, 100, 0, 2000, 2000, 0, 0, 0, 0, 12, 9417021, 6, 20000, 0, 0, 0, 8, 0, 0, 0, 0, 372.31, 249.201, 32.484, 0, 'Stop 1 wave 1 - mob 1 (route point ahead)'),

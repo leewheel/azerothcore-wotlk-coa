@@ -1,10 +1,10 @@
--- In Fear of Death (#12765, #12770): the Hillsbrad restore (rev_20261027_84) and the Defias Tower spawns
--- (rev_20261103_00) both used creature guids 9950700-9950729. Depending on the order the two files ran, either
--- 30 Hillsbrad NPCs (Asteria, Morninglare, Lestern, Krenna, Vorman, ...) were replaced by Defias, or the Defias
--- were replaced and the Hillsbrad NPCs inherited the Defias per-guid SmartAI, addons and formation, which
--- override their own gossip credit. The Defias keep 9950700-9950729; the Hillsbrad spawns move
--- to 9951000-9951029. Juliette Livingston (#12738, #12741) also leaves the cliff face below the quest 1355 POI for
--- the level hilltop 30 yd south of it.
+-- 2026.11.20 《畏惧死亡》（议题 #12765 / #12770）：希尔斯布莱德恢复（rev_20261027_84）与迪菲亚塔刷怪
+-- （rev_20261103_00）都用了 creature guid 9950700-9950729。两个文件执行的先后顺序不同，导致要么
+-- 30 个希尔斯布莱德 NPC（阿斯特莉亚、莫宁莱尔、莱斯特恩、克雷娜、沃曼……）被迪菲亚顶掉，要么迪菲亚被顶掉、
+-- 而希尔斯布莱德 NPC 继承了迪菲亚的按 guid 的 SmartAI、addon 和阵型，把它们自己的对话计分覆盖掉。
+-- 处理：迪菲亚保留 9950700-9950729，希尔斯布莱德刷点整体迁到 9951000-9951029。
+-- 另：朱丽叶特·利文斯顿（议题 #12738 / #12741）从任务 1355 兴趣点下方的崖壁，挪到其南侧 30 码的台地顶部。
+-- 上游 #12817（世界任务批次 9）。// By leewheel 20261120
 DELETE FROM `creature` WHERE `guid` BETWEEN 9951000 AND 9951029;
 INSERT INTO `creature` (`guid`, `id`, `map`, `zoneId`, `areaId`, `spawnMask`, `phaseMask`, `equipment_id`,
     `position_x`, `position_y`, `position_z`, `orientation`, `spawntimesecs`, `wander_distance`, `currentwaypoint`,

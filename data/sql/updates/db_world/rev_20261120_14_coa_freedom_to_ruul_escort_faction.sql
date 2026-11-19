@@ -1,7 +1,6 @@
--- Freedom to Ruul (6482): Ruul Snowhoof (12818) keeps faction 714 during the escort, which is neutral to the
--- Thistlefur ambushers (faction 82), so IsValidAttackTarget rejects them and he never fights.
--- Switch him to the Horde active escortee faction 232 (FACTION_ESCORTEE_H_NEUTRAL_ACTIVE) on accept and restore
--- the template faction on respawn.
+-- 2026.11.20 「还鲁尔自由」(6482)：鲁尔·雪蹄（12818）护送期间一直是阵营 714，对蓟皮伏击者（阵营 82）中立，
+-- 于是 IsValidAttackTarget 判定不合法，他从不还手。改为接任务时切到部落护送者阵营 232
+-- （FACTION_ESCORTEE_H_NEUTRAL_ACTIVE），重生时还原模板阵营。上游 #12818 议题 #8624。// By leewheel 20261120
 DELETE FROM `smart_scripts` WHERE `entryorguid` = 12818 AND `source_type` = 0 AND `id` IN (20, 21);
 INSERT INTO `smart_scripts` (`entryorguid`, `source_type`, `id`, `link`, `event_type`, `event_phase_mask`,
     `event_chance`, `event_flags`, `event_param1`, `event_param2`, `event_param3`, `event_param4`, `event_param5`,

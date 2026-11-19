@@ -1,4 +1,6 @@
--- Anzuldin (164806): wait for each voiced line of Voice of the Snow Loa (175155) to end before the next one
+-- 2026.11.20 安祖尔丁（164806）：任务「雪洛阿之声」(175155) 的每一句配音播完再播下一句。
+-- 各条延时按音频长度给（loa1 8.7 秒 → 10 秒、loa2 9.9 → 11、loa3 3.9 → 7、loa4 10.2 → 12、
+-- loa5 8.9 → 10、loa6 13.1 → 15、loa7 4.8 → 7）。上游 #12828 议题 #12822。// By leewheel 20261120
 DELETE FROM `smart_scripts` WHERE (`entryorguid`, `source_type`) IN ((164806, 0));
 INSERT INTO `smart_scripts` (`entryorguid`, `source_type`, `id`, `link`, `event_type`, `event_phase_mask`, `event_chance`, `event_flags`, `event_param1`, `event_param2`, `event_param3`, `event_param4`, `event_param5`, `event_param6`, `action_type`, `action_param1`, `action_param2`, `action_param3`, `action_param4`, `action_param5`, `action_param6`, `target_type`, `target_param1`, `target_param2`, `target_param3`, `target_param4`, `target_x`, `target_y`, `target_z`, `target_o`, `comment`) VALUES
 (164806, 0, 0, 0, 19, 0, 100, 0, 175155, 0, 0, 0, 0, 0, 1, 0, 10000, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 'Anzuldin - On Quest Accepted Voice of the Snow Loa - Say Line 0 (loa1.wav 8.7 s)'),

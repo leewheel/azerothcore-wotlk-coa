@@ -1,7 +1,8 @@
--- Human Head of Ras Frostwhisper 13626 (#12785): The Lich, Ras Frostwhisper 5466 needs the head. His Normal loot 10508
--- pays it at 100% to players on the quest once the Soulbound Keepsake has turned him human (Scholomance instance data
--- 2 = 1), but the Heroic and Mythic lists 110508 and 210508 that rev_20261009_70 rewrote hold no quest item, so a
--- Heroic or Mythic kill never drops it. Mirror the Normal row and its human-form condition.
+-- 2026.11.20 拉斯·霜语的人头 13626（议题 #12785）：任务 5466「巫妖」需要这颗人头。
+-- 他的普通难度掉落 10508 在「魂契纪念品」把他变回人类之后（通灵学院实例数据 2 = 1）对已接任务的玩家 100% 给，
+-- 但 rev_20261009_70 重写过的英雄/秘境掉落表 110508 与 210508 里没有这个任务物品，所以英雄或秘境击杀永远不掉。
+-- 这里照抄普通难度那一行以及它的「人类形态」判定条件。
+-- 上游 #12817（世界任务批次 9）。// By leewheel 20261120
 DELETE FROM `creature_loot_template` WHERE `Entry` IN (110508, 210508) AND `Item` = 13626;
 INSERT INTO `creature_loot_template` (`Entry`, `Item`, `Reference`, `Chance`, `QuestRequired`, `LootMode`, `GroupId`,
     `MinCount`, `MaxCount`, `Comment`) VALUES

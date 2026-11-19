@@ -1,4 +1,5 @@
--- Voltzix Sprocketpop (#12752) is the Crossroads Engineering Trainer of his WDB row but only offered quests.
+-- 2026.11.20 沃尔提克斯·斯普罗克特波普（议题 #12752）在 WDB 数据里是十字路口的工程学训练师，但此前只提供任务。
+-- 上游 #12817（世界任务批次 9）。// By leewheel 20261120
 UPDATE `creature_template` SET `npcflag` = 83, `gossip_menu_id` = 9010711 WHERE `entry` = 753524;
 
 DELETE FROM `gossip_menu_option` WHERE `MenuID` = 9010711 AND `OptionID` = 0;
