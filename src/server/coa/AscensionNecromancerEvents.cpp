@@ -198,7 +198,7 @@ class aura_ascension_necromancer_event : public AuraScript
             if (target->HasAura(560729, player->GetGUID()))
                 Copy(actor, target, 561318, uint64(damage) * std::max(0, Amount(561319)) / 100);
             //By leewheel 20261119 bug_137：天赋由「学会」授予时也认（个别途径只进法术书不落光环），
-            // 否则这条减冷却永远不会触发。真正的原因见 AscensionNecromancer.cpp 的 Reduce()：减完没通知客户端。
+            // 否则这条减冷却永远不会触发 —— 这才是玩家「冷却照旧走满」的根因。
             if ((player->HasAura(704721) || player->HasSpell(704721)) &&
                 (!info || (info->SchoolMask & (SPELL_SCHOOL_MASK_NORMAL | SPELL_SCHOOL_MASK_FROST))) &&
                 !State(player).cooldowns.HasTimeUntilEvent(704721))

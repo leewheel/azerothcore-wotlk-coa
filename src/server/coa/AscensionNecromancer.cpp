@@ -213,18 +213,20 @@ uint32 KnownRank(Player* player, uint32 root)
 }
 //By leewheel 20261119 玩家反馈 bug_137：死灵天赋「死亡研究」704721 的
 // 「仆从的冰霜/物理伤害使邪恶狂乱的冷却缩短 0.5 秒」实测无效，冷却照旧走满。
-// 原因：服务端确实减了冷却，但 Player::ModifySpellCooldown 对负值只发 SMSG_MODIFY_COOLDOWN，
-// 客户端动作条不按它重绘（完整重置走的是另一条清除包，所以重置类天赋看起来是好的）。
-// 结果服务端已减、客户端仍显示原冷却，还按旧冷却拒绝施放，玩家自然判定「没减」。
-// 这里减完之后补发一次权威的「剩余冷却」包（核心给正值 / 重置补发用的是同一套），客户端才会按新剩余时间重绘。
-static void ResendCooldown(Player* player, uint32 spellId)
+// 根因：天赋只进了法术书、没落成光环（HasAura 为假），整条减冷却分支从不执行，
+// 已在 AscensionNecromancerEvents.cpp 里补 HasSpell 兜底。
+//
+// 20261119 二次修复（玩家反馈「更新之后这技能直接不会冷却了」）：
+// 第一版在这里写成「先 ModifySpellCooldown 发负增量，再补发一次 SMSG_SPELL_COOLDOWN」，
+// 两个包语义不同（一个是增量、一个是绝对总时长），客户端把冷却算了两遍，
+// 宝宝又有 1 秒节流不停重推，动作条上的倒计时就乱掉 —— 于是玩家看到冷却不走 / 干脆没有冷却。
+// 正确写法照抄同仓 Runemaster 的既有做法：直接覆盖服务端剩余（AddSpellCooldown 不发包），
+// 再只推一次绝对剩余；减完则走核心的清除冷却，绝不再混发增量和绝对两种包。
+static void RefreshCooldown(Player* player, uint32 spellId, uint32 remaining)
 {
-    if (!player || !player->HasActiveSpell(spellId))
-        return;
-
-    WorldPacket data;
-    player->BuildCooldownPacket(data, SPELL_COOLDOWN_FLAG_NONE, spellId, player->GetSpellCooldownDelay(spellId));
-    player->SendDirectMessage(&data);
+    WorldPacket packet;
+    player->BuildCooldownPacket(packet, SPELL_COOLDOWN_FLAG_NONE, spellId, remaining);
+    player->SendDirectMessage(&packet);
 }
 
 void Reduce(Player* player, uint32 root, int32 milliseconds)
@@ -233,13 +235,26 @@ void Reduce(Player* player, uint32 root, int32 milliseconds)
         if (value->State != PLAYERSPELL_REMOVED && Named(sSpellMgr->GetSpellInfo(id), root))
         {
             if (milliseconds == INT32_MAX)
-                player->RemoveSpellCooldown(id, true);
-            else
             {
-                player->ModifySpellCooldown(id, -std::abs(milliseconds));
-                // 把减完之后的真实剩余冷却推给客户端，否则界面不刷新（见上面的说明）
-                ResendCooldown(player, id);
+                player->RemoveSpellCooldown(id, true);
+                continue;
             }
+
+            // 没在冷却里就不动，免得凭空给客户端推一条冷却
+            uint32 remaining = player->GetSpellCooldownDelay(id);
+            if (!remaining)
+                continue;
+
+            uint32 amount = uint32(std::abs(milliseconds));
+            if (amount >= remaining)
+            {
+                player->RemoveSpellCooldown(id, true);
+                continue;
+            }
+
+            uint32 next = remaining - amount;
+            player->AddSpellCooldown(id, 0, next, true);
+            RefreshCooldown(player, id, next);
         }
 }
 //End By leewheel
