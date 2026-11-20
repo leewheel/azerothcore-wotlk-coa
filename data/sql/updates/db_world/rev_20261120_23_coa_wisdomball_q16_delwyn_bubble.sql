@@ -1,3 +1,9 @@
+-- 智慧球 Q16：德尔温的护盾消失后延时 10.5 秒才推进相位（原来是立刻推进），
+-- 并新增 Q16 完成判定：护盾消失的定时事件触发时，给 30 码内的玩家任务信用。
+-- 上游 #12790。本脚本无玩家可见文本。
+-- By leewheel 20261120
+-- End By leewheel
+
 UPDATE `smart_scripts` SET `action_type` = 67, `action_param1` = 7, `action_param2` = 10500, `action_param3` = 10500, `target_type` = 1, `target_param1` = 0, `comment` = 'Khadgar (Rift) - Linked - Timed event 7 in 10.5 s (Delwyn''s bubble gone, then the phase may change)' WHERE `entryorguid` = -9417109 AND `source_type` = 0 AND `id` = 16;
 DELETE FROM `smart_scripts` WHERE `entryorguid` = -9417109 AND `source_type` = 0 AND `id` = 26;
 INSERT INTO `smart_scripts` (`entryorguid`, `source_type`, `id`, `link`, `event_type`, `event_phase_mask`, `event_chance`, `event_flags`, `event_param1`, `event_param2`, `event_param3`, `event_param4`, `event_param5`, `action_type`, `action_param1`, `action_param2`, `action_param3`, `action_param4`, `action_param5`, `action_param6`, `target_type`, `target_param1`, `target_param2`, `target_x`, `target_y`, `target_z`, `target_o`, `comment`) VALUES

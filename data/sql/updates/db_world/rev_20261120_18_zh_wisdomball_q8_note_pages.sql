@@ -1,3 +1,8 @@
+-- 智慧球任务线 Q8「学徒德尔温的残影」：五页笔记物品、拾取脚本、任务目标与系统消息
+-- 来源上游 #12790（Delwyn's note pages）。脚本数据与上游一致，玩家可见文本已补简体中文
+-- By leewheel 20261120
+-- End By leewheel
+
 INSERT INTO `item_template` (`entry`, `class`, `subclass`, `SoundOverrideSubclass`, `name`, `displayid`, `Quality`, `Flags`, `FlagsExtra`, `BuyCount`, `BuyPrice`, `SellPrice`, `InventoryType`, `AllowableClass`, `AllowableRace`, `ItemLevel`, `RequiredLevel`, `RequiredSkill`, `RequiredSkillRank`, `requiredspell`, `requiredhonorrank`, `RequiredCityRank`, `RequiredReputationFaction`, `RequiredReputationRank`, `maxcount`, `stackable`, `ContainerSlots`, `stat_type1`, `stat_value1`, `stat_type2`, `stat_value2`, `stat_type3`, `stat_value3`, `stat_type4`, `stat_value4`, `stat_type5`, `stat_value5`, `stat_type6`, `stat_value6`, `stat_type7`, `stat_value7`, `stat_type8`, `stat_value8`, `stat_type9`, `stat_value9`, `stat_type10`, `stat_value10`, `ScalingStatDistribution`, `ScalingStatValue`, `dmg_min1`, `dmg_max1`, `dmg_type1`, `dmg_min2`, `dmg_max2`, `dmg_type2`, `armor`, `holy_res`, `fire_res`, `nature_res`, `frost_res`, `shadow_res`, `arcane_res`, `delay`, `ammo_type`, `RangedModRange`, `spellid_1`, `spelltrigger_1`, `spellcharges_1`, `spellppmRate_1`, `spellcooldown_1`, `spellcategory_1`, `spellcategorycooldown_1`, `spellid_2`, `spelltrigger_2`, `spellcharges_2`, `spellppmRate_2`, `spellcooldown_2`, `spellcategory_2`, `spellcategorycooldown_2`, `spellid_3`, `spelltrigger_3`, `spellcharges_3`, `spellppmRate_3`, `spellcooldown_3`, `spellcategory_3`, `spellcategorycooldown_3`, `spellid_4`, `spelltrigger_4`, `spellcharges_4`, `spellppmRate_4`, `spellcooldown_4`, `spellcategory_4`, `spellcategorycooldown_4`, `spellid_5`, `spelltrigger_5`, `spellcharges_5`, `spellppmRate_5`, `spellcooldown_5`, `spellcategory_5`, `spellcategorycooldown_5`, `bonding`, `description`, `PageText`, `LanguageID`, `PageMaterial`, `startquest`, `lockid`, `Material`, `sheath`, `RandomProperty`, `RandomSuffix`, `block`, `itemset`, `MaxDurability`, `area`, `Map`, `BagFamily`, `TotemCategory`, `socketColor_1`, `socketContent_1`, `socketColor_2`, `socketContent_2`, `socketColor_3`, `socketContent_3`, `socketBonus`, `GemProperties`, `RequiredDisenchantSkill`, `ArmorDamageModifier`, `duration`, `ItemLimitCategory`, `HolidayId`, `ScriptName`, `DisenchantID`, `FoodType`, `minMoneyLoot`, `maxMoneyLoot`, `flagsCustom`, `VerifiedBuild`) VALUES
 ('9417329', '12', '0', '-1', 'Delwyn\'s Notes, Page 1', '277', '1', '0', '0', '1', '0', '0', '0', '-1', '-1', '30', '0', '0', '0', '0', '0', '0', '0', '0', '1', '1', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', NULL, NULL, NULL, NULL, NULL, NULL, '1000', '0', '0', '0', '0', '0', '0', '-1', '0', '-1', '0', '0', '0', '0', '-1', '0', '-1', '0', '0', '0', '0', '-1', '0', '-1', '0', '0', '0', '0', '-1', '0', '-1', '0', '0', '0', '0', '-1', '0', '-1', '4', '"...the seal is thinning. Khadgar must not know yet..."', '0', '0', '0', '0', '0', '7', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '-1', '0', '0', '0', '0', '', '0', '0', '0', '0', '0', NULL),
 ('9417330', '12', '0', '-1', 'Delwyn\'s Notes, Page 2', '277', '1', '0', '0', '1', '0', '0', '0', '-1', '-1', '30', '0', '0', '0', '0', '0', '0', '0', '0', '1', '1', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', NULL, NULL, NULL, NULL, NULL, NULL, '1000', '0', '0', '0', '0', '0', '0', '-1', '0', '-1', '0', '0', '0', '0', '-1', '0', '-1', '0', '0', '0', '0', '-1', '0', '-1', '0', '0', '0', '0', '-1', '0', '-1', '0', '0', '0', '0', '-1', '0', '-1', '4', '"...the wardstones answer when they are woken. Three of them, old Kirin Tor work..."', '0', '0', '0', '0', '0', '7', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '-1', '0', '0', '0', '0', '', '0', '0', '0', '0', '0', NULL),
@@ -20,7 +25,7 @@ INSERT INTO `item_dbc` (`ID`, `ClassID`, `SubclassID`, `Sound_Override_Subclassi
 
 DELETE FROM `acore_string` WHERE `entry` = 9417026;
 INSERT INTO `acore_string` (`entry`, `content_default`, `locale_koKR`, `locale_frFR`, `locale_deDE`, `locale_zhCN`, `locale_zhTW`, `locale_esES`, `locale_esMX`, `locale_ruRU`) VALUES
-('9417026', 'I have read this one already.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+('9417026', 'I have read this one already.', NULL, NULL, NULL, '这一页我已经读过了。', NULL, NULL, NULL, NULL);
 
 DELETE FROM `smart_scripts` WHERE `entryorguid` IN (-9417004, -9417005, -9417006, -9417007, -9417008) AND `source_type` = 1;
 INSERT INTO `smart_scripts` (`entryorguid`, `source_type`, `id`, `link`, `event_type`, `event_phase_mask`, `event_chance`, `event_flags`, `event_param1`, `event_param2`, `event_param3`, `event_param4`, `event_param5`, `event_param6`, `action_type`, `action_param1`, `action_param2`, `action_param3`, `action_param4`, `action_param5`, `action_param6`, `target_type`, `target_param1`, `target_param2`, `target_param3`, `target_param4`, `target_x`, `target_y`, `target_z`, `target_o`, `comment`) VALUES
@@ -115,3 +120,22 @@ INSERT INTO `quest_poi_points` (`QuestID`, `Idx1`, `Idx2`, `X`, `Y`, `VerifiedBu
 ('9417108', '4', '6', '62', '263', NULL),
 ('9417108', '4', '7', '58', '262', NULL),
 ('9417108', '5', '0', '102', '255', NULL);
+
+-- 五页笔记的物品名与物品描述中文（item_template 保留英文原文，中文客户端按 locale 取这里）
+-- By leewheel 20261120
+DELETE FROM `item_template_locale` WHERE `ID` BETWEEN 9417329 AND 9417333 AND `locale` = 'zhCN';
+INSERT INTO `item_template_locale` (`ID`, `locale`, `Name`, `Description`, `VerifiedBuild`) VALUES
+(9417329, 'zhCN', '德尔温的笔记，第 1 页', '“……封印正在变薄。卡德加现在还不能知道……”', NULL),
+(9417330, 'zhCN', '德尔温的笔记，第 2 页', '“……符文石被唤醒时会有回应。三块，都是肯瑞托的老手艺……”', NULL),
+(9417331, 'zhCN', '德尔温的笔记，第 3 页', '“……只要我睡在封印之上，就能进入梦境，从里面把它补好……”', NULL),
+(9417332, 'zhCN', '德尔温的笔记，第 4 页', '“……梦里有东西在听。它开始念我的名字了……”', NULL),
+(9417333, 'zhCN', '德尔温的笔记，第 5 页', '“……别来找我。把封印补好。”', NULL);
+-- End By leewheel
+
+-- 任务 9417108「学徒德尔温的残影」中文文本（quest_template 保留英文原文，中文客户端按 zhCN 取这里）
+-- 任务描述里的 $B$B 是换行、$N 是玩家名，必须原样保留
+-- By leewheel 20261120
+DELETE FROM `quest_template_locale` WHERE `ID` = 9417108 AND `locale` = 'zhCN';
+INSERT INTO `quest_template_locale` (`ID`, `locale`, `Title`, `Details`, `Objectives`, `EndText`, `CompletedText`, `ObjectiveText1`, `ObjectiveText2`, `ObjectiveText3`, `ObjectiveText4`, `VerifiedBuild`) VALUES
+(9417108, 'zhCN', '学徒德尔温的残影', '这些碎片上带着一个名字，就刻在符文本身里：德尔温，肯瑞托的学徒。守着封印的人是他，第三次大战前一年失踪的那个人也是他。$B$B他的笔记一定还散落在废墟之间。去把它们找回来。还有，$N……如果你在巨坑里遇到本不该在那里的人，别怕，听他说。', '在达拉然巨坑收集 5 页德尔温散落的笔记，然后与学徒德尔温的残影交谈。', NULL, '与学徒德尔温的残影交谈。', '已收集德尔温散落的笔记', NULL, NULL, NULL, NULL);
+-- End By leewheel
