@@ -138,8 +138,10 @@ public:
         ArenaReadiness& readiness = Readiness[bg->GetInstanceID()];
         readiness.ReadyPlayers.insert(player->GetGUID());
 
-        ChatHandler(player->GetSession()).PSendSysMessage("Ready: {}/{}", ReadyPresentPlayers(bg, readiness),
+        // By leewheel 20261120 就绪人数提示本地化
+        ChatHandler(player->GetSession()).PSendSysMessage("就绪：{}/{}", ReadyPresentPlayers(bg, readiness),
             uint32(bg->GetArenaType()) * PVP_TEAMS_COUNT);
+        // End By leewheel
 
         if (BothTeamsReady(bg, readiness) && bg->GetStartDelayTime() > BG_START_DELAY_15S)
         {

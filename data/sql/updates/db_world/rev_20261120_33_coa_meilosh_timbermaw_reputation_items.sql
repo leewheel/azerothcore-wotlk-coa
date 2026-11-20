@@ -1,9 +1,10 @@
--- Meilosh <Timbermaw Hold Quartermaster> (11557) sold the Timbermaw Hold reputation rewards on live Conquest of
--- Azeroth and only sold Ancient Stick here (#9477). The BisBeard item list in the db.exil.es export (2026-09-13)
--- labels 15 of these items "Timbermaw Hold - Honored/Revered/Exalted"; the five others (856017, 856018, 856022,
--- 856026, 856029) and Formula: Enchant Cloak - Lesser Spell Penetration 46520 require Timbermaw Hold in the captured
--- WDB itemcache. No captured vendor list names their seller; the owner confirmed Meilosh. Ranks and prices are the
--- existing item_template values. Defender of the Timbermaw 21326 stays the reward of The Root of All Evil 8481.
+-- By leewheel 20261120
+-- #13006 木喉要塞军需官梅罗什（11557）在本服只卖「古老的树枝」，缺了木喉要塞声望奖励
+-- db.exil.es 导出的 BisBeard 物品清单（2026-09-13）把其中 15 件标为「木喉要塞 - 尊敬/崇敬/崇拜」
+-- 另外五件（856017、856018、856022、856026、856029）与配方：附魔披风 - 次级法术穿透 46520
+-- 依据抓包 WDB 物品缓存判定要求木喉要塞声望；抓包里没有记录卖家，由服主确认为梅罗什
+-- 声望档位与价格沿用 item_template 现有数值；木喉要塞保卫者 21326 仍是任务「万恶之源」8481 的奖励
+-- End By leewheel
 DELETE FROM `npc_vendor` WHERE `entry` = 11557 AND `ExtendedCost` = 0 AND `item` IN (
     46520, 856009, 856010, 856011, 856012, 856013, 856014, 856017,
     856018, 856022, 856026, 856029, 1519801, 1519802, 1519803, 1519890,

@@ -1,8 +1,12 @@
--- CoA creature-cache dataset 836dab599218015bced50dfb87a5a3b022f745b8636ae86e632e22e0349b1730 (2026-11-18).
--- Source file: cachedata/by-locale/enUS/by-mode/conquest-of-azeroth/creaturecache.tsv.gz.
--- The cache records the names, displays, families, types, flags, and health and mana modifiers.
--- Faction, unit class, attack timing, and Mindbender model geometry use core summon defaults.
--- Run after rev_20261003_20_ascension_creature_families.sql widens the creature family column.
+-- By leewheel 20261120
+-- #13012 补回缺失的召唤物模板（七个）
+-- 数据取自 CoA 生物缓存数据集 836dab599218015bced50dfb87a5a3b022f745b8636ae86e632e22e0349b1730（2026-11-18）
+-- 源文件：cachedata/by-locale/enUS/by-mode/conquest-of-azeroth/creaturecache.tsv.gz
+-- 缓存里记录了名称、外观、科系、类型、标志位以及生命与法力系数
+-- 阵营、单位职业、攻击节奏和控心者的模型几何沿用核心召唤默认值
+-- 必须在 rev_20261003_20_ascension_creature_families.sql 放宽科系字段之后再执行
+-- 中文名走 creature_template_locale，主表保留英文原名
+-- End By leewheel
 START TRANSACTION;
 
 DELETE FROM `creature_model_info` WHERE `DisplayID` = 464978;
@@ -36,9 +40,20 @@ VALUES
     (50319, 0, 9589, 1, 1, 12340),
     (50328, 0, 464978, 1, 1, 12340);
 
--- Summon: Mindbender (803062) references Entropic Union (800022) in its client tooltip.
+-- 召唤：控心者（803062）的客户端提示里引用熵能联结（800022）
 DELETE FROM `creature_template_spell` WHERE `CreatureID` = 50328 AND `Index` = 0;
 INSERT INTO `creature_template_spell` (`CreatureID`, `Index`, `Spell`, `VerifiedBuild`)
 VALUES (50328, 0, 800022, 12340);
+
+-- 七个召唤物的中文名
+DELETE FROM `creature_template_locale` WHERE `entry` IN (50095, 50308, 50315, 50317, 50318, 50319, 50328) AND `locale` = 'zhCN';
+INSERT INTO `creature_template_locale` (`entry`, `locale`, `Name`, `Title`, `VerifiedBuild`) VALUES
+(50095, 'zhCN', '无面者仆从', '', 12340),
+(50308, 'zhCN', '永恒守护者', '', 12340),
+(50315, 'zhCN', '鹰之精魂', '', 12340),
+(50317, 'zhCN', '龟之精魂', '', 12340),
+(50318, 'zhCN', '虎之精魂', '', 12340),
+(50319, 'zhCN', '大地之精魂', '', 12340),
+(50328, 'zhCN', '控心者', '', 12340);
 
 COMMIT;
