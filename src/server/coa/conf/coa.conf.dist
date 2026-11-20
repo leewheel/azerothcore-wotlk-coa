@@ -410,19 +410,18 @@ HighRisk.GoldChance = 50
 CoA.Battleground.WideBrackets.Enable = 1
 
 #    CoA.Battleground.WideBrackets.Ranges
-#        Description: Comma-separated, ascending level ranges between 1 and 59. Each range must hold
-#                     whole stock brackets (10-19, 20-29, ...) and keep the same lead bracket on every
-#                     battleground. An invalid value logs an error and keeps the stock brackets. Read at
-#                     startup only.
-#        Default:     "10-29,30-49,50-59"
+#        说明：以逗号分隔、按升序排列的等级区间，取值 1~59。每个区间必须能容纳完整的原版分段
+#              （10-19、20-29……），并且在所有战场里保持相同的领先分段。取值非法会打一条错误日志并
+#              退回原版分段。只在启动时读取一次。
+#        默认："10-29,30-49,50-59"
 
 CoA.Battleground.WideBrackets.Ranges = "10-29,30-49,50-59"
 
 #    CoA.Battleground.WideBrackets.MaxLiftLevels
-#        Description: Most levels the health lift and output scaling bridge for a player or pet below the
-#                     bracket top. Combat rolls still use the bracket top. Read at startup only.
-#        Default:     0 - (No cap)
-#                     N - (Lift to at most own level + N)
+#        说明：低于档位顶端的玩家或宠物，生命托举与输出缩放最多补多少级。战斗判定仍然按档位顶端计算。
+#              只在启动时读取一次。
+#        默认：0 - 不设上限
+#              N - 最多托举到「自身等级 + N」
 
 CoA.Battleground.WideBrackets.MaxLiftLevels = 0
 
