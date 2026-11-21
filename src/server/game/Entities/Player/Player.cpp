@@ -8028,6 +8028,12 @@ void Player::CastItemUseSpell(Item* item, SpellCastTargets const& targets, uint8
     if (!sScriptMgr->OnPlayerCanCastItemUseSpell(this, item, targets, cast_count, glyphIndex))
         return;
 
+    // By leewheel 20261121 宠物令牌（驯兽大师的哨子/哨角等）：使用即驯服对应宠物。
+    // 条件不满足时由该函数直接给出具体的中文原因，不再施放物品自带的空法术。
+    if (AscensionCosmeticPetTokens::UseTokenItem(this, item->GetEntry()))
+        return;
+    // End By leewheel
+
     ItemTemplate const* proto = item->GetTemplate();
     // special learning case
     if (proto->Spells[0].SpellId == 483 || proto->Spells[0].SpellId == 55884)

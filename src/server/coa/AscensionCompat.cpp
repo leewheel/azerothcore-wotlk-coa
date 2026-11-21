@@ -8427,6 +8427,83 @@ public:
         (category->second.ClassMask & RealmClassMask()) != 0;
   }
 
+  // By leewheel 20261121 宠物令牌召唤失败的可见原因（全中文），
+  // 这些就是「使用这只哨子」所必需的具体条件。
+  static char const* CosmeticPetRefusalText(char const* refused)
+  {
+    if (!refused)
+      return "未知原因";
+    if (!std::strcmp(refused, "APPLY_APPEARANCES_PET_TYPE_NOT_FOUND"))
+      return "该宠物类型无法使用。";
+    if (!std::strcmp(refused, "APPLY_APPEARANCES_BAD_CREATURE_ENTRY") ||
+        !std::strcmp(refused, "APPLY_APPEARANCES_BAD_CREATURE_TEMPLATE"))
+      return "这只生物无法被驯服。";
+    if (!std::strcmp(refused, "APPLY_APPEARANCES_CANNOT_TAME_EXOTIC"))
+      return "你需要先学会驯服异种宠物。";
+    if (!std::strcmp(refused, "APPLY_APPEARANCES_COSMETIC_PET_IN_COMBAT"))
+      return "战斗中无法驯服宠物，请先脱离战斗。";
+    if (!std::strcmp(refused, "APPLY_APPEARANCES_PET_SUMMON_SPELL_NOT_LEARNED"))
+      return "你需要先学会该类型宠物的召唤技能。";
+    if (!std::strcmp(refused, "APPLY_APPEARANCES_PET_DISMISS_SPELL_NOT_LEARNED"))
+      return "你需要先学会解散宠物。";
+    if (!std::strcmp(refused, "APPLY_APPEARANCES_PET_DEAD_NON_SAFE_ZONE"))
+      return "你的宠物已死亡，请到主城或旅店休整后再更换宠物。";
+    return "宠物栏位不足，或当前状态不允许驯服。";
+  }
+
+  // By leewheel 20261121 使用宠物令牌（驯兽大师的哨子/哨角等）直接驯服对应宠物。
+  // 返回 false 表示这不是宠物令牌，调用方按原流程处理；返回 true 表示已处理。
+  bool UseCosmeticPetToken(Player* player, uint32 itemId)
+  {
+    // 已有专用法术脚本的令牌（Barnabus 哨子 79567）继续走原脚本，这里不接管，避免重复处理
+    static constexpr uint32 ScriptedTokenItem = 79567;
+    if (itemId == ScriptedTokenItem)
+      return false;
+
+    auto const token = _petTokens.find(itemId);
+    if (token == _petTokens.end())
+      return false;
+
+    ChatHandler handler(player->GetSession());
+    AppearanceInfo const& appearance = _appearances.at(token->second);
+    auto const category = _petCategories.find(appearance.PrimaryCategory);
+    if (category == _petCategories.end() || !appearance.CreatureEntry)
+    {
+      handler.SendSysMessage("这只哨子对应的宠物数据缺失，无法驯服。");
+      return true;
+    }
+    if (!category->second.AllowsClass(player->getClass()))
+    {
+      handler.SendSysMessage("你的职业无法驯服这类宠物。");
+      return true;
+    }
+    if (!RealmAllows(appearance))
+    {
+      handler.SendSysMessage("本服务器未开放这只宠物。");
+      return true;
+    }
+    // 驯服类使用要求先空出宠物位，避免直接替换掉玩家已经培养好的宠物
+    if (player->GetPetGUID() || player->GetCharmGUID() || player->IsExistPet())
+    {
+      handler.SendSysMessage("请先解散你当前的宠物，再来驯服新的宠物。");
+      return true;
+    }
+
+    char const* refused = AscensionTaming::SummonCosmeticPet(player, category->second.Tier,
+        appearance.CreatureEntry, IsServerPetAppearance(token->second));
+    if (refused)
+    {
+      handler.SendSysMessage(std::string("无法驯服：") + CosmeticPetRefusalText(refused));
+      return true;
+    }
+
+    if (!player->IsGameMaster())
+      player->DestroyItemCount(itemId, 1, true);
+    handler.SendSysMessage("你已驯服这只宠物，该外观同时记入收藏。");
+    return true;
+  }
+  // End By leewheel
+
 private:
   void HandleSetAppearanceVisibility(Player *player, WorldPacket &packet) {
     std::shared_ptr<PlayerCollectionState> state = GetState(player);
@@ -11766,6 +11843,15 @@ bool AscensionCosmeticPetTokens::AvailableOnRealm(uint32 itemId)
 {
     return AscensionCollectionService::Instance().CosmeticPetTokenAvailableHere(itemId);
 }
+
+// By leewheel 20261121 宠物令牌使用入口（由 Player::CastItemUseSpell 调用）
+bool AscensionCosmeticPetTokens::UseTokenItem(Player* player, uint32 itemId)
+{
+    if (!player || !player->GetSession() || player->GetSession()->IsBot())
+        return false;
+    return AscensionCollectionService::Instance().UseCosmeticPetToken(player, itemId);
+}
+// End By leewheel
 
 bool IsAscensionPrimalistTameEligible(Player const* player)
 {
