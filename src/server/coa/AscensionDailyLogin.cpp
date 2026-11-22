@@ -3,6 +3,7 @@
 // 每日登录奖励汉化：邮件标题「每日登录奖励」与正文、客户端 Toast 通知标题与说明。
 // ToastNotificationSystem 的 "Item" 是分类协议串，保持英文。
 //End By leewheel
+#include "AscensionBazaarTokenReserve.h"
 #include "AscensionClientLua.h"
 #include "AsyncCallbackProcessor.h"
 #include "DatabaseEnv.h"
@@ -111,11 +112,14 @@ end)
             draft->DiscardItems();
             delete draft;
         });
+        uint32 realmBoundTokens = 0;
         for (Reward const& reward : rewards)
         {
             ItemTemplate const* itemTemplate = sObjectMgr->GetItemTemplate(reward.Item);
             if (!itemTemplate)
                 return;
+            if (reward.Item == AscensionBazaarTokenReserve::TOKEN_ITEM)
+                realmBoundTokens += reward.Quantity;
             uint32 remaining = reward.Quantity;
             while (remaining)
             {
@@ -135,10 +139,12 @@ end)
         std::lock_guard lock(commitLock);
         commits.AddCallback(std::move(committed)).AfterComplete(
             [mail, staged = *staged, guid = player->GetGUID(),
-             accountId = player->GetSession()->GetAccountId(), claimNumber = previousClaim + 1](bool success)
+             accountId = player->GetSession()->GetAccountId(), claimNumber = previousClaim + 1,
+             realmBoundTokens](bool success)
         {
             if (!success)
                 return;
+            AscensionBazaarTokenReserve::AddReserve(accountId, realmBoundTokens);
             Player* current = ObjectAccessor::FindConnectedPlayer(guid);
             if (current && (!current->GetSession() || current->GetSession()->GetAccountId() != accountId))
                 current = nullptr;
