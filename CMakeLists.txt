@@ -18,8 +18,15 @@ message(STATUS "CMake version: ${CMAKE_VERSION}")
 # CMake policies (can not be handled elsewhere)
 cmake_policy(SET CMP0005 NEW)
 
-if (POLICY CMP0153)
-  cmake_policy(SET CMP0153 OLD)
+# By leewheel 20261122：EXEC_PROGRAM 已全部换成 EXECUTE_PROCESS（见 src/cmake/platform/cmake_uninstall.in.cmake），
+# 不再需要把 CMP0153 设成已废弃的 OLD 行为，消除 CMake 4.x 的 deprecated 警告。
+# End By leewheel
+
+# By leewheel 20261122：CMake 4.x 移除了 FindBoost 模块（CMP0167），
+# 明确改用上游 BoostConfig.cmake（由 vcpkg 提供），不再回落到已删除的 FindBoost。
+# End By leewheel
+if (POLICY CMP0167)
+  cmake_policy(SET CMP0167 NEW)
 endif()
 
 # Set projectname (must be done AFTER setting configurationtypes)

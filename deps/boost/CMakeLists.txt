@@ -32,7 +32,11 @@ else()
 endif()
 
 # Boost.System is header-only since 1.69; do not require it explicitly.
-find_package(Boost ${BOOST_REQUIRED_VERSION} REQUIRED COMPONENTS filesystem program_options iostreams regex thread)
+# By leewheel 20261122：显式使用 CONFIG 模式查找上游 BoostConfig.cmake（vcpkg 的 1.91），
+# 避免 find_package 回落到 CMake 4.x 已删除的 FindBoost，也避免扫描 C:\local 下
+# boost_1_78_0 / 1_81_0 / 1_84_0 / 1_87_0 / 1_88_0 / 1_92_0 多个版本造成版本混用。
+# End By leewheel
+find_package(Boost ${BOOST_REQUIRED_VERSION} REQUIRED CONFIG COMPONENTS filesystem program_options iostreams regex thread)
 
 if(NOT Boost_FOUND)
   if(NOT DEFINED ENV{Boost_ROOT} AND NOT DEFINED Boost_DIR AND NOT DEFINED BOOST_ROOT AND NOT DEFINED BOOSTROOT)

@@ -20,8 +20,11 @@ STRING(REGEX REPLACE "\n" ";" files "${files}")
 FOREACH(file ${files})
   MESSAGE(STATUS "Uninstalling \"${file}\"")
   IF(EXISTS "${file}")
-    EXEC_PROGRAM(
-      "@CMAKE_COMMAND@" ARGS "-E remove \"${file}\""
+    # By leewheel 20261122：EXEC_PROGRAM 自 CMake 3.0 起已废弃、3.28 起由 CMP0153 限制调用，
+    # 这里改用等价的 EXECUTE_PROCESS，保证卸载目标在新版 CMake 下不再触发 deprecated 警告。
+    # End By leewheel
+    EXECUTE_PROCESS(
+      COMMAND "@CMAKE_COMMAND@" -E remove "${file}"
       OUTPUT_VARIABLE rm_out
       RETURN_VALUE rm_retval
       )
