@@ -1151,7 +1151,8 @@ void AddAscensionDummyFixDruidScripts()
     RegisterSpellScript(spell_dummyfix_druid_cyclone);
     RegisterSpellScript(spell_dummyfix_druid_bear_form_passive);
     RegisterSpellScript(spell_dummyfix_druid_lunar_fire);
-    RegisterSpellScript(spell_dummyfix_druid_nourish);
+    //By leewheel 2026年11月25日 上游 #13351 注册了本脚本，但配套 SQL 明确写明故意不绑定（绑定会让 Nourish 加成 x1.69 翻倍，见 rev_20261121_dummyfix_druid.sql 注释），属死注册；注销以消除 "not assigned in the database" 启动告警
+    //原行已注销: RegisterSpellScript(spell_dummyfix_druid_nourish);
     RegisterSpellScript(spell_dummyfix_druid_learn_with);
     RegisterSpellScript(spell_dummyfix_druid_providing_for_nature);
     RegisterSpellScript(spell_dummyfix_druid_entangling_roots);

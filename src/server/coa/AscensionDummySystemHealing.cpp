@@ -1357,7 +1357,8 @@ void AddAscensionDummySystemHealingScripts()
     RegisterSpellScript(spell_dummysystem_healing_adorned_by_light);
     RegisterSpellScript(spell_dummysystem_healing_beacon_of_divinity);
     RegisterSpellScript(spell_dummysystem_healing_beacon_of_divinity_heal);
-    RegisterSpellScript(spell_dummysystem_healing_divine_favor_spent);
+    //By leewheel 2026年11月25日 上游 #13351 注册了本脚本，但 archived/pending SQL 全树均无对应 spell_script_names 绑定（上游 main 同样如此），属死注册；其记录的 SpentFavorData 仅作 1 秒兜底、主路径由 AuraNamed("Divine Favor") 承担。注销以消除 "not assigned in the database" 启动告警，不引入新行为
+    //原行已注销: RegisterSpellScript(spell_dummysystem_healing_divine_favor_spent);
     RegisterSpellScript(spell_dummysystem_healing_holy_ground);
     RegisterSpellScript(spell_dummysystem_healing_force_of_nature);
     RegisterSpellScript(spell_dummysystem_healing_power_of_the_elements);
