@@ -3,7 +3,7 @@
 -- 原则：不改上游 SQL 的任何一行一列，全部用 locale 覆盖表与说明表收口，
 --       上游下次再动这些文件也不会冲突，updates 的 SHA1 hash 始终对得上。
 -- 覆盖内容：
---   1) 荒野之地新增任务链的 5 个生物名、1 个物件名（萨卡里 / 雷蹄长老 / 水晶等）
+--   1) 荒野之地新增任务链的 5 个生物名、2 个物件名（萨卡里 / 雷蹄长老 / 水晶 / 翡翠鹅膏菌等）
 --   2) 任务 254014 最后一块、254015 逆转、500007 最初步伐的标题与正文
 --   3) 太阳牧师 / 焚誓者等 4 条新法术说明（coa_client_spell_description）
 -- 占位符 ${...} / $m1 / $s1 / $d / $i / $a1 / \r\n 原样保留，仅为文字汉化。
@@ -23,10 +23,11 @@ INSERT INTO `creature_template_locale` (`entry`, `locale`, `Name`, `Title`, `Ver
 (9935000, 'zhCN', '[TG] 小米奇烧瓶头骨', NULL, 0)
 ON DUPLICATE KEY UPDATE `Name` = VALUES(`Name`), `Title` = VALUES(`Title`);
 
--- 物件名 254002 Ouru'gai Crystal
-DELETE FROM `gameobject_template_locale` WHERE `entry` = 254002 AND `locale` = 'zhCN';
+-- 物件名 254002 Ouru'gai Crystal / 254477 Emerald Amanita（翡翠鹅膏菌，真菌恢复药水材料）
+DELETE FROM `gameobject_template_locale` WHERE `entry` IN (254002, 254477) AND `locale` = 'zhCN';
 INSERT INTO `gameobject_template_locale` (`entry`, `locale`, `name`, `castBarCaption`, `VerifiedBuild`) VALUES
-(254002, 'zhCN', '奥鲁盖水晶', NULL, 0)
+(254002, 'zhCN', '奥鲁盖水晶', NULL, 0),
+(254477, 'zhCN', '翡翠鹅膏菌', NULL, 0)
 ON DUPLICATE KEY UPDATE `name` = VALUES(`name`), `castBarCaption` = VALUES(`castBarCaption`);
 
 -- ============================================================
