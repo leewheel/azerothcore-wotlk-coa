@@ -28,7 +28,8 @@ constexpr uint32 SPELL_CRIMINAL = 9930873;
 constexpr uint32 SPELL_HOMEBOUND_PORTAL = 93187;
 constexpr int32 CRIMINAL_HIT_DURATION = 3 * MINUTE * IN_MILLISECONDS;
 constexpr int32 CRIMINAL_KILL_DURATION = 8 * MINUTE * IN_MILLISECONDS;
-constexpr char NoRetreatMessage[] = "You cannot escape while the No Retreat debuff is active!";
+// By leewheel 20261126 玩家可见提示汉化（本服为中文客户端，直接出中文）
+constexpr char NoRetreatMessage[] = "「不得撤退」效果生效期间，你无法逃离！";
 constexpr char const* AggressionKey = "ascension_mercenary_criminal_aggression";
 
 struct Aggression final : DataMap::Base
