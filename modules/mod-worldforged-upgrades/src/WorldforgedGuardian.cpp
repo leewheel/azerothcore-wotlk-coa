@@ -17,6 +17,8 @@
 
 #include "AscensionFreepick.h"
 #include "AscensionWarcraftReborn.h"
+// By leewheel 20261125 上游 #13411 删掉了 Chat.h，但 AddLocalizedOption 仍用 ChatHandler 取本地化字符串，补回依赖
+#include "Chat.h"
 #include "Config.h"
 #include "Creature.h"
 #include "DBCStores.h"
