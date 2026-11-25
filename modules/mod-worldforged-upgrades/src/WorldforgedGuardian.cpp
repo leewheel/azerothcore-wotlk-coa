@@ -15,10 +15,8 @@
 
 #include "WorldforgedUpgrades.h"
 
-#include "AscensionAccountProgress.h"
 #include "AscensionFreepick.h"
 #include "AscensionWarcraftReborn.h"
-#include "Chat.h"
 #include "Config.h"
 #include "Creature.h"
 #include "DBCStores.h"
@@ -37,7 +35,6 @@ namespace Worldforged
 namespace
 {
     constexpr uint32 INVISIBLE_GOSSIP_ICON = 34;
-    constexpr uint8 HEIRLOOM_LEVEL = 60;
     constexpr uint32 GENERAL_GOODS = 9781000;
     constexpr uint32 HEIRLOOMS = 9781001;
     constexpr uint32 ALTARS = 9781012;
@@ -190,13 +187,7 @@ public:
                 player->GetSession()->SendListInventory(creature->GetGUID(), GENERAL_GOODS);
                 return true;
             case ACTION_HEIRLOOMS:
-                if (!AscensionAccountProgress::HasLevelOrPrestige(player, HEIRLOOM_LEVEL))
-                {
-                    ChatHandler(player->GetSession()).PSendModuleSysMessage(
-                        Worldforged::MODULE_NAME, Worldforged::LANG_WORLDFORGED_HEIRLOOM_LEVEL_REQUIRED);
-                    SendMainMenu(player, creature);
-                    return true;
-                }
+                // By leewheel 20261125 上游 #13411 起改为购买时校验账号满级，不再在对话菜单处拦截
                 CloseGossipMenuFor(player);
                 player->GetSession()->SendListInventory(creature->GetGUID(), HEIRLOOMS);
                 return true;
