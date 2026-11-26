@@ -5939,9 +5939,11 @@ private:
   }
 
   static std::vector<SpellPatchRow> BuildSpellPatchRows() {
+    // 专业技能等级名是玩家在法术书上直接看到的，用官方中文译名
+    //By leewheel 2026年11月26日
     std::unordered_map<uint32, char const*> const blacksmithingTiers = {
-        {2018, "Apprentice"}, {3100, "Journeyman"}, {3538, "Expert"},
-        {9785, "Artisan"}, {29844, "Master"}, {51300, "Grand Master"}};
+        {2018, "初级"}, {3100, "中级"}, {3538, "高级"},
+        {9785, "专家级"}, {29844, "大师级"}, {51300, "宗师级"}};
     std::unordered_map<uint32, ClientSpellText> descriptions =
         LoadClientSpellDescriptions();
     std::unordered_set<uint32> descriptionIds;
