@@ -155,7 +155,7 @@ namespace
     using namespace Acore::ChatCommands;
 
     constexpr char const* AWARD_USAGE =
-        "Usage: .groot award <character> <amount> <issue-number> \"<reason>\" \"<attribution-ref>\"";
+        "用法：.groot award <角色名> <数量> <issue编号> \"<事由>\" \"<归属参考>\"";
 
     class groot_coin_commands : public CommandScript
     {
@@ -184,17 +184,17 @@ namespace
             WorldSession* session = handler->GetSession();
             if (!session || !session->GetPlayer())
             {
-                handler->SendSysMessage("Groot Coin awards need an in-game staff character.");
+                handler->SendSysMessage("发放格鲁特币需要一个在线的管理员角色。");
                 return true;
             }
             if (!AwardsAvailable())
             {
-                handler->SendSysMessage("Groot Coin awards are disabled. See .groot status.");
+                handler->SendSysMessage("格鲁特币发放已关闭，请看 .groot status。");
                 return true;
             }
             if (session->GetSecurity() < SEC_GAMEMASTER)
             {
-                handler->SendSysMessage("Groot Coin awards need Game Master security.");
+                handler->SendSysMessage("发放格鲁特币需要游戏管理员权限。");
                 return true;
             }
             if (!target || !amountText || !issueText || !reason || !attribution)
@@ -207,15 +207,15 @@ namespace
             Optional<uint32> const issue = ParseIssueNumber(*issueText);
             if (!amount || !issue)
             {
-                handler->PSendSysMessage("Amount must be a whole number from 1 to {}, and the issue the plain number of "
-                    "a jealous-sound/azerothcore-wotlk-coa issue.", GetSettings().maxAward);
+                handler->PSendSysMessage("数量必须是 1 到 {} 之间的整数，issue 参数填 "
+                    "jealous-sound/azerothcore-wotlk-coa 的 issue 编号。", GetSettings().maxAward);
                 handler->SendSysMessage(AWARD_USAGE);
                 return true;
             }
             if (!IsValidAuditText(*reason, REASON_MAX) || !IsValidAuditText(*attribution, ATTRIBUTION_MAX))
             {
-                handler->PSendSysMessage("Reason (up to {} characters) and attribution reference (up to {}) are "
-                    "required.", REASON_MAX, ATTRIBUTION_MAX);
+                handler->PSendSysMessage("必须填写事由（最多 {} 个字符）与归属参考（最多 {} 个字符）。",
+                    REASON_MAX, ATTRIBUTION_MAX);
                 handler->SendSysMessage(AWARD_USAGE);
                 return true;
             }
@@ -232,8 +232,8 @@ namespace
             request.actor = session->GetPlayer()->GetGUID();
             IssueAward(std::move(request));
 
-            handler->PSendSysMessage("Groot Coin: awarding {} coin(s) to {} for issue #{}...", *amount,
-                target->GetName(), *issue);
+            handler->PSendSysMessage("格鲁特币：正在为 issue #{} 向 {} 发放 {} 枚……", *issue,
+                target->GetName(), *amount);
             return true;
         }
 
@@ -241,14 +241,14 @@ namespace
         {
             if (!target)
             {
-                handler->PSendSysMessage("Usage: .groot history <character> [count up to {}]", HISTORY_MAX);
+                handler->PSendSysMessage("用法：.groot history <角色名> [最多 {} 条]", HISTORY_MAX);
                 return true;
             }
 
             Optional<uint32> const limit = ParseHistoryCount(count ? std::string_view(*count) : std::string_view());
             if (!limit)
             {
-                handler->PSendSysMessage("Usage: .groot history <character> [count up to {}]", HISTORY_MAX);
+                handler->PSendSysMessage("用法：.groot history <角色名> [最多 {} 条]", HISTORY_MAX);
                 return true;
             }
 
@@ -260,7 +260,7 @@ namespace
         {
             if (!id || !IsUuid(*id))
             {
-                handler->SendSysMessage("Usage: .groot inspect <award-id or exchange-id>");
+                handler->SendSysMessage("用法：.groot inspect <发放ID 或 兑换ID>");
                 return true;
             }
 
