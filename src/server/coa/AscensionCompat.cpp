@@ -1972,13 +1972,59 @@ public:
     return uint32(known.size());
   }
 
+  static uint32 PersistentRank(Player const* player, AscensionCompatData::CoATalentEntry const& entry)
+  {
+    uint32 rank = 0;
+    for (uint32 index = 0; index < entry.SpellCount; ++index)
+    {
+      uint32 const spellId = entry.SpellIds[index];
+      bool const granted = spellId && std::any_of(AscensionCompatData::ClassSpells.begin(),
+          AscensionCompatData::ClassSpells.end(), [player, spellId](AscensionCompatData::ClassSpell const& spell)
+          {
+            return spell.ClassId == player->getClass() && spell.SpellId == spellId &&
+                   spell.RequiredLevel <= player->GetLevel();
+          });
+      if (granted)
+        rank = index + 1;
+    }
+    return rank;
+  }
+
+  // 自动成长表（ClassSpells）与天赋条目有重叠技能时，服务器已经免费授予了这些等级，
+  // 天赋校验不能再按条目价目重复收一次点数，否则点数预算永远差一截。
+  // 实弹：女巫猎人 10 级选专精被拒，spent 2 AE / 预算 1 AE（Vault 500085 自动授予却算 1 AE）。//By leewheel 2026年11月26日
+  static AscensionCoATalentState::SpentPoints AutoGrantedPoints(Player const* player, uint32 targetSpec)
+  {
+    AscensionCoATalentState::SpentPoints granted;
+    std::unordered_set<uint32> charged;
+    for (AscensionCompatData::CoATalentEntry const& entry : AscensionCompatData::CoATalentEntries)
+    {
+      if (entry.ClassId != player->getClass() || (!entry.AECost && !entry.TECost))
+        continue;
+      if (entry.SpecId && entry.SpecId != targetSpec)
+        continue;
+
+      uint32 const ranks = std::min<uint32>(PersistentRank(player, entry), entry.SpellCount);
+      for (uint32 index = 0; index < ranks; ++index)
+      {
+        if (!charged.insert(entry.SpellIds[index]).second)
+          continue;
+        if (entry.SpecId)
+          granted.TE += entry.TECost;
+        else
+          granted.AE += entry.AECost;
+      }
+    }
+    return granted;
+  }
+
   bool SetTalentRank(Player* player, AscensionCompatData::CoATalentEntry const& entry, uint32 rank,
                      std::string& error, bool checkBudget = true)
   {
     uint32 const entryId = entry.EntryId;
     if (entry.ClassId != player->getClass())
     {
-      error = Acore::StringFormat("Talent entry {} does not belong to your custom class.", entryId);
+      error = Acore::StringFormat("天赋条目 {} 不属于你的职业。", entryId);
       return false;
     }
 
@@ -1999,7 +2045,7 @@ public:
 
     if (rank > entry.SpellCount)
     {
-      error = Acore::StringFormat("Talent entry {} only has {} rank(s).", entryId, uint32(entry.SpellCount));
+      error = Acore::StringFormat("天赋条目 {} 只有 {} 级。", entryId, uint32(entry.SpellCount));
       return false;
     }
 
@@ -2007,13 +2053,13 @@ public:
     bool const automaticallyGranted = entry.AECost == 0 && entry.TECost == 0 && !freeChoiceGroup;
     if (automaticallyGranted && rank != 0 && rank != entry.SpellCount)
     {
-      error = Acore::StringFormat("Progression entry {} must use its full automatic rank.", entryId);
+      error = Acore::StringFormat("成长条目 {} 必须一次性点到自动授予的最高级。", entryId);
       return false;
     }
 
     if (rank > 0 && player->GetLevel() < entry.RequiredLevel)
     {
-      error = Acore::StringFormat("Talent entry {} requires level {}.", entryId, uint32(entry.RequiredLevel));
+      error = Acore::StringFormat("天赋条目 {} 需要 {} 级。", entryId, uint32(entry.RequiredLevel));
       return false;
     }
 
@@ -2023,7 +2069,7 @@ public:
       SynchronizeProgression(player);
       if (!grantable)
       {
-        error = Acore::StringFormat("Progression entry {} requires its prerequisite ability.", entryId);
+        error = Acore::StringFormat("成长条目 {} 需要先学会它的前置技能。", entryId);
         return false;
       }
       return true;
@@ -2032,7 +2078,7 @@ public:
     uint32 const selectedSpellId = rank > 0 ? entry.SpellIds[rank - 1] : 0;
     if (rank > 0 && (!selectedSpellId || !sSpellMgr->GetSpellInfo(selectedSpellId)))
     {
-      error = Acore::StringFormat("Talent entry {} rank {} references a missing server spell.", entryId, rank);
+      error = Acore::StringFormat("天赋条目 {} 第 {} 级对应的法术在服务端缺失。", entryId, rank);
       return false;
     }
 
@@ -2045,8 +2091,12 @@ public:
         return false;
 
       bool const classTree = entry.SpecId == 0;
-      AscensionCoATalentState::SpentPoints const spent =
+      AscensionCoATalentState::SpentPoints spent =
           AscensionCoATalentState::Spent(EntriesOfSpecialization(KnownTalentEntries(player), activeSpecialization));
+      //By leewheel 2026年11月26日 自动成长授予的等级免费，不占预算
+      AscensionCoATalentState::SpentPoints const granted = AutoGrantedPoints(player, activeSpecialization);
+      spent.AE -= std::min(spent.AE, granted.AE);
+      spent.TE -= std::min(spent.TE, granted.TE);
       uint32 const used = classTree ? spent.AE : spent.TE;
       uint32 const budget = classTree ? classBudget : specializationBudget;
       uint32 const cost = (rank - currentRank) * uint32(classTree ? entry.AECost : entry.TECost);
@@ -2072,7 +2122,7 @@ public:
         projected.push_back({ entryId, rank });
       if (TabInvestmentShortfall(projected, entry))
       {
-        error = Acore::StringFormat("Talent entry {} needs more points invested in its tab first.", entryId);
+        error = Acore::StringFormat("天赋条目 {} 需要先在该页投入更多点数。", entryId);
         return false;
       }
     }
@@ -2163,27 +2213,9 @@ public:
 
     LOG_ERROR("coa", "No CoA talent budget row for class {} at level {} ({})",
               uint32(player->getClass()), uint32(player->GetLevel()), player->GetName());
-    error = Acore::StringFormat("No talent budget is known for class {} at level {}; no rank can be raised.",
-                                uint32(player->getClass()), uint32(player->GetLevel()));
+    error = Acore::StringFormat("找不到 {} 级职业 {} 的天赋点数预算，无法提升任何天赋等级。",
+                                uint32(player->GetLevel()), uint32(player->getClass()));
     return false;
-  }
-
-  static uint32 PersistentRank(Player const* player, AscensionCompatData::CoATalentEntry const& entry)
-  {
-    uint32 rank = 0;
-    for (uint32 index = 0; index < entry.SpellCount; ++index)
-    {
-      uint32 const spellId = entry.SpellIds[index];
-      bool const granted = spellId && std::any_of(AscensionCompatData::ClassSpells.begin(),
-          AscensionCompatData::ClassSpells.end(), [player, spellId](AscensionCompatData::ClassSpell const& spell)
-          {
-            return spell.ClassId == player->getClass() && spell.SpellId == spellId &&
-                   spell.RequiredLevel <= player->GetLevel();
-          });
-      if (granted)
-        rank = index + 1;
-    }
-    return rank;
   }
 
   bool ApplyKnownEntriesUpload(Player* player, std::vector<AscensionCoATalentState::KnownEntry> const& upload,
@@ -2192,7 +2224,7 @@ public:
     AscensionCoATalentState::UploadedSpecialization const uploaded = AscensionCoATalentState::SpecializationOf(upload);
     if (uploaded.Mixed)
     {
-      refusal = { "CA_UPDATE_ENTRIES_BAD_ENTRY", "", 0, 0, "The uploaded build mixes specializations." };
+      refusal = { "CA_UPDATE_ENTRIES_BAD_ENTRY", "", 0, 0, "你提交的天赋方案混用了多个专精。" };
       return false;
     }
 
@@ -2209,19 +2241,19 @@ public:
       if (!entry || entry->ClassId != player->getClass())
       {
         refusal = { "CA_UPDATE_ENTRIES_BAD_ENTRY", "CA_LEARN_WRONG_CLASS", item.EntryId, item.Rank,
-                    Acore::StringFormat("Talent entry {} does not belong to your custom class.", item.EntryId) };
+                    Acore::StringFormat("天赋条目 {} 不属于你的职业。", item.EntryId) };
         return false;
       }
       if (!received.insert(item.EntryId).second)
       {
         refusal = { "CA_UPDATE_ENTRIES_BAD_ENTRY", "", item.EntryId, item.Rank,
-                    "The uploaded build repeats a talent entry." };
+                    "你提交的天赋方案里重复出现了同一条天赋。" };
         return false;
       }
       if (item.Rank > entry->SpellCount)
       {
         refusal = { "CA_UPDATE_ENTRIES_BAD_ENTRY", "", entry->EntryId, item.Rank,
-                    Acore::StringFormat("Talent entry {} only has {} rank(s).", entry->EntryId,
+                    Acore::StringFormat("天赋条目 {} 只有 {} 级。", entry->EntryId,
                                         uint32(entry->SpellCount)) };
         return false;
       }
@@ -2230,14 +2262,14 @@ public:
         if (player->GetLevel() < entry->RequiredLevel)
         {
           refusal = { "CA_UPDATE_ENTRIES_NOT_TRAVERSIBLE", "CA_LEARN_LOW_LEVEL", entry->EntryId, item.Rank,
-                      Acore::StringFormat("Talent entry {} requires level {}.", entry->EntryId,
+                      Acore::StringFormat("天赋条目 {} 需要 {} 级。", entry->EntryId,
                                           uint32(entry->RequiredLevel)) };
           return false;
         }
         if (!sSpellMgr->GetSpellInfo(entry->SpellIds[item.Rank - 1]))
         {
           refusal = { "CA_UPDATE_ENTRIES_BAD_ENTRY", "CA_LEARN_BAD_ABILITY", entry->EntryId, item.Rank,
-                      Acore::StringFormat("Talent entry {} rank {} references a missing server spell.",
+                      Acore::StringFormat("天赋条目 {} 第 {} 级对应的法术在服务端缺失。",
                                           entry->EntryId, item.Rank) };
           return false;
         }
@@ -2245,14 +2277,14 @@ public:
       if (item.Rank && entry->SpecId && entry->SpecId != targetSpec)
       {
         refusal = { "CA_UPDATE_ENTRIES_BAD_ENTRY", "CA_LEARN_WRONG_CLASS", item.EntryId, item.Rank,
-                    "The uploaded build includes an entry of another specialization." };
+                    "你提交的天赋方案里含其它专精的条目。" };
         return false;
       }
       if (uint32 const group = GetSelectableFreeGroup(item.EntryId); item.Rank && group &&
           !selectedGroups.insert(group).second)
       {
         refusal = { "CA_UPDATE_ENTRIES_NOT_TRAVERSIBLE", "CA_LEARN_GROUP", item.EntryId, item.Rank,
-                    "The uploaded build selects mutually exclusive talents." };
+                    "你提交的天赋方案里选了互斥的天赋。" };
         return false;
       }
       if (entry->AECost || entry->TECost || GetSelectableFreeGroup(entry->EntryId))
@@ -2292,7 +2324,7 @@ public:
                 }))
             continue;
         refusal = { "CA_UPDATE_ENTRIES_BAD_ENTRY", "CA_LEARN_BAD_ABILITY", item.EntryId, item.Rank,
-                    Acore::StringFormat("Talent entry {} is not purchasable and cannot be granted automatically.", item.EntryId) };
+                    Acore::StringFormat("天赋条目 {} 不可购买，也无法自动授予。", item.EntryId) };
         return false;
     }
     std::vector<AscensionCoATalentState::KnownEntry> current;
@@ -2314,7 +2346,7 @@ public:
                 }))
             {
                 refusal = { "CA_UPDATE_ENTRIES_NOT_TRAVERSIBLE", "", item.EntryId, item.Rank,
-                    Acore::StringFormat("Talent entry {} requires entry {} in the uploaded build.",
+                    Acore::StringFormat("天赋条目 {} 需要先有天赋条目 {}。",
                         item.EntryId, requiredId) };
                 return false;
             }
@@ -2323,7 +2355,7 @@ public:
                              TabInvestmentShortfall(current, *entry)))
         {
             refusal = { "CA_UPDATE_ENTRIES_NOT_TRAVERSIBLE", learnResult, item.EntryId, item.Rank,
-                Acore::StringFormat("Talent entry {} needs more points invested in its tab first.",
+                Acore::StringFormat("天赋条目 {} 需要先在该页投入更多点数。",
                     item.EntryId) };
             return false;
         }
@@ -2336,13 +2368,17 @@ public:
       refusal.Result = "CA_UPDATE_ENTRIES_UNKNOWN";
       return false;
     }
-    AscensionCoATalentState::SpentPoints const spent = AscensionCoATalentState::Spent(priced);
+    AscensionCoATalentState::SpentPoints spent = AscensionCoATalentState::Spent(priced);
+    //By leewheel 2026年11月26日 自动成长的等级免费，不占预算
+    AscensionCoATalentState::SpentPoints const granted = AutoGrantedPoints(player, targetSpec);
+    spent.AE -= std::min(spent.AE, granted.AE);
+    spent.TE -= std::min(spent.TE, granted.TE);
     if (spent.AE > classBudget || spent.TE > specializationBudget)
     {
       refusal = { "CA_UPDATE_ENTRIES_NOT_TRAVERSIBLE",
                   spent.AE > classBudget ? "CA_LEARN_MISSING_AE" : "CA_LEARN_MISSING_TE", 0, 0,
                   Acore::StringFormat(
-                      "That build spends {} class and {} specialization point(s); level {} has {} and {}.",
+                      "该方案花费 {} 点职业点与 {} 点专精点；{} 级只有 {} 点和 {} 点。",
                       spent.AE, spent.TE, uint32(player->GetLevel()), classBudget, specializationBudget) };
       return false;
     }
@@ -2976,7 +3012,7 @@ public:
             index >= AscensionWildcard::SPECIALIZATION_COUNT ||
             !player->HasSpell(AscensionWildcard::SPECIALIZATION_SWAP_SPELLS[index]))
         {
-            error = "That specialization slot is not unlocked.";
+            error = "该专精栏位尚未解锁。";
             return false;
         }
         if (index == ActiveSlot(player))
@@ -2998,7 +3034,7 @@ public:
             if (!AscensionCoATalentState::ParseSpecializationSlot(values, target) ||
                 target.ClassId != player->getClass())
             {
-                error = "The saved specialization slot is invalid for this character.";
+                error = "该角色已保存的专精栏位无效。";
                 return false;
             }
         }
