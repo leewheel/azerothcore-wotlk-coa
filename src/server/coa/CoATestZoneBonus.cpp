@@ -130,10 +130,12 @@ std::string ZoneName(uint32 zoneId)
 
     // 中文端优先取 zhCN 区域名，缺少时回退英文
     //By leewheel 2026年11月26日
-    if (!area->area_name[LOCALE_zhCN].empty())
-        return area->area_name[LOCALE_zhCN];
+    char const* zhName = area->area_name[LOCALE_zhCN];
+    if (zhName && *zhName)
+        return zhName;
 
-    return area->area_name[LOCALE_enUS];
+    char const* enName = area->area_name[LOCALE_enUS];
+    return (enName && *enName) ? enName : std::string("未知区域");
 }
 
 // 中文时长文本：secsToTimeString 输出的是英文单位，这里单独给中文
