@@ -28,6 +28,7 @@ void AddSC_AscensionHighRisk();
 void AddSC_AscensionHonorableCombat();
 void AddSC_AscensionFelCommutation();
 void AddSC_AscensionQuestLogOverflow();
+void AddSC_AscensionQuestLogExtended();
 void AddSC_AscensionClientHotPatch();
 void AddSC_AscensionCrowsCache();
 void AddSC_AscensionAetherialReliquary();
@@ -888,6 +889,7 @@ void AddCoAScripts()
     AddSC_AscensionHonorableCombat();
     AddSC_AscensionFelCommutation();
     AddSC_AscensionQuestLogOverflow();
+    AddSC_AscensionQuestLogExtended();
     AddSC_AscensionClientHotPatch();
     AddSC_AscensionCrowsCache();
     AddSC_AscensionAetherialReliquary();
