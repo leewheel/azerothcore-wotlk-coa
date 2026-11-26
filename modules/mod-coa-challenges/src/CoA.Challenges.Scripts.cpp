@@ -3071,8 +3071,8 @@ namespace CoAChallenges
                 player = PlayerIdentifier::FromTargetOrSelf(handler);
             if (!player)
             {
-                handler->PSendSysMessage("Syntax: .coa trial objectives [player]");
-                handler->SendErrorMessage("No player: target someone or name one, with a two-word name in quotes.");
+                handler->PSendSysMessage("用法：.coa trial objectives [玩家]");
+                handler->SendErrorMessage("没有指定玩家：先选中目标，或直接写名字（两个字的名字要加引号）。");
                 return false;
             }
 
@@ -3080,10 +3080,10 @@ namespace CoAChallenges
             Player* online = player->GetConnectedPlayer();
             std::set<uint32> const actives = ActiveChallenges(guid);
             if (online)
-                handler->PSendSysMessage("{}, level {}, {} active challenge(s):",
+                handler->PSendSysMessage("{}，等级 {}，进行中的挑战 {} 个：",
                     player->GetName(), online->GetLevel(), actives.size());
             else
-                handler->PSendSysMessage("{} (offline), {} active challenge(s):", player->GetName(), actives.size());
+                handler->PSendSysMessage("{}（离线），进行中的挑战 {} 个：", player->GetName(), actives.size());
 
             uint32 const cappedGate = online ? NextGatedLevel(online) : 0;
             uint32 const maxLevel = sWorld->getIntConfig(CONFIG_MAX_PLAYER_LEVEL);
@@ -3095,14 +3095,14 @@ namespace CoAChallenges
                         guid, challengeId))
                     deaths = r->Fetch()[0].Get<uint32>();
                 uint32 const lives = LivesTotal(challengeId);
-                handler->PSendSysMessage("{}, Challenge ID {}, level {}, deaths {}{}",
+                handler->PSendSysMessage("{}，挑战 ID {}，等级 {}，死亡 {}{}",
                     ChallengeName(challengeId), challengeId, ActiveChallengeLevel(guid, challengeId), deaths,
-                    lives ? Acore::StringFormat(" of {} lives", lives) : std::string());
+                    lives ? Acore::StringFormat("（共 {} 条命）", lives) : std::string());
 
                 std::vector<Objective> const tracked = TrackedObjectives(challengeId);
                 if (tracked.empty())
                 {
-                    handler->PSendSysMessage("  (no tracked objectives)");
+                    handler->PSendSysMessage("  （没有追踪中的目标）");
                     continue;
                 }
                 bool allDone = true;
@@ -3112,12 +3112,12 @@ namespace CoAChallenges
                     bool const done = IsObjectiveDone(guid, challengeId, o.key);
                     allDone = allDone && done;
                     uint32 const gate = CoAParse::ObjectiveGateLevel(o);
-                    handler->PSendSysMessage("  {}. [{}] {}, Objective ID {}{}", i + 1, done ? "done" : "pending",
+                    handler->PSendSysMessage("  {}. [{}] {}，目标 ID {}{}", i + 1, done ? "已完成" : "未完成",
                         DescribeObjective(o), i + 1, (!done && gate && gate == cappedGate)
-                            ? Acore::StringFormat(" (levelling capped at {})", gate - 1) : std::string());
+                            ? Acore::StringFormat("（等级上限 {}）", gate - 1) : std::string());
                 }
                 if (allDone && IsTrialChallenge(challengeId) && (!online || online->GetLevel() < maxLevel))
-                    handler->PSendSysMessage("  All objectives done; completes at level {}.", maxLevel);
+                    handler->PSendSysMessage("  所有目标都已完成，将在 {} 级结算。", maxLevel);
             }
 
             // The failed challenges, newest first, with what a GM needs to pick
@@ -3128,44 +3128,44 @@ namespace CoAChallenges
             PreparedQueryResult failed = CharacterDatabase.Query(selectFailed);
             if (failed)
             {
-                handler->PSendSysMessage("Failed challenges:");
+                handler->PSendSysMessage("失败的挑战：");
                 uint32 const now = uint32(::time(nullptr));
                 do
                 {
                     Field* f = failed->Fetch();
                     uint32 const challengeId = f[0].Get<uint32>();
                     uint32 const failTime = f[2].Get<uint32>();
-                    handler->PSendSysMessage("  {}, Challenge ID {}, level {}, failed {}{}",
+                    handler->PSendSysMessage("  {}，挑战 ID {}，等级 {}，失败于 {}{}",
                         ChallengeName(challengeId), challengeId, f[1].Get<uint32>(),
                         TimeAgo(failTime, now), f[3].IsNull() ? std::string()
-                            : Acore::StringFormat(" at character level {}", f[3].Get<uint32>()));
+                            : Acore::StringFormat("（角色等级 {}）", f[3].Get<uint32>()));
                 } while (failed->NextRow());
             }
             if (!actives.empty())
-                handler->PSendSysMessage("Credit an objective: {}", CreditSyntax);
+                handler->PSendSysMessage("计入一个目标：{}", CreditSyntax);
             if (failed)
-                handler->PSendSysMessage("Restore a failed challenge: {}", RestoreSyntax);
+                handler->PSendSysMessage("恢复失败的挑战：{}", RestoreSyntax);
             return true;
         }
 
         static std::string TimeAgo(uint32 then, uint32 now)
         {
             if (!then || then > now)
-                return "at an unknown time";
+                return "时间未知";
             uint32 const seconds = now - then;
             if (seconds < MINUTE)
-                return "less than a minute ago";
+                return "不到一分钟前";
             if (seconds < HOUR)
-                return Acore::StringFormat("{} minute(s) ago", seconds / MINUTE);
+                return Acore::StringFormat("{} 分钟前", seconds / MINUTE);
             if (seconds < DAY)
-                return Acore::StringFormat("{} hour(s) ago", seconds / HOUR);
-            return Acore::StringFormat("{} day(s) ago", seconds / DAY);
+                return Acore::StringFormat("{} 小时前", seconds / HOUR);
+            return Acore::StringFormat("{} 天前", seconds / DAY);
         }
 
-        static constexpr char const* CreditSyntax = ".coa trial credit <Challenge ID> <Objective ID> [player]";
-        static constexpr char const* RestoreSyntax = ".coa trial restore <Challenge ID> [player]";
+        static constexpr char const* CreditSyntax = ".coa trial credit <挑战ID> <目标ID> [玩家]";
+        static constexpr char const* RestoreSyntax = ".coa trial restore <挑战ID> [玩家]";
         static constexpr char const* ObjectivesHint =
-            "Use .coa trial objectives \"Player Name\" to find the IDs. The player defaults to your target.";
+            "用 .coa trial objectives \"角色名\" 查 ID。玩家默认取你的当前目标。";
 
         // .coa <trial|challenge> credit <id> <objective number> [player]
         // Marks one tracked objective done, whatever the player's level.
@@ -3174,7 +3174,7 @@ namespace CoAChallenges
         {
             if (!challengeId || !objectiveNumber)
             {
-                handler->PSendSysMessage("Syntax: {}", CreditSyntax);
+                handler->PSendSysMessage("用法：{}", CreditSyntax);
                 handler->SendErrorMessage("{}", ObjectivesHint);
                 return false;
             }
@@ -3183,7 +3183,7 @@ namespace CoAChallenges
             Player* p = player ? player->GetConnectedPlayer() : nullptr;
             if (!p)
             {
-                handler->SendErrorMessage("Player must be online to credit an objective.");
+                handler->SendErrorMessage("玩家必须在线才能计入目标。");
                 return false;
             }
 
@@ -3207,7 +3207,7 @@ namespace CoAChallenges
         {
             if (!challengeId)
             {
-                handler->PSendSysMessage("Syntax: {}", RestoreSyntax);
+                handler->PSendSysMessage("用法：{}", RestoreSyntax);
                 handler->SendErrorMessage("{}", ObjectivesHint);
                 return false;
             }
@@ -3216,7 +3216,7 @@ namespace CoAChallenges
             Player* p = player ? player->GetConnectedPlayer() : nullptr;
             if (!p)
             {
-                handler->SendErrorMessage("Player must be online to restore a challenge.");
+                handler->SendErrorMessage("玩家必须在线才能恢复挑战。");
                 return false;
             }
 

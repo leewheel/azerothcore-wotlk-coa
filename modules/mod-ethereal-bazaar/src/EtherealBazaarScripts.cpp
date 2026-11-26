@@ -185,11 +185,11 @@ public:
     {
         if (!Enabled())
         {
-            handler->PSendSysMessage("Ethereal Bazaar is disabled.");
+            handler->PSendSysMessage("以太集市已关闭。");
             return true;
         }
         sBazaarStock->Rotate();
-        handler->PSendSysMessage("Ethereal Bazaar: rotated, {} items in stock.",
+        handler->PSendSysMessage("以太集市：已刷新，当前上架 {} 件物品。",
                                  sBazaarStock->StockSize());
         return true;
     }
@@ -198,15 +198,15 @@ public:
     {
         uint64 const now = static_cast<uint64>(GameTime::GetGameTime().count());
         uint64 const next = sBazaarStock->NextRotation();
-        handler->PSendSysMessage("Ethereal Bazaar: {} items in stock.", sBazaarStock->StockSize());
-        handler->PSendSysMessage("Pool: {} cheap, {} mid, {} expensive.",
+        handler->PSendSysMessage("以太集市：当前上架 {} 件物品。", sBazaarStock->StockSize());
+        handler->PSendSysMessage("池子：低价 {} 件，中价 {} 件，高价 {} 件。",
                                  sBazaarStock->PoolSize(BazaarBand::Cheap),
                                  sBazaarStock->PoolSize(BazaarBand::Mid),
                                  sBazaarStock->PoolSize(BazaarBand::Expensive));
         if (next > now)
-            handler->PSendSysMessage("Next rotation in {} minutes.", (next - now) / MINUTE);
+            handler->PSendSysMessage("距离下次刷新还有 {} 分钟。", (next - now) / MINUTE);
         else
-            handler->PSendSysMessage("Next rotation is due.");
+            handler->PSendSysMessage("下一次刷新已到期。");
         return true;
     }
 };

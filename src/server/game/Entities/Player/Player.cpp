@@ -6820,7 +6820,7 @@ bool Player::RewardHonor(Unit* uVictim, uint32 groupsize, int32 honor, bool awar
             int32 count = sWorld->getIntConfig(CONFIG_PVP_TOKEN_COUNT);
 
             if (AddItem(itemID, count))
-                ChatHandler(GetSession()).PSendSysMessage("You have been awarded a token for slaying another player.");
+                ChatHandler(GetSession()).PSendSysMessage("你因击杀其他玩家获得了一枚代币。");
         }
     }
 
@@ -17074,7 +17074,7 @@ bool Player::AddItem(uint32 itemId, uint32 count)
     if (count == 0 || dest.empty())
     {
         // -- TODO: Send to mailbox if no space
-        ChatHandler(GetSession()).PSendSysMessage("You don't have any space in your bags.");
+        ChatHandler(GetSession()).PSendSysMessage("你的背包已满，没有空位。");
         return false;
     }
 

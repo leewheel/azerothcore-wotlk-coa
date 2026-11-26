@@ -1002,13 +1002,13 @@ public:
         {
             GameObject const* go = LiveCache(spawn);
             time_t const respawn = spawn.map->GetGORespawnTime(spawn.data->spawnId);
-            std::string const state = go && go->isSpawned() ? "up"
-                : respawn > now ? Acore::StringFormat("opened, back in {} min", (respawn - now + 59) / 60) : "not loaded";
+            std::string const state = go && go->isSpawned() ? "在场"
+                : respawn > now ? Acore::StringFormat("已开启，{} 分钟后重置", (respawn - now + 59) / 60) : "未加载";
             handler->PSendSysMessage("{} {} - {} - .go gameobject {} ({:.1f} {:.1f} {:.1f})",
                 HiddenCacheTierNames[spawn.tier], ZoneName(spawn.zone), state, spawn.data->spawnId,
                 spawn.data->posX, spawn.data->posY, spawn.data->posZ);
         }
-        handler->PSendSysMessage("{} Rare and Epic Hidden Caches{}.", spawns.size(), scope ? "" : " in this zone");
+        handler->PSendSysMessage("稀有与史诗隐藏宝箱 {} 处{}。", spawns.size(), scope ? "" : "（本区域）");
         return true;
     }
 

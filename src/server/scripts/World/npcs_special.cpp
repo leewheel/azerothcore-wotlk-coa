@@ -535,15 +535,15 @@ public:
             auto itr = _healers.find(player->GetGUID());
             if (itr == _healers.end())
             {
-                handler.PSendSysMessage("Healing Dummy: you have not healed me yet. Shields absorbed {} damage.", _absorbed);
+                handler.PSendSysMessage("治疗假人：你还没有治疗过我。护盾吸收了 {} 点伤害。", _absorbed);
                 return;
             }
 
             HealerStats const& stats = itr->second;
             uint64 const total = stats.Effective + stats.Overheal;
             uint32 const seconds = std::max<uint32>(1, uint32((GameTime::GetGameTimeMS() - stats.Start).count() / IN_MILLISECONDS));
-            handler.PSendSysMessage("Healing Dummy: {} healing in {}s ({} HPS), {} overhealing ({}%). Shields absorbed {} damage.",
-                stats.Effective, seconds, stats.Effective / seconds, stats.Overheal, total ? stats.Overheal * 100 / total : 0, _absorbed);
+            handler.PSendSysMessage("治疗假人：{} 秒内有效治疗 {}（{} 每秒），过量治疗 {}（{}%）。护盾吸收了 {} 点伤害。",
+                seconds, stats.Effective, stats.Effective / seconds, stats.Overheal, total ? stats.Overheal * 100 / total : 0, _absorbed);
         }
 
     private:
@@ -606,16 +606,16 @@ public:
             return false;
 
         ClearGossipMenuFor(player);
-        AddGossipItemFor(player, GOSSIP_ICON_INTERACT_1, "Take no damage.", GOSSIP_SENDER_MAIN, HEALING_DUMMY_ACTION_DAMAGE_OFF);
-        AddGossipItemFor(player, GOSSIP_ICON_INTERACT_1, "Take steady damage (3% per second).", GOSSIP_SENDER_MAIN, HEALING_DUMMY_ACTION_DAMAGE_STEADY);
-        AddGossipItemFor(player, GOSSIP_ICON_INTERACT_1, "Take heavy damage (8% per second).", GOSSIP_SENDER_MAIN, HEALING_DUMMY_ACTION_DAMAGE_HEAVY);
-        AddGossipItemFor(player, GOSSIP_ICON_INTERACT_1, "Take spiky damage (35% every 5 seconds).", GOSSIP_SENDER_MAIN, HEALING_DUMMY_ACTION_DAMAGE_SPIKY);
-        AddGossipItemFor(player, GOSSIP_ICON_CHAT, "Drop to 20% health.", GOSSIP_SENDER_MAIN, HEALING_DUMMY_ACTION_WOUND);
-        AddGossipItemFor(player, GOSSIP_ICON_CHAT, "Match my level and maximum health.", GOSSIP_SENDER_MAIN, HEALING_DUMMY_ACTION_MATCH_PLAYER);
-        AddGossipItemFor(player, GOSSIP_ICON_CHAT, ai->AutoWound() ? "Stop dropping to 20% when healed to full." : "Drop to 20% again when healed to full.",
+        AddGossipItemFor(player, GOSSIP_ICON_INTERACT_1, "不造成任何伤害。", GOSSIP_SENDER_MAIN, HEALING_DUMMY_ACTION_DAMAGE_OFF);
+        AddGossipItemFor(player, GOSSIP_ICON_INTERACT_1, "持续受到伤害（每秒 3%）。", GOSSIP_SENDER_MAIN, HEALING_DUMMY_ACTION_DAMAGE_STEADY);
+        AddGossipItemFor(player, GOSSIP_ICON_INTERACT_1, "承受重度伤害（每秒 8%）。", GOSSIP_SENDER_MAIN, HEALING_DUMMY_ACTION_DAMAGE_HEAVY);
+        AddGossipItemFor(player, GOSSIP_ICON_INTERACT_1, "承受爆发伤害（每 5 秒 35%）。", GOSSIP_SENDER_MAIN, HEALING_DUMMY_ACTION_DAMAGE_SPIKY);
+        AddGossipItemFor(player, GOSSIP_ICON_CHAT, "生命值降至 20%。", GOSSIP_SENDER_MAIN, HEALING_DUMMY_ACTION_WOUND);
+        AddGossipItemFor(player, GOSSIP_ICON_CHAT, "与我的等级和最大生命值一致。", GOSSIP_SENDER_MAIN, HEALING_DUMMY_ACTION_MATCH_PLAYER);
+        AddGossipItemFor(player, GOSSIP_ICON_CHAT, ai->AutoWound() ? "治疗满血后不再自动降至 20%。" : "治疗满血后再次自动降至 20%。",
             GOSSIP_SENDER_MAIN, HEALING_DUMMY_ACTION_AUTO_WOUND);
-        AddGossipItemFor(player, GOSSIP_ICON_CHAT, "Show my healing.", GOSSIP_SENDER_MAIN, HEALING_DUMMY_ACTION_SHOW_STATS);
-        AddGossipItemFor(player, GOSSIP_ICON_CHAT, "Reset the healing statistics.", GOSSIP_SENDER_MAIN, HEALING_DUMMY_ACTION_RESET_STATS);
+        AddGossipItemFor(player, GOSSIP_ICON_CHAT, "显示我的治疗量。", GOSSIP_SENDER_MAIN, HEALING_DUMMY_ACTION_SHOW_STATS);
+        AddGossipItemFor(player, GOSSIP_ICON_CHAT, "重置治疗统计。", GOSSIP_SENDER_MAIN, HEALING_DUMMY_ACTION_RESET_STATS);
         SendGossipMenuFor(player, NPC_TEXT_HEALING_DUMMY, creature->GetGUID());
         return true;
     }

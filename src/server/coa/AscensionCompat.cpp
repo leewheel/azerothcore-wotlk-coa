@@ -11148,7 +11148,7 @@ public:
         player->SendEquipError(EQUIP_ERR_NONE, item, nullptr);
         if (player->HasSpell(mountSpell))
         {
-            ChatHandler(player->GetSession()).SendNotification("You already know this mount.");
+            ChatHandler(player->GetSession()).SendNotification("你已经学会这个坐骑了。");
             return true;
         }
 
@@ -11721,7 +11721,7 @@ public:
         ClearGossipMenuFor(player);
         if (ascensionCompatConfig.GetConfigValue<bool>(AscensionCompatConfig::ENABLED) &&
             IsAscensionCustomClass(player))
-            AddGossipItemFor(player, GOSSIP_ICON_TRAINER, "Restore my available class abilities.",
+            AddGossipItemFor(player, GOSSIP_ICON_TRAINER, "恢复我的职业可用技能。",
                 GOSSIP_SENDER_MAIN, ActionRestoreAbilities);
         SendGossipMenuFor(player, TextTraining, creature->GetGUID());
         return true;

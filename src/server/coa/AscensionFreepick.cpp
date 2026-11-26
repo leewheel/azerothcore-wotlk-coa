@@ -628,7 +628,7 @@ public:
             handler->SendErrorMessage("条目 {}：{}", entryId, error);
             return false;
         }
-        handler->PSendSysMessage("{} entry {} for {}.", learn ? "Learned" : "Unlearned", entryId, player->GetName());
+        handler->PSendSysMessage("已为 {} {} 条目 {}。", player->GetName(), learn ? "学会" : "遗忘", entryId);
         return true;
     }
 };

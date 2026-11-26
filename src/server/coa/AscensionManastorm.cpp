@@ -877,25 +877,25 @@ namespace
                             continue;
                         if (ItemTemplate const* item = sObjectMgr->GetItemTemplate(gadget.item))
                             AddGossipItemFor(player, GOSSIP_ICON_VENDOR,
-                                item->Name1 + " - " + std::to_string(gadget.cost) + " Bonzo Bolts", GOSSIP_SENDER_MAIN, 100 + i);
+                                item->Name1 + " - " + std::to_string(gadget.cost) + " 邦佐螺栓", GOSSIP_SENDER_MAIN, 100 + i);
                     }
                     if (!player->HasSpell(93418) && !player->HasItemCount(98074, 1, true))
-                        AddGossipItemFor(player, GOSSIP_ICON_VENDOR, "Cogsley companion - 10 Bedlam Bullion",
+                        AddGossipItemFor(player, GOSSIP_ICON_VENDOR, "齿轮伴灵 - 10 混乱金条",
                             GOSSIP_SENDER_MAIN, 20);
-                    AddGossipItemFor(player, GOSSIP_ICON_VENDOR, "Exchange 1 Bedlam Bullion for 10 Bonzo Bolts",
+                    AddGossipItemFor(player, GOSSIP_ICON_VENDOR, "用 1 个混乱金条兑换 10 个邦佐螺栓",
                         GOSSIP_SENDER_MAIN, 21);
-                    AddGossipItemFor(player, GOSSIP_ICON_CHAT, "Back", GOSSIP_SENDER_MAIN, 1);
+                    AddGossipItemFor(player, GOSSIP_ICON_CHAT, "返回", GOSSIP_SENDER_MAIN, 1);
                     SendGossipMenuFor(player, DEFAULT_GOSSIP_MESSAGE, creature->GetGUID());
                     return true;
                 }
                 if (guide && CanAdvance(itr->second.encounter->phase, itr->second.encounter->depth))
-                    AddGossipItemFor(player, GOSSIP_ICON_CHAT, "Continue the Manastorm", GOSSIP_SENDER_MAIN, 2);
-                AddGossipItemFor(player, GOSSIP_ICON_CHAT, "Collect rewards from the mailbox", GOSSIP_SENDER_MAIN, 4);
-                AddGossipItemFor(player, GOSSIP_ICON_VENDOR, "Manastorm potions and upgrades", GOSSIP_SENDER_MAIN, 10);
-                AddGossipItemFor(player, GOSSIP_ICON_VENDOR, "Repair equipment and sell items", GOSSIP_SENDER_MAIN, 5);
-                AddGossipItemFor(player, GOSSIP_ICON_CHAT, "Replace missing starter potions", GOSSIP_SENDER_MAIN, 6);
+                    AddGossipItemFor(player, GOSSIP_ICON_CHAT, "继续法力风暴", GOSSIP_SENDER_MAIN, 2);
+                AddGossipItemFor(player, GOSSIP_ICON_CHAT, "从邮箱领取奖励", GOSSIP_SENDER_MAIN, 4);
+                AddGossipItemFor(player, GOSSIP_ICON_VENDOR, "法力风暴药水与升级", GOSSIP_SENDER_MAIN, 10);
+                AddGossipItemFor(player, GOSSIP_ICON_VENDOR, "修理装备并出售物品", GOSSIP_SENDER_MAIN, 5);
+                AddGossipItemFor(player, GOSSIP_ICON_CHAT, "补发缺失的初始药水", GOSSIP_SENDER_MAIN, 6);
                 if (guide)
-                    AddGossipItemFor(player, GOSSIP_ICON_CHAT, "Leave the Manastorm", GOSSIP_SENDER_MAIN, 3);
+                    AddGossipItemFor(player, GOSSIP_ICON_CHAT, "离开法力风暴", GOSSIP_SENDER_MAIN, 3);
                 SendGossipMenuFor(player, DEFAULT_GOSSIP_MESSAGE, creature->GetGUID());
             }
             else

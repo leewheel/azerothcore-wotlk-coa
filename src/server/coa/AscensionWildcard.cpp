@@ -2594,7 +2594,7 @@ public:
     bool OnGossipHello(Player* player, Creature* creature) override
     {
         ClearGossipMenuFor(player);
-        AddGossipItemFor(player, GOSSIP_ICON_VENDOR, "Show me yer plunder.", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_TRADE);
+        AddGossipItemFor(player, GOSSIP_ICON_VENDOR, "让我看看你的货。", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_TRADE);
         SendGossipMenuFor(player, PETE_ARR_TEXT, creature);
         return true;
     }

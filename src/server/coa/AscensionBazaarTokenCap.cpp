@@ -344,7 +344,7 @@ private:
         AscensionBazaarTokenCap::Set(accountId, earned, secondsAgo);
         if (target->IsConnected())
             AscensionBazaarTokenCap::SendClientState(target->GetConnectedPlayer());
-        handler->PSendSysMessage("{} (account {}): {}", target->GetName(), accountId,
+        handler->PSendSysMessage("{}（账号 {}）：{}", target->GetName(), accountId,
             AscensionBazaarTokenCap::Describe(accountId));
         return true;
     }

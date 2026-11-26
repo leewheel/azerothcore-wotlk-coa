@@ -435,7 +435,7 @@ bool GrantCache(Player* player, uint32 cacheItemId)
 
     CharacterDatabaseTransaction trans = CharacterDatabase.BeginTransaction();
     item->SaveToDB(trans);
-    MailDraft("Callboard Cache", "Your bags were full, so your Callboard Cache was sent by mail.")
+    MailDraft("委托板缓存", "你的背包已满，委托板缓存已通过邮件寄给你。")
         .AddItem(item)
         .SendMailTo(trans, MailReceiver(player), MailSender(player));
     CharacterDatabase.CommitTransaction(trans);

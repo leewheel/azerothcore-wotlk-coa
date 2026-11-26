@@ -602,8 +602,8 @@ namespace
                 return false;
             }
             Publish(*ticket);
-            handler->PSendSysMessage(gameMasterOnly ? "Note added to player ticket #{}." :
-                "Reply sent on player ticket #{}.", ticket->Id);
+            handler->PSendSysMessage(gameMasterOnly ? "已为玩家工单 #{} 添加备注。" :
+                "已回复玩家工单 #{}。", ticket->Id);
             return true;
         }
     };
